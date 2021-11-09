@@ -1,3 +1,10 @@
+- name: Yarn Upgrader
+  uses: browniebroke/yarn-upgrade-action@v1.1
+  on:
+    push:
+      branches: 
+      - dependency-management
+      
 jobs:
   build:
     runs-on: ubuntu-latest
