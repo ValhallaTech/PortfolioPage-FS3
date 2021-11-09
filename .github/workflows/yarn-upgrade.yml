@@ -1,0 +1,2 @@
+- name: Yarn Upgrader
+  uses: browniebroke/yarn-upgrade-action@v1.1
