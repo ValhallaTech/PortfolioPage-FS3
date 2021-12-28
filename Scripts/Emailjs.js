@@ -1,4 +1,4 @@
-const btn = document.getElementById ( "btnSend" );
+let btn = document.getElementById ( "btnSend" );
 
 document.getElementById ( "frmContact" )
     .addEventListener ( "submit",
