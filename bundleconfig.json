@@ -1,50 +1,62 @@
 [
-    {
-        "outputFileName": "Content/style.min.css",
-        "inputFiles": [
-            "Content/style.css"
-        ]
-    },
-    {
-        "outputFileName": "Content/aos.min.css",
-        "inputFiles": [
-            "Content/aos.css"
-        ]
-    },
-    {
-        "outputFileName": "Scripts/main.min.js",
-        "inputFiles": [
-            "Scripts/main.js"
-        ]
-    },
-    {
-        "outputFileName": "Scripts/aos.min.js",
-        "inputFiles": [
-            "Scripts/aos.js"
-        ]
-    },
-    {
-        "outputFileName": "Scripts/Emailjs.min.js",
-        "inputFiles": [
-            "Scripts/Emailjs.js"
-        ]
-    },
-    {
-        "outputFileName": "lib/aos/aos.min.css",
-        "inputFiles": [
-            "lib/aos/aos.css"
-        ]
-    },
-    {
-        "outputFileName": "lib/aos/aos.min.js",
-        "inputFiles": [
-            "lib/aos/aos.js"
-        ]
-    },
-    {
-        "outputFileName": "Content/Emailjs.min.css",
-        "inputFiles": [
-            "Content/Emailjs.css"
-        ]
-    }
+  {
+    "outputFileName": "Content/style.min.css",
+    "inputFiles": [
+      "Content/style.css"
+    ]
+  },
+  {
+    "outputFileName": "Content/aos.min.css",
+    "inputFiles": [
+      "Content/aos.css"
+    ]
+  },
+  {
+    "outputFileName": "Scripts/main.min.js",
+    "inputFiles": [
+      "Scripts/main.js"
+    ]
+  },
+  {
+    "outputFileName": "Scripts/aos.min.js",
+    "inputFiles": [
+      "Scripts/aos.js"
+    ]
+  },
+  {
+    "outputFileName": "Scripts/Emailjs.min.js",
+    "inputFiles": [
+      "Scripts/Emailjs.js"
+    ]
+  },
+  {
+    "outputFileName": "lib/aos/aos.min.css",
+    "inputFiles": [
+      "lib/aos/aos.css"
+    ]
+  },
+  {
+    "outputFileName": "lib/aos/aos.min.js",
+    "inputFiles": [
+      "lib/aos/aos.js"
+    ]
+  },
+  {
+    "outputFileName": "Content/Emailjs.min.css",
+    "inputFiles": [
+      "Content/Emailjs.css"
+    ]
+  },
+  {
+    "outputFileName": "node_modules/aos/dist/aos.min.css",
+    "inputFiles": [
+      "node_modules/aos/dist/aos.css"
+    ]
+  },
+  {
+    "outputFileName": "node_modules/aos/dist/aos.min.js",
+    "inputFiles": [
+      "node_modules/aos/dist/aos.js"
+    ]
+  }
 ]

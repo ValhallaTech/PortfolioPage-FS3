@@ -2,13 +2,13 @@
 # Manual changes might be lost - proceed with caution!
 
 __metadata:
-  version: 4
-  cacheKey: 7
+  version: 5
+  cacheKey: 8
 
 "@popperjs/core@npm:^2.9.2":
   version: 2.9.2
   resolution: "@popperjs/core@npm:2.9.2"
-  checksum: cc4de8b46fc190805619224f1c683bee6a162276430af3728d35087099ad83a80da3c11c4eac7cb2b5aa2fa59d4c7c689e211a3e955136588ed6dedb5bff32c5
+  checksum: a5916302e706b7dfbbbcd8728bafc1682b450d5ec70dd10da84a07c89a419fa72f83cbf990798589e6e69e1b520d6768176ea4bd360d7450d08a2fbc25a14e1c
   languageName: node
   linkType: hard
 
@@ -20,6 +20,9 @@ __metadata:
     aos: ^2.3.4
     bootstrap: ^5.0.2
     emailjs-com: ^3.1.0
+    isotope-layout: ^3.0.6
+    jquery.easing: ^1.4.1
+    owl.carousel: ^2.3.4
     typed.js: ^2.0.12
     validate.js: ^0.13.1
     venobox: ^1.9.3
@@ -37,7 +40,7 @@ __metadata:
     classlist-polyfill: ^1.0.3
     lodash.debounce: ^4.0.6
     lodash.throttle: ^4.0.1
-  checksum: f32d309c30e6404b370cdef6542560f16df394a11e6d4d101c75f54db5c858d3c5d5e30156eab6cace8cbfb85fcd723b4114af4581670720aee7809312890c92
+  checksum: 42f823777e9042b860e286b2e75478866eaa5ae9f5d6e2ff6fee5f79b2a94dd50e4a161c2fae490ba9b92be21ba36452212ed5f6dbd1f88a83697a57164864a1
   languageName: node
   linkType: hard
 
@@ -46,56 +49,136 @@ __metadata:
   resolution: "bootstrap@npm:5.0.2"
   peerDependencies:
     "@popperjs/core": ^2.9.2
-  checksum: 5074006f6bdd28f476c9154c3b0945997ad16999564d9b1f0f5aea1ed2083eeeda12619be87ec47da88ff131d6a06a42fea739794c54f487434a14f849c4c187
+  checksum: be9ddb109bb18db5aa4bb6899016282b9430185241d60876fbb00a76dd725a1efcc61398d81081030f93f6db1c9f245baddaaefbdf1ac1ea69a7c169cb2ace7b
   languageName: node
   linkType: hard
 
 "classlist-polyfill@npm:^1.0.3":
   version: 1.2.0
   resolution: "classlist-polyfill@npm:1.2.0"
-  checksum: 17b18e3ef8a3f57423afb132cec8032e3751c5e2bca8ce5783d4167c967ad48f693910dd74abb0f4716ce2099eba79cfa593d2eb76ceea6f8413c53101a8177a
+  checksum: 43ff10af5e75d0347f820d77536a12f981adbf5be9c0ff5c3c4823693c8daacf8aa487eac1a9704b73f4dd74d811e5145b4465fe606926351cdfca5bb9b0914e
+  languageName: node
+  linkType: hard
+
+"desandro-matches-selector@npm:^2.0.0":
+  version: 2.0.2
+  resolution: "desandro-matches-selector@npm:2.0.2"
+  checksum: 30979e6b45d7720d259d4db11ec026fcbee242deee5ec0944c265d7e386a7358ab29f7417cbc3631830d0dbe6e827940dee31f789ed865dba22880d209fc9f8e
   languageName: node
   linkType: hard
 
 "emailjs-com@npm:^3.1.0":
   version: 3.1.0
   resolution: "emailjs-com@npm:3.1.0"
-  checksum: 3f39f9837546352b091d5b9e4789678f360766d45e6d112f7668fda8a77f411767e067827bd92b35e6edef3250104f71afca794b0158e632c117830d7ade6b6f
+  checksum: 182fae86af0f582efcb78ce4158f2cf57f0d0e9d09a4297f0eab8d963da758e0fde8d59055aa09eb5ea74869c3d77a3c854269c10c47d427b4aba3618f9737ed
   languageName: node
   linkType: hard
 
-"jquery@npm:>=1.7.0":
+"ev-emitter@npm:^1.0.0":
+  version: 1.1.1
+  resolution: "ev-emitter@npm:1.1.1"
+  checksum: 3dd78a7620701ef8095794f611dd251bdd9023badf322b3d6fa5e10a660c50e83eec5ee5bbc7654682635cf7b8858c94e2c77e1d10bdc188a2b0593436403476
+  languageName: node
+  linkType: hard
+
+"fizzy-ui-utils@npm:^2.0.0, fizzy-ui-utils@npm:^2.0.4":
+  version: 2.0.7
+  resolution: "fizzy-ui-utils@npm:2.0.7"
+  dependencies:
+    desandro-matches-selector: ^2.0.0
+  checksum: 001e54effa22c4f62728b90a25e8eb5477057ab53d0184e1c3231bbdfc7c34e278418fbcaf7d63c75ede823d82e61245e668ce8cba90e1c5699de960188c654f
+  languageName: node
+  linkType: hard
+
+"get-size@npm:^2.0.0, get-size@npm:^2.0.2":
+  version: 2.0.3
+  resolution: "get-size@npm:2.0.3"
+  checksum: 18d5a5fdb3f541db8b1e6ad46a5411d4bb7da3061d2ef7e544db3bbce7a13543f05c91fd40c7f68b4bc4bc035c160fed23c45514cde7d5fb18de1cce10208b19
+  languageName: node
+  linkType: hard
+
+"isotope-layout@npm:^3.0.6":
+  version: 3.0.6
+  resolution: "isotope-layout@npm:3.0.6"
+  dependencies:
+    desandro-matches-selector: ^2.0.0
+    fizzy-ui-utils: ^2.0.4
+    get-size: ^2.0.0
+    masonry-layout: ^4.1.0
+    outlayer: ^2.1.0
+  checksum: e0eff5d1ce4fd308fd2b3496a5a10aa99025bef4534f1d090d82289d51974177775a5581d74ed5ca05b80752f735bb5ee6b0c754f52f08747579f1e6dd18d467
+  languageName: node
+  linkType: hard
+
+"jquery.easing@npm:^1.4.1":
+  version: 1.4.1
+  resolution: "jquery.easing@npm:1.4.1"
+  checksum: b608b2bfb959634dfef151694aade01eccef37870c2c8ed121c81ddf9c0c82a35c8096de2c5cc926190385e9854ecc926e822825a3fdf31d7708f73aa5adc233
+  languageName: node
+  linkType: hard
+
+"jquery@npm:>=1.7.0, jquery@npm:>=1.8.3":
   version: 3.6.0
   resolution: "jquery@npm:3.6.0"
-  checksum: a0a819022a1bdff5efa79bbd9d4d7352de5bd32dabe42108e6ec0797238dba36c09c108e0eea2724f5d03acc1b30ee87d76bec80e15b9510106532292ebe6ba4
+  checksum: 8fd5fef4aa48fd374ec716dd1c1df1af407814a228e15c1260ca140de3a697c2a77c30c54ff1d238b6a3ab4ddc445ddeef9adce6c6d28e4869d85eb9d3951c0e
   languageName: node
   linkType: hard
 
 "lodash.debounce@npm:^4.0.6":
   version: 4.0.8
   resolution: "lodash.debounce@npm:4.0.8"
-  checksum: b6042bd8c09ff1961c9127d32266316bc21f946ece5e3464a663ec61fadb98e7d56ec0ef7e23b47d393695310c19cf24e651c1756be6da91ac02c72be7f79465
+  checksum: a3f527d22c548f43ae31c861ada88b2637eb48ac6aa3eb56e82d44917971b8aa96fbb37aa60efea674dc4ee8c42074f90f7b1f772e9db375435f6c83a19b3bc6
   languageName: node
   linkType: hard
 
 "lodash.throttle@npm:^4.0.1":
   version: 4.1.1
   resolution: "lodash.throttle@npm:4.1.1"
-  checksum: d9107c79033f609f23552f48f5ba93b8a98a07a2b38914745a48d33f18704a4c6a125610ad2bab2a0139974d1da7c5d6a24271243e21571f01e21bf3b2f6b21d
+  checksum: 129c0a28cee48b348aef146f638ef8a8b197944d4e9ec26c1890c19d9bf5a5690fe11b655c77a4551268819b32d27f4206343e30c78961f60b561b8608c8c805
+  languageName: node
+  linkType: hard
+
+"masonry-layout@npm:^4.1.0":
+  version: 4.2.2
+  resolution: "masonry-layout@npm:4.2.2"
+  dependencies:
+    get-size: ^2.0.2
+    outlayer: ^2.1.0
+  checksum: b947029b8fdfb384d17d7749d80a4f00f88d885acea04d77e1fefd36827cc2a345fd40d9ccddf720ed9323e133d8ea498125eece91d2c8517f69fd4e9e1bbdf4
+  languageName: node
+  linkType: hard
+
+"outlayer@npm:^2.1.0":
+  version: 2.1.1
+  resolution: "outlayer@npm:2.1.1"
+  dependencies:
+    ev-emitter: ^1.0.0
+    fizzy-ui-utils: ^2.0.0
+    get-size: ^2.0.2
+  checksum: a8b69d07bad6b498ea1956f89a4bae6d38414d81a5feeae6af06cd8206a1bf47db82f664dc3ccd13b8d2c5886a6cded4a4642d0fafcbbd80f68873b7eb9f4153
+  languageName: node
+  linkType: hard
+
+"owl.carousel@npm:^2.3.4":
+  version: 2.3.4
+  resolution: "owl.carousel@npm:2.3.4"
+  dependencies:
+    jquery: ">=1.8.3"
+  checksum: fb28a3373c273d7210bf97739bcb35bfd552afa4e2541d4fc66f19cf1d253136cda927c60162a961902a72bd31dccc6c18084fc9a676d210356bb15677d6d571
   languageName: node
   linkType: hard
 
 "typed.js@npm:^2.0.12":
   version: 2.0.12
   resolution: "typed.js@npm:2.0.12"
-  checksum: b17ed74438fc525877252e156c6a5471b352e7a74ff72be51c73a7b223159d5d0f38ef8f83ac5913fce16cbb66193f67ae6dc29b2609a655a92b042cb9d12342
+  checksum: ea753bf8e01fd6e37390f8d02de58cc084e7b11620e937e75a6cad58829dd55a9273954191529cddad58ab102479f097db4587c6790ba4ff2dabc5d4fb6192d8
   languageName: node
   linkType: hard
 
 "validate.js@npm:^0.13.1":
   version: 0.13.1
   resolution: "validate.js@npm:0.13.1"
-  checksum: 74e4ba95d8ee6e8c43b38f53f0ce4f5b300a57780c994b563ff181d5ff2a544edc5be18f8cc7d8841e47e8f453d7fb05f0a89c0207159c994ba68fd37e069432
+  checksum: a3ddc8744bf1e97afeef6129083e5a4f6c3378a82927c94effa4ec9954ff0cc3a9155c3894101b781f20b6256dde1010b69a96145e0bfb2229da3a8b7bd331a6
   languageName: node
   linkType: hard
 
@@ -104,13 +187,13 @@ __metadata:
   resolution: "venobox@npm:1.9.3"
   dependencies:
     jquery: ">=1.7.0"
-  checksum: a12e40cefa3234eb649ad98fc0b136dc9a52e8c66d4a35bfde08fdcc5ebd55ea645f04ba173e66f575a831d459d6f27a66d7a58375b3449cd0c957e30cc988a6
+  checksum: 29e4025b2964fc0cebb142c29e1b7f00a4bbfea953143b9a25ba604ec28f66466c324ad7e7e9dbf455a983be09f72b5e8ab271935ca87f1cb340c06a463b18e4
   languageName: node
   linkType: hard
 
 "waypoints@npm:^4.0.1":
   version: 4.0.1
   resolution: "waypoints@npm:4.0.1"
-  checksum: 2a1bd02e6980fa9a1b9e70df30af2707d91e30d0553cb99bd20c494ec405c975b431a397067387be7dd10250388488725caf125f931f9538aae3ef754e612d17
+  checksum: 0549b20be80202fbe8d1a5a736c1ee978aa48b56ba46b2e8e4a93fe4b4e2098b1fbbf8411f93965a415ed95294130fa4b3491f93e4d92c8af3ab377fff993788
   languageName: node
   linkType: hard
