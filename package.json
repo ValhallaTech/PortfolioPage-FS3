@@ -1,6 +1,9 @@
 {
   "name": "PortfolioPage_FS3",
   "packageManager": "yarn@3.1.1",
+  "scripts": {
+    "build": "parcel build index.html"
+  },
   "dependencies": {
     "@icon/icofont": "^1.0.1-alpha.1",
     "@popperjs/core": "^2.11.2",
