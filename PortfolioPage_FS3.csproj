@@ -24,7 +24,7 @@
     <UseGlobalApplicationHostFile />
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
-    <TypeScriptToolsVersion>3.9</TypeScriptToolsVersion>
+    <TypeScriptToolsVersion>4.3</TypeScriptToolsVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -67,6 +67,8 @@
     <Reference Include="System.EnterpriseServices" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="portfolio-details.html" />
+    <Content Include="Scripts\app.js" />
     <Content Include="Content\animations.css" />
     <Content Include="Content\aos.css" />
     <Content Include="Content\aos.min.css">
@@ -709,11 +711,7 @@
     <Content Include="Fonts\boxicons.woff2" />
     <Content Include=".yarnrc.yml" />
     <None Include="bundleconfig.json" />
-    <Content Include="libman.json" />
     <Content Include="Scripts\main.js" />
-    <Content Include="Scripts\main.min.js">
-      <DependentUpon>main.js</DependentUpon>
-    </Content>
     <Content Include="Scripts\popper-utils.js" />
     <Content Include="Scripts\popper-utils.min.js" />
     <Content Include="Scripts\popper.js" />
@@ -1136,7 +1134,6 @@
     <Content Include="node_modules\bootstrap\scss\_utilities.scss" />
     <Content Include="node_modules\bootstrap\scss\_variables.scss" />
     <Content Include="node_modules\emailjs-com\package.json" />
-    <None Include="packages.config" />
     <Content Include="Scripts\umd\popper.min.js.map" />
     <Content Include="Scripts\umd\popper.js.map" />
     <Content Include="Scripts\umd\popper.js.flow" />
