@@ -11,11 +11,6 @@
   # Base directory for build
   base = "."
 
-  # Node.js version to use (exact version for consistency)
-  [build.environment]
-    NODE_VERSION = "24.14.1"
-    YARN_VERSION = "4.13.0"
-
 # Headers for security and performance
 [[headers]]
   for = "/*"
