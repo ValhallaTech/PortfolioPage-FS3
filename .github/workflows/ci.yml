@@ -20,10 +20,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24.14.1'
+          node-version-file: .node-version
+          cache: 'yarn'
 
-      - name: Enable Corepack
-        run: corepack enable
+      - name: Enable Corepack and activate Yarn 4
+        run: |
+          corepack enable
+          corepack prepare yarn@4 --activate
 
       - name: Install dependencies
         run: yarn install --immutable
