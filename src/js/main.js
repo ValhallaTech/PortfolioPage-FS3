@@ -4,14 +4,13 @@
  */
 
 import Typed from 'typed.js';
-import AOS from 'aos';
+import ScrollReveal from 'scrollreveal';
 import Isotope from 'isotope-layout';
 import Swiper from 'swiper';
 import { Autoplay, Pagination } from 'swiper/modules';
 import GLightbox from 'glightbox';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
-import 'aos/dist/aos.css';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'glightbox/dist/css/glightbox.min.css';
@@ -98,14 +97,27 @@ function initLightbox() {
 }
 
 /**
- * Initialize AOS (Animate On Scroll)
+ * Initialize ScrollReveal (replaces AOS)
  */
-function initAOS() {
-  AOS.init({
+function initScrollReveal() {
+  const sr = ScrollReveal({
+    distance: '60px',
     duration: 1000,
-    easing: 'ease-in-out-back',
+    easing: 'ease-in-out',
     once: true,
   });
+
+  sr.reveal('.hero-container', { origin: 'top', delay: 200 });
+  sr.reveal('[data-sr="fade-right"]', { origin: 'right' });
+  sr.reveal('[data-sr="fade-left"]', { origin: 'left' });
+  sr.reveal('[data-sr="fade-up"]', { origin: 'bottom' });
+  sr.reveal('[data-sr="fade-in"]', { origin: 'bottom', distance: '0px' });
+
+  sr.reveal('[data-sr-delay="100"]', { delay: 100 });
+  sr.reveal('[data-sr-delay="200"]', { delay: 200 });
+  sr.reveal('[data-sr-delay="300"]', { delay: 300 });
+  sr.reveal('[data-sr-delay="400"]', { delay: 400 });
+  sr.reveal('[data-sr-delay="500"]', { delay: 500 });
 }
 
 /**
@@ -171,8 +183,8 @@ function init() {
   // Testimonials carousel (Swiper replaces owl.carousel)
   initTestimonialsCarousel(document.querySelector('.testimonials-carousel'));
 
-  // Init AOS
-  initAOS();
+  // Init ScrollReveal (replaces AOS)
+  initScrollReveal();
 }
 
 // Auto-initialize on DOM ready
