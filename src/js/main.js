@@ -92,10 +92,24 @@ function initTestimonialsCarousel(container) {
 }
 
 /**
- * Initialize GLightbox for portfolio items
+ * Initialize GLightbox for portfolio items.
+ * Portfolio links store the image URL in data-src so Parcel does not process
+ * them as raw-file bundles, which would conflict with the img src bundles for
+ * the same files and corrupt their output paths.  Copy data-src → href at
+ * runtime so GLightbox receives the correct URL.
  * @returns {GLightbox|null}
  */
 function initLightbox() {
+  document.querySelectorAll('a.glightbox[data-src]').forEach((el) => {
+    const raw = el.getAttribute('data-src') || '';
+    // Extract only the numeric index from the expected portfolio path pattern.
+    // Construct href from a trusted template so no raw DOM value reaches setAttribute.
+    const m = raw.match(/portfolio-(\d+)\.jpe?g$/i);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      el.setAttribute('href', `./images/portfolio/portfolio-${n}.jpg`);
+    }
+  });
   return GLightbox({ selector: '.glightbox' });
 }
 
