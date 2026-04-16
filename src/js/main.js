@@ -101,10 +101,13 @@ function initTestimonialsCarousel(container) {
  */
 function initLightbox() {
   document.querySelectorAll('a.glightbox[data-src]').forEach((el) => {
-    const src = el.getAttribute('data-src');
-    // Only allow safe relative image paths; never javascript: or other protocol URIs.
-    if (src && /\.(jpe?g|png|gif|webp|avif|svg)(\?.*)?$/i.test(src) && !/^\w+:/i.test(src)) {
-      el.setAttribute('href', src);
+    const raw = el.getAttribute('data-src') || '';
+    // Extract only the numeric index from the expected portfolio path pattern.
+    // Construct href from a trusted template so no raw DOM value reaches setAttribute.
+    const m = raw.match(/portfolio-(\d+)\.(jpe?g|png|gif|webp)$/i);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      el.setAttribute('href', `./images/portfolio/portfolio-${n}.jpg`);
     }
   });
   return GLightbox({ selector: '.glightbox' });
