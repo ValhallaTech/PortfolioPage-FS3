@@ -135,19 +135,39 @@ function initContactForm() {
 
   if (!form || !submitBtn || !errorMessage || !sentMessage) return;
 
-  // Reset form and clear messages whenever the modal is dismissed
+  const defaultButtonText = submitBtn.textContent;
+  let abortController = null;
+  let autoCloseTimer = null;
+
+  // Abort in-flight request and reset form state whenever the modal is fully hidden
   if (modalEl) {
     modalEl.addEventListener('hidden.bs.modal', () => {
+      if (abortController) {
+        abortController.abort();
+        abortController = null;
+      }
+      clearTimeout(autoCloseTimer);
+      autoCloseTimer = null;
       form.reset();
       errorMessage.style.display = 'none';
       sentMessage.style.display = 'none';
+      submitBtn.disabled = false;
+      submitBtn.textContent = defaultButtonText;
     });
   }
 
-  const defaultButtonText = submitBtn.textContent;
-
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+
+    // Cancel any previous in-flight request and pending auto-close timer
+    if (abortController) {
+      abortController.abort();
+    }
+    clearTimeout(autoCloseTimer);
+    autoCloseTimer = null;
+
+    abortController = new AbortController();
+    const { signal } = abortController;
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'Sending...';
@@ -165,6 +185,7 @@ function initContactForm() {
           Accept: 'application/json',
         },
         body: JSON.stringify(payload),
+        signal,
       });
       const data = await response.json();
 
@@ -174,7 +195,10 @@ function initContactForm() {
         form.reset();
         // Close the modal after a short delay so the user sees the success message
         if (modalEl) {
-          setTimeout(() => Modal.getOrCreateInstance(modalEl).hide(), 2000);
+          autoCloseTimer = setTimeout(() => {
+            autoCloseTimer = null;
+            Modal.getOrCreateInstance(modalEl).hide();
+          }, 2000);
         }
       } else {
         errorMessage.textContent = data.message || 'Failed to send message. Please try again.';
@@ -182,12 +206,18 @@ function initContactForm() {
         sentMessage.style.display = 'none';
       }
     } catch (error) {
+      // hidden.bs.modal already handles cleanup when the request is aborted
+      if (error.name === 'AbortError') return;
       errorMessage.textContent = 'Failed to send message. Please try again.';
       errorMessage.style.display = 'block';
       sentMessage.style.display = 'none';
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = defaultButtonText;
+      // Skip button reset when aborted; hidden.bs.modal has already reset it
+      if (!signal.aborted) {
+        abortController = null;
+        submitBtn.disabled = false;
+        submitBtn.textContent = defaultButtonText;
+      }
     }
   });
 }
