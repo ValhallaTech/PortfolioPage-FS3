@@ -776,7 +776,9 @@ section
 .testimonials .testimonial-item .testimonial-img
 {
     border-radius: 50%;
+    height: 90px;
     margin: 0 auto;
+    object-fit: cover;
     width: 90px;
 }
 
