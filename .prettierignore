@@ -1,0 +1,8 @@
+dist/
+node_modules/
+coverage/
+.parcel-cache/
+*.min.css
+*.min.js
+src/css/icofont.min.css
+yarn.lock

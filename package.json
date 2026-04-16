@@ -8,7 +8,11 @@
     "start": "parcel src/index.html",
     "build": "parcel build src/index.html --public-url ./",
     "test": "jest --coverage",
-    "test:ci": "jest --coverage --ci"
+    "test:ci": "jest --coverage --ci",
+    "lint": "eslint src/js __tests__",
+    "lint:fix": "eslint src/js __tests__ --fix",
+    "format": "prettier --write src/js __tests__",
+    "format:check": "prettier --check src/js __tests__"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0",
@@ -23,10 +27,16 @@
     "typed.js": "^3.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "latest",
     "@parcel/transformer-css": "^2.16.4",
+    "eslint": "latest",
+    "eslint-config-prettier": "latest",
+    "eslint-plugin-prettier": "latest",
+    "globals": "latest",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
-    "parcel": "^2.16.4"
+    "parcel": "^2.16.4",
+    "prettier": "latest"
   },
   "packageManager": "yarn@4.14.0"
 }
