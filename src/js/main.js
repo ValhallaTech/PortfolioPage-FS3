@@ -104,7 +104,7 @@ function initLightbox() {
     const raw = el.getAttribute('data-src') || '';
     // Extract only the numeric index from the expected portfolio path pattern.
     // Construct href from a trusted template so no raw DOM value reaches setAttribute.
-    const m = raw.match(/portfolio-(\d+)\.(jpe?g|png|gif|webp)$/i);
+    const m = raw.match(/portfolio-(\d+)\.jpe?g$/i);
     if (m) {
       const n = parseInt(m[1], 10);
       el.setAttribute('href', `./images/portfolio/portfolio-${n}.jpg`);
