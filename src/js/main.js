@@ -11,8 +11,8 @@ import { Autoplay, Pagination } from 'swiper/modules';
 import GLightbox from 'glightbox';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
-import 'swiper/css';
-import 'swiper/css/pagination';
+import 'swiper/swiper.css';
+import 'swiper/modules/pagination.css';
 import 'glightbox/dist/css/glightbox.min.css';
 import 'boxicons/css/boxicons.min.css';
 import '../css/style.css';
