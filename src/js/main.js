@@ -123,6 +123,61 @@ function initScrollReveal() {
 }
 
 /**
+ * Initialize Web3Forms contact form submission
+ */
+function initContactForm() {
+  const form = document.querySelector('#contact-form');
+  const submitBtn = document.querySelector('#submit-btn');
+  const errorMessage = document.querySelector('#error-message');
+  const sentMessage = document.querySelector('#sent-message');
+
+  if (!form || !submitBtn || !errorMessage || !sentMessage) return;
+
+  const defaultButtonText = submitBtn.textContent;
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending...';
+    errorMessage.style.display = 'none';
+    sentMessage.style.display = 'none';
+
+    try {
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+
+      if (data.success === true) {
+        sentMessage.style.display = 'block';
+        errorMessage.style.display = 'none';
+        form.reset();
+      } else {
+        errorMessage.textContent = data.message || 'Failed to send message. Please try again.';
+        errorMessage.style.display = 'block';
+        sentMessage.style.display = 'none';
+      }
+    } catch (error) {
+      errorMessage.textContent = 'Failed to send message. Please try again.';
+      errorMessage.style.display = 'block';
+      sentMessage.style.display = 'none';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = defaultButtonText;
+    }
+  });
+}
+
+/**
  * Main initialization - wires up all functionality
  */
 function init() {
@@ -187,6 +242,9 @@ function init() {
 
   // Init ScrollReveal (replaces AOS)
   initScrollReveal();
+
+  // Contact form
+  initContactForm();
 }
 
 // Auto-initialize on DOM ready
