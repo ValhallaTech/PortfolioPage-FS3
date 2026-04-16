@@ -9,6 +9,7 @@ import Isotope from 'isotope-layout';
 import Swiper from 'swiper';
 import { Autoplay, Pagination } from 'swiper/modules';
 import GLightbox from 'glightbox';
+import { Modal } from 'bootstrap';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'swiper/swiper.css';
@@ -130,8 +131,18 @@ function initContactForm() {
   const submitBtn = document.querySelector('#submit-btn');
   const errorMessage = document.querySelector('#error-message');
   const sentMessage = document.querySelector('#sent-message');
+  const modalEl = document.querySelector('#contactModal');
 
   if (!form || !submitBtn || !errorMessage || !sentMessage) return;
+
+  // Reset form and clear messages whenever the modal is dismissed
+  if (modalEl) {
+    modalEl.addEventListener('hidden.bs.modal', () => {
+      form.reset();
+      errorMessage.style.display = 'none';
+      sentMessage.style.display = 'none';
+    });
+  }
 
   const defaultButtonText = submitBtn.textContent;
 
@@ -157,10 +168,14 @@ function initContactForm() {
       });
       const data = await response.json();
 
-      if (data.success === true) {
+      if (data.success) {
         sentMessage.style.display = 'block';
         errorMessage.style.display = 'none';
         form.reset();
+        // Close the modal after a short delay so the user sees the success message
+        if (modalEl) {
+          setTimeout(() => Modal.getOrCreateInstance(modalEl).hide(), 2000);
+        }
       } else {
         errorMessage.textContent = data.message || 'Failed to send message. Please try again.';
         errorMessage.style.display = 'block';

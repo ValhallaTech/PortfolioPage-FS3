@@ -433,35 +433,13 @@
                         </div>
                     </div>
 
-                    <div class="align-items-stretch col-lg-7 d-flex mt-5 mt-lg-0">
-                        <form action="https://api.web3forms.com/submit" class="php-email-form" id="contact-form" method="POST" novalidate>
-                            <input type="hidden" name="access_key" value="9837ba21-4ccf-4710-9e29-0551dc6e1a76">
-                            <input type="hidden" name="redirect" value="false">
-                            <input type="checkbox" name="botcheck" style="display: none;">
-
-                            <div class="form-group">
-                                <input type="text" name="name" class="form-control" id="name" placeholder="Your Name" required>
-                                <div class="validate"></div>
-                            </div>
-                            <div class="form-group">
-                                <input type="email" name="email" class="form-control" id="email" placeholder="Your Email" required>
-                                <div class="validate"></div>
-                            </div>
-                            <div class="form-group">
-                                <input type="text" name="subject" class="form-control" id="subject" placeholder="Subject" required>
-                            </div>
-                            <div class="form-group">
-                                <textarea class="form-control" name="message" id="message" rows="5" placeholder="Message" required></textarea>
-                                <div class="validate"></div>
-                            </div>
-                            <div class="mb-3">
-                                <div class="error-message" id="error-message"></div>
-                                <div class="sent-message" id="sent-message">Your message has been sent. Thank you!</div>
-                            </div>
-                            <div class="text-center">
-                                <button type="submit" id="submit-btn">Send Message</button>
-                            </div>
-                        </form>
+                    <div class="align-items-center col-lg-7 d-flex justify-content-center mt-5 mt-lg-0">
+                        <div class="contact-cta text-center">
+                            <p>Have a question or want to work together?</p>
+                            <button class="contact-modal-btn" data-bs-target="#contactModal" data-bs-toggle="modal" type="button">
+                                <i class="fa-solid fa-envelope"></i> Send Me a Message
+                            </button>
+                        </div>
                     </div>
 
                 </div>
@@ -486,6 +464,48 @@
     <a class="back-to-top" href="#">
         <i class="fa-solid fa-chevron-up"></i>
     </a>
+
+    <!-- ======= Contact Modal ======= -->
+    <div aria-labelledby="contactModalLabel" class="modal fade" id="contactModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="contactModalLabel">Send Me a Message</h5>
+                    <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="https://api.web3forms.com/submit" class="php-email-form" id="contact-form" method="POST" novalidate>
+                        <input type="hidden" name="access_key" value="9837ba21-4ccf-4710-9e29-0551dc6e1a76">
+                        <input type="hidden" name="redirect" value="false">
+                        <input type="checkbox" name="botcheck" style="display: none;">
+
+                        <div class="form-group">
+                            <input type="text" name="name" class="form-control" id="name" placeholder="Your Name" required>
+                            <div class="validate"></div>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" name="email" class="form-control" id="email" placeholder="Your Email" required>
+                            <div class="validate"></div>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" name="subject" class="form-control" id="subject" placeholder="Subject" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea class="form-control" name="message" id="message" rows="5" placeholder="Message" required></textarea>
+                            <div class="validate"></div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="error-message" id="error-message"></div>
+                            <div class="sent-message" id="sent-message">Your message has been sent. Thank you!</div>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" id="submit-btn">Send Message</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div><!-- End Contact Modal -->
 
     <!-- Main JS (Parcel entry point - imports all dependencies) -->
     <script type="module" src="./js/main.js"></script>
