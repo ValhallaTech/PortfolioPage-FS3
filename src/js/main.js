@@ -9,6 +9,7 @@ import Isotope from 'isotope-layout';
 import Swiper from 'swiper';
 import { Autoplay, Pagination } from 'swiper/modules';
 import GLightbox from 'glightbox';
+import { Modal } from 'bootstrap';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'swiper/swiper.css';
@@ -123,6 +124,105 @@ function initScrollReveal() {
 }
 
 /**
+ * Initialize Web3Forms contact form submission
+ */
+function initContactForm() {
+  const form = document.querySelector('#contact-form');
+  const submitBtn = document.querySelector('#submit-btn');
+  const errorMessage = document.querySelector('#error-message');
+  const sentMessage = document.querySelector('#sent-message');
+  const modalEl = document.querySelector('#contactModal');
+
+  if (!form || !submitBtn || !errorMessage || !sentMessage) return;
+
+  const defaultButtonText = submitBtn.textContent;
+  let abortController = null;
+  let autoCloseTimer = null;
+
+  // Abort in-flight request and reset form state whenever the modal is fully hidden
+  if (modalEl) {
+    modalEl.addEventListener('hidden.bs.modal', () => {
+      if (abortController) {
+        abortController.abort();
+        abortController = null;
+      }
+      clearTimeout(autoCloseTimer);
+      autoCloseTimer = null;
+      form.reset();
+      errorMessage.style.display = 'none';
+      sentMessage.style.display = 'none';
+      submitBtn.disabled = false;
+      submitBtn.textContent = defaultButtonText;
+    });
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    // Cancel any previous in-flight request and pending auto-close timer
+    if (abortController) {
+      abortController.abort();
+    }
+    clearTimeout(autoCloseTimer);
+    autoCloseTimer = null;
+
+    abortController = new AbortController();
+    const { signal } = abortController;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending...';
+    errorMessage.style.display = 'none';
+    sentMessage.style.display = 'none';
+
+    try {
+      const formData = new FormData(form);
+      const payload = Object.fromEntries(formData.entries());
+
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal,
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        sentMessage.style.display = 'block';
+        errorMessage.style.display = 'none';
+        form.reset();
+        // Close the modal after a short delay so the user sees the success message
+        if (modalEl) {
+          autoCloseTimer = setTimeout(() => {
+            autoCloseTimer = null;
+            Modal.getOrCreateInstance(modalEl).hide();
+          }, 2000);
+        }
+      } else {
+        errorMessage.textContent = data.message || 'Failed to send message. Please try again.';
+        errorMessage.style.display = 'block';
+        sentMessage.style.display = 'none';
+      }
+    } catch (error) {
+      // hidden.bs.modal already handles cleanup when the request is aborted
+      if (error.name === 'AbortError') return;
+      errorMessage.textContent = 'Failed to send message. Please try again.';
+      errorMessage.style.display = 'block';
+      sentMessage.style.display = 'none';
+    } finally {
+      // Skip button reset when aborted; hidden.bs.modal has already reset it
+      if (!signal.aborted) {
+        abortController = null;
+        submitBtn.disabled = false;
+        submitBtn.textContent = defaultButtonText;
+      }
+    }
+  });
+}
+
+/**
  * Main initialization - wires up all functionality
  */
 function init() {
@@ -187,6 +287,9 @@ function init() {
 
   // Init ScrollReveal (replaces AOS)
   initScrollReveal();
+
+  // Contact form
+  initContactForm();
 }
 
 // Auto-initialize on DOM ready
