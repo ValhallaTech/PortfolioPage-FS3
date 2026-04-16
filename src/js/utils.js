@@ -22,8 +22,8 @@ function toggleMobileNav() {
   document.body.classList.toggle('mobile-nav-active');
   const icon = document.querySelector('.mobile-nav-toggle i');
   if (icon) {
-    icon.classList.toggle('icofont-navigation-menu');
-    icon.classList.toggle('icofont-close');
+    icon.classList.toggle('fa-bars');
+    icon.classList.toggle('fa-xmark');
   }
 }
 
@@ -35,8 +35,8 @@ function closeMobileNav() {
     document.body.classList.remove('mobile-nav-active');
     const icon = document.querySelector('.mobile-nav-toggle i');
     if (icon) {
-      icon.classList.remove('icofont-close');
-      icon.classList.add('icofont-navigation-menu');
+      icon.classList.remove('fa-xmark');
+      icon.classList.add('fa-bars');
     }
   }
 }

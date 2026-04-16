@@ -50,7 +50,7 @@ describe('toggleMobileNav', () => {
   beforeEach(() => {
     document.body.innerHTML = `
       <button class="mobile-nav-toggle">
-        <i class="icofont-navigation-menu"></i>
+        <i class="fa-solid fa-bars"></i>
       </button>
     `;
     document.body.className = '';
@@ -70,16 +70,16 @@ describe('toggleMobileNav', () => {
   test('toggles icon classes', () => {
     const icon = document.querySelector('.mobile-nav-toggle i');
     toggleMobileNav();
-    expect(icon.classList.contains('icofont-close')).toBe(true);
-    expect(icon.classList.contains('icofont-navigation-menu')).toBe(false);
+    expect(icon.classList.contains('fa-xmark')).toBe(true);
+    expect(icon.classList.contains('fa-bars')).toBe(false);
   });
 
   test('restores icon classes on second toggle', () => {
     const icon = document.querySelector('.mobile-nav-toggle i');
     toggleMobileNav();
     toggleMobileNav();
-    expect(icon.classList.contains('icofont-navigation-menu')).toBe(true);
-    expect(icon.classList.contains('icofont-close')).toBe(false);
+    expect(icon.classList.contains('fa-bars')).toBe(true);
+    expect(icon.classList.contains('fa-xmark')).toBe(false);
   });
 
   test('handles missing icon element gracefully', () => {
@@ -92,7 +92,7 @@ describe('closeMobileNav', () => {
   beforeEach(() => {
     document.body.innerHTML = `
       <button class="mobile-nav-toggle">
-        <i class="icofont-close"></i>
+        <i class="fa-solid fa-xmark"></i>
       </button>
     `;
   });
@@ -107,8 +107,8 @@ describe('closeMobileNav', () => {
     document.body.classList.add('mobile-nav-active');
     closeMobileNav();
     const icon = document.querySelector('.mobile-nav-toggle i');
-    expect(icon.classList.contains('icofont-navigation-menu')).toBe(true);
-    expect(icon.classList.contains('icofont-close')).toBe(false);
+    expect(icon.classList.contains('fa-bars')).toBe(true);
+    expect(icon.classList.contains('fa-xmark')).toBe(false);
   });
 
   test('does nothing when nav is not active', () => {
