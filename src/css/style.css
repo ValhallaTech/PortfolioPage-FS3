@@ -769,6 +769,8 @@ section
 .testimonials .testimonial-item
 {
     box-sizing: content-box;
+    display: flex;
+    flex-direction: column;
     min-height: 320px;
     text-align: center;
 }
@@ -824,9 +826,9 @@ section
     background: #fff;
     border-radius: 6px;
     box-shadow: 0px 2px 15px rgba( 0, 0, 0, 0.1 );
+    flex-grow: 1;
     font-style: italic;
-    margin: 0 15px 15px 15px;
-    margin-bottom: 35px;
+    margin: 0 15px 35px 15px;
     padding: 20px;
     position: relative;
 }
