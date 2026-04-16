@@ -14,7 +14,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'swiper/swiper.css';
 import 'swiper/modules/pagination.css';
 import 'glightbox/dist/css/glightbox.min.css';
-import 'boxicons/css/boxicons.min.css';
+import '@fortawesome/fontawesome-free/css/all.min.css';
 import '../css/style.css';
 
 const {

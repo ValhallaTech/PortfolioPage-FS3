@@ -11,6 +11,7 @@
     "test:ci": "jest --coverage --ci"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.2.0",
     "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.8",
     "boxicons": "^2.1.4",
