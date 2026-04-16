@@ -101,7 +101,11 @@ function initTestimonialsCarousel(container) {
  */
 function initLightbox() {
   document.querySelectorAll('a.glightbox[data-src]').forEach((el) => {
-    el.setAttribute('href', el.getAttribute('data-src'));
+    const src = el.getAttribute('data-src');
+    // Only allow safe relative image paths; never javascript: or other protocol URIs.
+    if (src && /\.(jpe?g|png|gif|webp|avif|svg)(\?.*)?$/i.test(src) && !/^\w+:/i.test(src)) {
+      el.setAttribute('href', src);
+    }
   });
   return GLightbox({ selector: '.glightbox' });
 }
