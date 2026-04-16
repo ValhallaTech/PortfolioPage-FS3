@@ -28,6 +28,12 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      - name: Run ESLint
+        run: yarn lint
+
+      - name: Run Prettier check
+        run: yarn prettier --check "src/js/**/*.js"
+
       - name: Run tests
         run: yarn test:ci
 
