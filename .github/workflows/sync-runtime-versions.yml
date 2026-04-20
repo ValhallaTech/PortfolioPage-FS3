@@ -21,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version-file: .nvmrc
 
       - name: Update pinned Node and Yarn versions
         run: |
@@ -59,6 +59,22 @@ jobs:
               );
           };
 
+          const packageJsonPath = 'package.json';
+          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+          const yarnMajorMatch = (packageJson.packageManager || '').match(/^yarn@(\d+)\./);
+          if (!yarnMajorMatch) {
+            throw new Error(`Could not parse Yarn major from packageManager: ${packageJson.packageManager}`);
+          }
+          const yarnMajor = Number.parseInt(yarnMajorMatch[1], 10);
+
+          const currentNodePin = fs.readFileSync('.nvmrc', 'utf8').trim();
+          const nodeMajorMatch = currentNodePin.match(/^(\d+)\./);
+          if (!nodeMajorMatch) {
+            throw new Error(`Could not parse Node major from .nvmrc: ${currentNodePin}`);
+          }
+          const nodeMajor = Number.parseInt(nodeMajorMatch[1], 10);
+
           const yarnVersions = readJsonCommand(
             'npm view @yarnpkg/cli-dist versions --json',
             'Failed to fetch Yarn versions',
@@ -66,7 +82,7 @@ jobs:
           if (!Array.isArray(yarnVersions) || yarnVersions.length === 0) {
             throw new Error('Yarn versions response was empty or invalid.');
           }
-          const latestYarn4 = latestForMajor(yarnVersions, 4);
+          const latestYarn = latestForMajor(yarnVersions, yarnMajor);
 
           const nodeDistIndex = readJsonCommand(
             'curl -fsSL https://nodejs.org/dist/index.json',
@@ -76,24 +92,35 @@ jobs:
             throw new Error('Node.js release index response was empty or invalid.');
           }
           const nodeVersions = nodeDistIndex.map((entry) => entry.version.replace(/^v/, ''));
-          const latestNode24 = latestForMajor(nodeVersions, 24);
+          const latestNode = latestForMajor(nodeVersions, nodeMajor);
 
-          if (!latestYarn4 || !latestNode24) {
-            throw new Error('Unable to determine latest Yarn 4 and Node 24 versions.');
+          if (!latestYarn || !latestNode) {
+            throw new Error(`Unable to determine latest Yarn ${yarnMajor} and Node ${nodeMajor} versions.`);
           }
 
-          const packageJsonPath = 'package.json';
-          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-          packageJson.packageManager = `yarn@${latestYarn4}`;
+          packageJson.packageManager = `yarn@${latestYarn}`;
           fs.writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
 
-          fs.writeFileSync('.nvmrc', `${latestNode24}\n`);
+          fs.writeFileSync('.nvmrc', `${latestNode}\n`);
 
           const netlifyPath = 'netlify.toml';
           const netlifyToml = fs.readFileSync(netlifyPath, 'utf8');
+
+          const nodeVersionPattern = /NODE_VERSION\s*=\s*"[^"]+"/;
+          const yarnVersionPattern = /YARN_VERSION\s*=\s*"[^"]+"/;
+
+          if (!nodeVersionPattern.test(netlifyToml) || !yarnVersionPattern.test(netlifyToml)) {
+            throw new Error('Failed to update netlify.toml: expected NODE_VERSION and YARN_VERSION entries were not found.');
+          }
+
           const updatedNetlifyToml = netlifyToml
-            .replace(/NODE_VERSION\s*=\s*"[^"]+"/, `NODE_VERSION = "${latestNode24}"`)
-            .replace(/YARN_VERSION\s*=\s*"[^"]+"/, `YARN_VERSION = "${latestYarn4}"`);
+            .replace(nodeVersionPattern, `NODE_VERSION = "${latestNode}"`)
+            .replace(yarnVersionPattern, `YARN_VERSION = "${latestYarn}"`);
+
+          if (updatedNetlifyToml === netlifyToml) {
+            throw new Error('Failed to update netlify.toml: NODE_VERSION and YARN_VERSION replacements did not change the file.');
+          }
+
           fs.writeFileSync(netlifyPath, updatedNetlifyToml);
           NODE
 
