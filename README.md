@@ -133,10 +133,10 @@ Node and Yarn versions are pinned in the `[build.environment]` section of `netli
 
 ### CI
 
-Two GitHub Actions workflows run on every push and pull request to `main`:
+This repository uses two GitHub Actions workflows:
 
-- **`ci.yml`** — enables Corepack, installs dependencies, then runs ESLint, Prettier check, Jest, and Parcel build in sequence.
-- **`sync-runtime-versions.yml`** — scheduled workflow that syncs the Node and Yarn versions across `package.json`, `.nvmrc`, and `netlify.toml`, then opens a pull request when versions drift.
+- **`ci.yml`** — runs on every push and pull request to `main`, enabling Corepack, installing dependencies, then running ESLint, Prettier check, Jest, and Parcel build in sequence.
+- **`sync-runtime-versions.yml`** — runs weekly (and can also be triggered manually) to sync the Node and Yarn versions across `package.json`, `.nvmrc`, and `netlify.toml`, then opens a pull request when versions drift.
 
 ## Contributing
 
