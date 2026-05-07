@@ -33,8 +33,8 @@
     "eslint-config-prettier": "latest",
     "eslint-plugin-prettier": "latest",
     "globals": "latest",
-    "jest": "30.3.0",
-    "jest-environment-jsdom": "30.3.0",
+    "jest": "30.4.0",
+    "jest-environment-jsdom": "30.4.0",
     "parcel": "2.16.4",
     "prettier": "latest"
   },
