@@ -5501,7 +5501,7 @@ __metadata:
     parcel: "npm:2.16.4"
     prettier: "npm:latest"
     scrollreveal: "npm:4.0.9"
-    swiper: "npm:12.1.0"
+    swiper: "npm:^12.1.2"
     typed.js: "npm:3.0.0"
   languageName: unknown
   linkType: soft
@@ -5990,10 +5990,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"swiper@npm:12.1.0":
-  version: 12.1.0
-  resolution: "swiper@npm:12.1.0"
-  checksum: 10c0/bbde6c489cae0853f9d7774d69bcb70d5dab1b94f3c1929a81c0d1f1cb9b302bb32101f38ed0b45e77a7158411887bf1ec162afc5335c73d9beb3c4c0ee101a0
+"swiper@npm:^12.1.2":
+  version: 12.1.2
+  resolution: "swiper@npm:12.1.2"
+  checksum: 10c0/f2597a67c4d647e367a236735bb7779e2833346b332e6d7b8caf48c6b82da52787959e86f06762983ab82b142958690a0d1b9f6fc5a59170a648949b35cfedd0
   languageName: node
   linkType: hard
 
