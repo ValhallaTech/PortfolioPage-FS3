@@ -38,5 +38,5 @@
     "parcel": "2.16.4",
     "prettier": "latest"
   },
-  "packageManager": "yarn@4.16.0"
+  "packageManager": "yarn@4.17.0"
 }
