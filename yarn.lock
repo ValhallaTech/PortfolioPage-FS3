@@ -551,10 +551,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fortawesome/fontawesome-free@npm:7.3.0":
-  version: 7.3.0
-  resolution: "@fortawesome/fontawesome-free@npm:7.3.0"
-  checksum: 10c0/f7f401e4736fcff1ace455f83d16b3c5fe97f3daaa8ca48710649dbae7b6aeaee5f2fda6a66e4675475e68b1241541638c5ca0ad65ca148a69df8bd5cdb229c3
+"@fortawesome/fontawesome-free@npm:7.3.1":
+  version: 7.3.1
+  resolution: "@fortawesome/fontawesome-free@npm:7.3.1"
+  checksum: 10c0/85b70ea64e69b9635ff0b949871acaaf0e6c6fd41860b8a78a5067123a42dd71144f7f7feea7aee013a485166ee8bf8ee3aafb15146dc0f55512d07015adddee
   languageName: node
   linkType: hard
 
@@ -5484,7 +5484,7 @@ __metadata:
   resolution: "portfoliopage-fs3@workspace:."
   dependencies:
     "@eslint/js": "npm:latest"
-    "@fortawesome/fontawesome-free": "npm:7.3.0"
+    "@fortawesome/fontawesome-free": "npm:7.3.1"
     "@parcel/transformer-css": "npm:2.16.4"
     "@popperjs/core": "npm:2.11.8"
     bootstrap: "npm:5.3.8"
@@ -5501,7 +5501,7 @@ __metadata:
     parcel: "npm:2.16.4"
     prettier: "npm:latest"
     scrollreveal: "npm:4.0.9"
-    swiper: "npm:14.0.2"
+    swiper: "npm:14.0.5"
     typed.js: "npm:3.0.0"
   languageName: unknown
   linkType: soft
@@ -5990,10 +5990,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"swiper@npm:14.0.2":
-  version: 14.0.2
-  resolution: "swiper@npm:14.0.2"
-  checksum: 10c0/5fe2a06908675cfbd415e8ea3dcfc72bf0ddcc379509bdce19e9187b91c7741566fb132b22464a1ff420f8913d9080cc0793f7f1ec5c04d634bb07155e9d8dbe
+"swiper@npm:14.0.5":
+  version: 14.0.5
+  resolution: "swiper@npm:14.0.5"
+  checksum: 10c0/d0f0fe9fc12e810052cfa378dd7a84da525739ff662cb9a8a27c43025269979c71406427009047733a0b31a9b896687702191936ebb4b3e040e527cda77681ed
   languageName: node
   linkType: hard
 
