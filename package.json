@@ -17,13 +17,13 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "7.3.1",
     "@popperjs/core": "2.11.8",
-    "bootstrap": "5.3.8",
+    "bootstrap": "5.3.9",
     "boxicons": "2.1.4",
     "glightbox": "3.3.1",
     "isotope-layout": "3.0.6",
     "just-validate": "4.3.0",
     "scrollreveal": "4.0.9",
-    "swiper": "14.3.0",
+    "swiper": "14.4.0",
     "typed.js": "3.0.0"
   },
   "devDependencies": {
