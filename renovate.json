@@ -1,12 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "dependencyDashboard": true,
+  "dependencyDashboard": { "enabled": true },
   "labels": ["dependencies"],
   "packageRules": [
     {
+      "description": "Automerge paused 2026-11-16: GitHub Actions is billing-locked and main has no required checks. Turn it back on only once CI runs again.",
       "groupName": "all dependencies",
-      "automerge": true,
+      "automerge": false,
       "automergeType": "pr",
       "matchPackageNames": ["*"]
     }

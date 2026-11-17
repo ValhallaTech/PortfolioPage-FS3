@@ -10,6 +10,8 @@ const {
   observeSkills,
   setupNavClickHandlers,
   setupPortfolioFilters,
+  resolveHashTarget,
+  resolveLightboxHref,
 } = require('../src/js/utils');
 
 describe('smoothScrollTo', () => {
@@ -345,6 +347,249 @@ describe('setupNavClickHandlers', () => {
 
     document.body.click();
     expect(scrollFn).not.toHaveBeenCalled();
+  });
+
+  describe('with hashes that are not valid CSS selectors or URIs', () => {
+    // A detached document keeps these tests free of the listeners the tests above
+    // leave on the global document. The click listener is invoked directly because
+    // jsdom reports an exception thrown inside a listener instead of rethrowing it
+    // from dispatchEvent, so a dispatched click could not prove "does not throw".
+    let doc;
+    let scrollFn;
+    let closeFn;
+    let listenerCalls;
+    let clickHandler;
+
+    const findLink = (href) =>
+      Array.from(doc.querySelectorAll('.nav-menu a')).find((a) => a.getAttribute('href') === href);
+
+    const clickLink = (href) => {
+      const event = { target: findLink(href), preventDefault: jest.fn() };
+      clickHandler(event);
+      return event;
+    };
+
+    beforeEach(() => {
+      doc = document.implementation.createHTMLDocument('nav');
+      doc.body.innerHTML = `
+        <nav class="nav-menu">
+          <ul>
+            <li class="active"><a href="#">Top</a></li>
+            <li><a href="#%E0%A4%A">Broken</a></li>
+            <li><a href="#1x">Numeric</a></li>
+          </ul>
+        </nav>
+        <section id="1x"></section>
+      `;
+      scrollFn = jest.fn();
+      closeFn = jest.fn();
+      const addEventListener = jest.spyOn(doc, 'addEventListener');
+      setupNavClickHandlers(doc, scrollFn, closeFn);
+      listenerCalls = [...addEventListener.mock.calls];
+      addEventListener.mockRestore();
+      [[, clickHandler]] = listenerCalls;
+    });
+
+    test('registers a single click listener on the document', () => {
+      expect(listenerCalls).toEqual([['click', expect.any(Function)]]);
+    });
+
+    test('ignores a bare "#" link without scrolling or preventing default', () => {
+      const event = clickLink('#');
+
+      expect(scrollFn).not.toHaveBeenCalled();
+      expect(closeFn).not.toHaveBeenCalled();
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    test('ignores a malformed percent-escape without throwing, scrolling or preventing default', () => {
+      let event;
+
+      expect(() => {
+        event = clickLink('#%E0%A4%A');
+      }).not.toThrow();
+      expect(scrollFn).not.toHaveBeenCalled();
+      expect(closeFn).not.toHaveBeenCalled();
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    test('scrolls to an id that starts with a digit', () => {
+      const event = clickLink('#1x');
+
+      expect(scrollFn).toHaveBeenCalledWith(doc.getElementById('1x'));
+      expect(closeFn).toHaveBeenCalledTimes(1);
+      expect(event.preventDefault).toHaveBeenCalledTimes(1);
+    });
+
+    test('marks the clicked nav item active for an id that starts with a digit', () => {
+      const link = findLink('#1x');
+
+      clickLink('#1x');
+
+      expect(link.closest('li').classList.contains('active')).toBe(true);
+      expect(doc.querySelectorAll('.nav-menu .active')).toHaveLength(1);
+    });
+  });
+});
+
+describe('resolveHashTarget', () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <section id="1x"></section>
+      <section id="a b"></section>
+      <section id="café"></section>
+      <section id="about"></section>
+    `;
+  });
+
+  describe('resolves the decoded fragment by id', () => {
+    test.each([
+      ['#about', 'about'],
+      ['#1x', '1x'],
+      ['#a%20b', 'a b'],
+      ['#caf%C3%A9', 'café'],
+    ])('resolves %s to the element with id "%s"', (hash, id) => {
+      const result = resolveHashTarget(hash, document);
+
+      expect(result).toBe(document.getElementById(id));
+    });
+  });
+
+  describe('returns null', () => {
+    test('when the document is missing', () => {
+      expect(resolveHashTarget('#about', null)).toBeNull();
+    });
+
+    test.each([
+      ['an empty string', ''],
+      ['a string without a leading "#"', 'about'],
+      ['null', null],
+      ['a non-string value', 42],
+    ])('when the hash is %s', (_label, hash) => {
+      expect(resolveHashTarget(hash, document)).toBeNull();
+    });
+
+    test('when the percent-escape is malformed, without throwing', () => {
+      let result;
+
+      expect(() => {
+        result = resolveHashTarget('#%E0%A4%A', document);
+      }).not.toThrow();
+      expect(result).toBeNull();
+    });
+
+    test('when the id is empty', () => {
+      const getElementById = jest.spyOn(document, 'getElementById');
+
+      const result = resolveHashTarget('#', document);
+
+      expect(result).toBeNull();
+      expect(getElementById).not.toHaveBeenCalled();
+      getElementById.mockRestore();
+    });
+
+    test('when no element has the id', () => {
+      expect(resolveHashTarget('#missing', document)).toBeNull();
+    });
+  });
+});
+
+describe('resolveLightboxHref', () => {
+  // jsdom's global document is served from http://localhost/.
+  const renderPortfolioItem = (imgMarkup, doc = document) => {
+    doc.body.innerHTML = `
+      <div class="portfolio-wrap">
+        ${imgMarkup}
+        <div class="portfolio-links">
+          <a class="glightbox" data-src="./images/portfolio/portfolio-1.jpg" href="#"></a>
+        </div>
+      </div>
+    `;
+    return doc.querySelector('a.glightbox');
+  };
+
+  test('returns the absolute same-origin URL of the bundled image', () => {
+    const link = renderPortfolioItem('<img src="portfolio-1.afcd9577.jpg">');
+
+    const result = resolveLightboxHref(link, document);
+
+    expect(result).toBe('http://localhost/portfolio-1.afcd9577.jpg');
+  });
+
+  test('uses the first img that has a src attribute', () => {
+    const link = renderPortfolioItem(
+      '<img alt="placeholder"><img src="portfolio-2.1a2b3c4d.jpg"><img src="other.jpg">'
+    );
+
+    const result = resolveLightboxHref(link, document);
+
+    expect(result).toBe('http://localhost/portfolio-2.1a2b3c4d.jpg');
+  });
+
+  test('accepts an absolute URL on the page origin', () => {
+    const link = renderPortfolioItem('<img src="http://localhost/images/portfolio-3.jpg">');
+
+    const result = resolveLightboxHref(link, document);
+
+    expect(result).toBe('http://localhost/images/portfolio-3.jpg');
+  });
+
+  describe('returns null', () => {
+    test('when the link is missing', () => {
+      expect(resolveLightboxHref(null, document)).toBeNull();
+    });
+
+    test('when the document is missing', () => {
+      const link = renderPortfolioItem('<img src="portfolio-1.afcd9577.jpg">');
+
+      expect(resolveLightboxHref(link, null)).toBeNull();
+    });
+
+    test('when the link has no .portfolio-wrap ancestor', () => {
+      document.body.innerHTML = `
+        <img src="portfolio-1.afcd9577.jpg">
+        <a class="glightbox" href="#"></a>
+      `;
+      const link = document.querySelector('a.glightbox');
+
+      expect(resolveLightboxHref(link, document)).toBeNull();
+    });
+
+    test('when the wrap has no img with a src', () => {
+      const link = renderPortfolioItem('<img alt="no source">');
+
+      expect(resolveLightboxHref(link, document)).toBeNull();
+    });
+
+    test('when the img src is empty', () => {
+      const link = renderPortfolioItem('<img src="">');
+
+      expect(resolveLightboxHref(link, document)).toBeNull();
+    });
+
+    test.each([
+      ['a javascript: URL', 'javascript:alert(1)'],
+      ['a data: URL', 'data:image/png;base64,iVBORw0KGgo='],
+      ['another origin', 'https://evil.example/x.jpg'],
+      ['a protocol-relative URL to another origin', '//evil.example/x.jpg'],
+      ['the same host on another scheme', 'https://localhost/portfolio-1.jpg'],
+    ])('when the img src is %s', (_label, src) => {
+      const link = renderPortfolioItem(`<img src="${src}">`);
+
+      expect(resolveLightboxHref(link, document)).toBeNull();
+    });
+
+    test('when the document base URL cannot resolve the src, without throwing', () => {
+      const detached = document.implementation.createHTMLDocument('lightbox');
+      const link = renderPortfolioItem('<img src="portfolio-1.afcd9577.jpg">', detached);
+      let result;
+
+      expect(detached.baseURI).toBe('about:blank');
+      expect(() => {
+        result = resolveLightboxHref(link, detached);
+      }).not.toThrow();
+      expect(result).toBeNull();
+    });
   });
 });
 
