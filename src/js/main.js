@@ -29,6 +29,8 @@ const {
   observeSkills,
   setupNavClickHandlers,
   setupPortfolioFilters,
+  resolveHashTarget,
+  resolveLightboxHref,
 } = require('./utils');
 
 /**
@@ -93,21 +95,19 @@ function initTestimonialsCarousel(container) {
 
 /**
  * Initialize GLightbox for portfolio items.
- * Portfolio links store the image URL in data-src so Parcel does not process
- * them as raw-file bundles, which would conflict with the img src bundles for
- * the same files and corrupt their output paths.  Copy data-src → href at
- * runtime so GLightbox receives the correct URL.
+ * Portfolio links keep the image path in data-src (not href) so Parcel does not
+ * bundle the same file twice, which would corrupt the output paths. Parcel does
+ * not rewrite data-src either, so the link takes its href from the sibling
+ * <img src> in the same .portfolio-wrap, which Parcel has rewritten to the hashed
+ * build path. resolveLightboxHref() only returns a parsed same-origin http(s) URL,
+ * so no raw DOM value reaches setAttribute; links it rejects keep href="#".
  * @returns {GLightbox|null}
  */
 function initLightbox() {
   document.querySelectorAll('a.glightbox[data-src]').forEach((el) => {
-    const raw = el.getAttribute('data-src') || '';
-    // Extract only the numeric index from the expected portfolio path pattern.
-    // Construct href from a trusted template so no raw DOM value reaches setAttribute.
-    const m = raw.match(/portfolio-(\d+)\.jpe?g$/i);
-    if (m) {
-      const n = parseInt(m[1], 10);
-      el.setAttribute('href', `./images/portfolio/portfolio-${n}.jpg`);
+    const href = resolveLightboxHref(el, document);
+    if (href) {
+      el.setAttribute('href', href);
     }
   });
   return GLightbox({ selector: '.glightbox' });
@@ -247,12 +247,10 @@ function init() {
   // Smooth scroll for nav links
   setupNavClickHandlers(document, smoothScrollTo, closeMobileNav);
 
-  // Smooth scroll on page load with hash
-  if (window.location.hash) {
-    const target = document.querySelector(window.location.hash);
-    if (target) {
-      setTimeout(() => smoothScrollTo(target), 100);
-    }
+  // Smooth scroll on page load with hash (by id, so a malformed hash cannot throw)
+  const hashTarget = resolveHashTarget(window.location.hash, document);
+  if (hashTarget) {
+    setTimeout(() => smoothScrollTo(hashTarget), 100);
   }
 
   // Mobile nav toggle

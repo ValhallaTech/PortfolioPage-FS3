@@ -43,14 +43,35 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# Cache images. Parcel emits every image flat at the dist root with a
+# content hash in the file name, so a long immutable cache is safe.
 [[headers]]
-  for = "/*.ttf"
+  for = "/*.jpg"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Cache images
 [[headers]]
-  for = "/images/*"
+  for = "/*.jpeg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.webp"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.avif"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.svg"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
