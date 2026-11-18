@@ -37,8 +37,52 @@ const USAGE_EXIT = 64;
 const RUN_TIMEOUT_MS = 120_000;
 const TEST_TIMEOUT_MS = RUN_TIMEOUT_MS + 30_000;
 
+/** How much of the runner's stderr a failure message shows. */
+const STDERR_TAIL_CHARS = 4000;
+
 const STEP_ROW = /^\|\s*(\d+)\s*\|\s*`([^`]+)`\s*\|\s*([^|]+?)\s*\|\s*$/;
 const COMMIT_LINE = /^- Commit: `([^`]*)`\s*$/;
+
+/**
+ * Describes how the runner process ended: its exit status, signal, spawn error
+ * and the tail of its stderr.
+ *
+ * @param {import('node:child_process').SpawnSyncReturns<string>} run The finished process.
+ * @returns {string} The description.
+ */
+function describeRun(run) {
+  const stderr = (run.stderr ?? '').trimEnd();
+  const tail = stderr ? stderr.slice(-STDERR_TAIL_CHARS) : '(empty)';
+  const spawnError = run.error ? `, spawn error: ${run.error.message}` : '';
+  return (
+    `Gate runner: exit ${run.status}, signal ${run.signal}${spawnError}\n` +
+    `Gate runner stderr (last ${STDERR_TAIL_CHARS} characters):\n${tail}`
+  );
+}
+
+/**
+ * Runs `assertion` and, when it fails, adds the runner's exit status and stderr
+ * tail to the failure message, so a run that wrote no block shows why.
+ *
+ * @param {import('node:child_process').SpawnSyncReturns<string>} run The finished process.
+ * @param {() => void} assertion The `expect` call to run.
+ */
+function expectWithRunDetail(run, assertion) {
+  try {
+    assertion();
+  } catch (error) {
+    if (error instanceof Error) {
+      const detail = `\n\n${describeRun(run)}`;
+      const original = error.message;
+      error.message = `${original}${detail}`;
+      // V8 formats `stack` lazily, so it may already carry the new message.
+      if (typeof error.stack === 'string' && !error.stack.includes(detail)) {
+        error.stack = error.stack.replace(original, error.message);
+      }
+    }
+    throw error;
+  }
+}
 
 /**
  * Reads a text file, or returns '' when it does not exist.
@@ -144,17 +188,21 @@ describe('AC-2 format: the gate runner writes the v1 evidence block (chain A)', 
     }, TEST_TIMEOUT_MS);
 
     it('records the SHA of HEAD against the six canonical gate commands, in order', () => {
-      expect({ sha: block.sha, commands: block.commands }).toEqual({
-        sha: readHeadSha(),
-        commands: CANONICAL_COMMANDS,
-      });
+      expectWithRunDetail(result, () =>
+        expect({ sha: block.sha, commands: block.commands }).toEqual({
+          sha: readHeadSha(),
+          commands: CANONICAL_COMMANDS,
+        })
+      );
     });
 
     it('records exit code 0 for all six steps, and exits 0', () => {
-      expect({ exitCodes: block.exitCodes, status: result.status }).toEqual({
-        exitCodes: [0, 0, 0, 0, 0, 0],
-        status: 0,
-      });
+      expectWithRunDetail(result, () =>
+        expect({ exitCodes: block.exitCodes, status: result.status }).toEqual({
+          exitCodes: [0, 0, 0, 0, 0, 0],
+          status: 0,
+        })
+      );
     });
   });
 
@@ -171,18 +219,22 @@ describe('AC-2 format: the gate runner writes the v1 evidence block (chain A)', 
     }, TEST_TIMEOUT_MS);
 
     it('records 0, 0, 3, then "not run" for steps 4 to 6', () => {
-      expect(block.exitCodes).toEqual([0, 0, 3, 'not run', 'not run', 'not run']);
+      expectWithRunDetail(result, () =>
+        expect(block.exitCodes).toEqual([0, 0, 3, 'not run', 'not run', 'not run'])
+      );
     });
 
     it('exits with the failing step code, 3', () => {
-      expect(result.status).toBe(3);
+      expectWithRunDetail(result, () => expect(result.status).toBe(3));
     });
 
     it('stops before step 4: step 4 is "not run" and wrote no marker file', () => {
-      expect({ step4: block.exitCodes[3], markerWritten: fs.existsSync(markerFile) }).toEqual({
-        step4: 'not run',
-        markerWritten: false,
-      });
+      expectWithRunDetail(result, () =>
+        expect({ step4: block.exitCodes[3], markerWritten: fs.existsSync(markerFile) }).toEqual({
+          step4: 'not run',
+          markerWritten: false,
+        })
+      );
     });
   });
 
@@ -196,18 +248,20 @@ describe('AC-2 format: the gate runner writes the v1 evidence block (chain A)', 
     }, TEST_TIMEOUT_MS);
 
     it('exits 64, the usage-error code', () => {
-      expect(result.status).toBe(USAGE_EXIT);
+      expectWithRunDetail(result, () => expect(result.status).toBe(USAGE_EXIT));
     });
 
     it('prints a message on stderr', () => {
-      expect((result.stderr ?? '').trim()).not.toBe('');
+      expectWithRunDetail(result, () => expect((result.stderr ?? '').trim()).not.toBe(''));
     });
 
     it('writes no evidence block to stdout or to --out', () => {
-      expect({
-        stdout: (result.stdout ?? '').includes(EVIDENCE_MARKER),
-        out: readOptional(outFile).includes(EVIDENCE_MARKER),
-      }).toEqual({ stdout: false, out: false });
+      expectWithRunDetail(result, () =>
+        expect({
+          stdout: (result.stdout ?? '').includes(EVIDENCE_MARKER),
+          out: readOptional(outFile).includes(EVIDENCE_MARKER),
+        }).toEqual({ stdout: false, out: false })
+      );
     });
   });
 });
