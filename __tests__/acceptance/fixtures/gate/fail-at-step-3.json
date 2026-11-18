@@ -1,0 +1,8 @@
+[
+  "node -e \"process.exit(0)\"",
+  "node -e \"process.exit(0)\"",
+  "node -e \"process.exit(3)\"",
+  "node -e \"require('node:fs').writeFileSync(process.env.GATE_TEST_MARKER, 'step 4 ran')\"",
+  "node -e \"process.exit(0)\"",
+  "node -e \"process.exit(0)\""
+]

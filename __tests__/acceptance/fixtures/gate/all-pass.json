@@ -1,0 +1,8 @@
+[
+  "node -e \"process.exit(0)\"",
+  "node -e \"process.exit(0)\"",
+  "node -e \"process.exit(0)\"",
+  "node -e \"process.exit(0)\"",
+  "node -e \"process.exit(0)\"",
+  "node -e \"process.exit(0)\""
+]

@@ -14,7 +14,8 @@
     "format": "prettier --write src/js __tests__",
     "format:check": "prettier --check src/js __tests__",
     "gate": "node scripts/gate.mjs",
-    "gate:linux": "echo not implemented"
+    "gate:linux": "echo not implemented",
+    "verify:release": "jest -c jest.release.config.js"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "7.3.1",
@@ -38,7 +39,8 @@
     "jest": "30.5.2",
     "jest-environment-jsdom": "30.5.2",
     "parcel": "2.16.4",
-    "prettier": "latest"
+    "prettier": "latest",
+    "yaml": "2.9.1"
   },
   "packageManager": "yarn@4.18.1"
 }
