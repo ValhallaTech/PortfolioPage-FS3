@@ -3,6 +3,12 @@ import globals from 'globals';
 import prettierConfig from 'eslint-config-prettier';
 import prettierPlugin from 'eslint-plugin-prettier/recommended';
 
+const E2E_IMPORT_MESSAGE =
+  'Import test and expect from tests/e2e/fixtures.js and use the configured browser, which block real Web3Forms submissions (C-18, AC-90).';
+
+/** Matches @playwright/test, playwright/test, playwright and playwright-core. */
+const PLAYWRIGHT_MODULE_PATTERN = '/^(@?playwright\\/test|playwright(-core)?)$/';
+
 export default [
   js.configs.recommended,
   prettierConfig,
@@ -44,39 +50,48 @@ export default [
       'no-restricted-imports': [
         'error',
         {
+          // `default` is the unguarded base test, the same object as the named `test`.
+          // chromium, firefox and webkit launch a browser outside the configured one, which
+          // skips playwright.config.js launchOptions and with it the Web3Forms host block.
           paths: [
             {
               name: '@playwright/test',
-              // `default` is the unguarded base test, the same object as the named `test`.
-              importNames: ['default', 'test', 'expect'],
-              message:
-                'Import test and expect from tests/e2e/fixtures.js, which blocks real Web3Forms submissions (C-18, AC-90).',
+              importNames: ['default', 'test', 'expect', 'chromium', 'firefox', 'webkit'],
+              message: E2E_IMPORT_MESSAGE,
             },
             {
               // @playwright/test only re-exports playwright/test, which is installed at the top
               // level, so the same unguarded test is importable under this name too.
               name: 'playwright/test',
-              importNames: ['default', 'test', 'expect'],
-              message:
-                'Import test and expect from tests/e2e/fixtures.js, which blocks real Web3Forms submissions (C-18, AC-90).',
+              importNames: ['default', 'test', 'expect', 'chromium', 'firefox', 'webkit'],
+              message: E2E_IMPORT_MESSAGE,
+            },
+            {
+              // playwright and playwright-core are installed at the top level as dependencies of
+              // @playwright/test, and export the same browser launchers.
+              name: 'playwright',
+              importNames: ['default', 'chromium', 'firefox', 'webkit'],
+              message: E2E_IMPORT_MESSAGE,
+            },
+            {
+              name: 'playwright-core',
+              importNames: ['default', 'chromium', 'firefox', 'webkit'],
+              message: E2E_IMPORT_MESSAGE,
             },
           ],
         },
       ],
       // no-restricted-imports does not see require() or import(), so block both forms here,
-      // for both @playwright/test and playwright/test.
+      // for every module named above.
       'no-restricted-syntax': [
         'error',
         {
-          selector:
-            "CallExpression[callee.name='require'][arguments.0.value=/^@?playwright\\/test$/]",
-          message:
-            'Import test and expect from tests/e2e/fixtures.js, which blocks real Web3Forms submissions (C-18, AC-90).',
+          selector: `CallExpression[callee.name='require'][arguments.0.value=${PLAYWRIGHT_MODULE_PATTERN}]`,
+          message: E2E_IMPORT_MESSAGE,
         },
         {
-          selector: 'ImportExpression[source.value=/^@?playwright\\/test$/]',
-          message:
-            'Import test and expect from tests/e2e/fixtures.js, which blocks real Web3Forms submissions (C-18, AC-90).',
+          selector: `ImportExpression[source.value=${PLAYWRIGHT_MODULE_PATTERN}]`,
+          message: E2E_IMPORT_MESSAGE,
         },
       ],
     },

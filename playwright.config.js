@@ -8,6 +8,7 @@ import { defineConfig } from '@playwright/test';
  * Each test sets its own viewport from tests/e2e/viewports.js.
  */
 const LOCAL_URL = 'http://127.0.0.1:4173';
+const WEB3FORMS_HOST = 'api.web3forms.com';
 const liveBaseUrl = process.env.BASE_URL;
 
 export default defineConfig({
@@ -19,6 +20,11 @@ export default defineConfig({
   use: {
     baseURL: liveBaseUrl ?? LOCAL_URL,
     trace: 'retain-on-failure',
+    // Fails DNS for Web3Forms in every context of the configured browser, including ones
+    // a spec creates with browser.newContext() or browser.newPage() (C-18, AC-90).
+    // page.route and context.route fulfill before DNS, so mocks and the fixtures.js guard
+    // still see the request.
+    launchOptions: { args: [`--host-resolver-rules=MAP ${WEB3FORMS_HOST} ~NOTFOUND`] },
   },
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
   webServer: liveBaseUrl

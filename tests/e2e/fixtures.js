@@ -10,6 +10,12 @@ export const WEB3FORMS_URL = 'https://api.web3forms.com/**';
  * The guard covers browser-context traffic only: APIRequestContext (`request`,
  * `page.request`) is never routed, so no spec may send to Web3Forms through it.
  *
+ * Two layers block Web3Forms. playwright.config.js launchOptions make DNS fail for it in
+ * every context of the configured browser, so a context a spec creates itself
+ * (`browser.newContext()`, `browser.newPage()`) cannot reach it either. The guard below
+ * covers only this fixture's context, but it records and asserts, so an unmocked request
+ * there fails the test instead of just failing on the network.
+ *
  * - `web3formsGuard` routes Web3Forms to `abort()` at context level and records each
  *   request it aborts. A test's own `page.route` mock takes precedence, because
  *   Playwright checks page routes before context routes. After the test, the guard
