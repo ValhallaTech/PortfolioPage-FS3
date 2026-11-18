@@ -14,9 +14,16 @@
  * Exit codes:
  * - the first non-zero step exit code, or 0 when all six steps exit 0;
  * - 64: usage error, including a malformed `--commands-file` (no block);
+ * - 65: the working tree the steps would run in has uncommitted changes, so
+ *   no block could name a commit (the D-10 clean-tree rule; no block). Runs
+ *   with `--commands-file` are exempt;
  * - 69: Yarn through Corepack is unavailable or not the `packageManager`
  *   version (the D-10 preflight; no block);
- * - 1: the runner itself failed, for example the fresh clone (no block).
+ * - 1: the runner itself failed, for example the fresh clone or
+ *   `git status` (no block).
+ *
+ * Checks run in the D-10 order: usage, the clone if any, the clean tree, the
+ * preflight, then the steps.
  *
  * The six step commands run with `shell: true`, as the spec chooses. They are
  * either the canonical constants or, in tests only, the strings of the
@@ -30,9 +37,21 @@ import { promisify } from 'node:util';
 
 import { EXIT_USAGE, UsageError, loadCommandsFile, parseGateArgs } from './gate/cli.mjs';
 import { CANONICAL_COMMANDS, NOT_RUN, formatEvidenceBlock } from './gate/evidence.mjs';
-import { createFreshClone, readHeadSha, removeFreshClone } from './gate/workspace.mjs';
+import {
+  createFreshClone,
+  readHeadSha,
+  readWorkingTreeStatus,
+  removeFreshClone,
+} from './gate/workspace.mjs';
 
 const execAsync = promisify(exec);
+
+/** Exit code of a dirty working tree, the D-10 clean-tree rule (sysexits EX_DATAERR). */
+const EXIT_DIRTY_TREE = 65;
+
+/** The D-10 clean-tree refusal, printed on stderr. */
+const DIRTY_TREE_MESSAGE =
+  'Gate refused: the working tree has uncommitted changes, so no evidence can name a commit.';
 
 /** Exit code of an unmet D-10 Windows host precondition (sysexits EX_UNAVAILABLE). */
 const EXIT_PRECONDITION = 69;
@@ -192,8 +211,30 @@ async function runSteps(commands, cwd, env) {
 }
 
 /**
- * Runs the preflight and the six steps in `dir`, then prints the block and
- * writes it to `--out` when given.
+ * Applies the D-10 clean-tree rule to `dir`, once, before step 1. Changes the
+ * steps make afterwards are deliberately not checked.
+ *
+ * @param {string} dir Directory the steps run in.
+ * @returns {Promise<number | null>} An exit code when the run is refused, or
+ *   null when the tree is clean.
+ */
+async function refuseDirtyTree(dir) {
+  const status = await readWorkingTreeStatus(dir);
+  if (status === null) {
+    process.stderr.write(`gate: could not run git status in ${dir}\n`);
+    return EXIT_FAILURE;
+  }
+  if (status !== '') {
+    process.stderr.write(`${DIRTY_TREE_MESSAGE}\n`);
+    return EXIT_DIRTY_TREE;
+  }
+  return null;
+}
+
+/**
+ * Runs the clean-tree check (unless `--commands-file` is given), the preflight
+ * and the six steps in `dir`, then prints the block and writes it to `--out`
+ * when given.
  *
  * @param {string} dir Directory the steps run in.
  * @param {readonly string[]} commands The six shell commands.
@@ -201,6 +242,13 @@ async function runSteps(commands, cwd, env) {
  * @returns {Promise<number>} The process exit code.
  */
 async function runGate(dir, commands, options) {
+  if (options.commandsFile === undefined) {
+    const refusal = await refuseDirtyTree(dir);
+    if (refusal !== null) {
+      return refusal;
+    }
+  }
+
   const env = buildStepEnv();
   const expectedYarnVersion = await readExpectedYarnVersion(dir);
   const yarnVersion = await probeYarnVersion(dir, env);

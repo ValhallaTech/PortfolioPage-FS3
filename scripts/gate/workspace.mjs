@@ -1,6 +1,6 @@
 /**
- * Git access for the gate runner: reading `HEAD`, and the `--fresh-clone`
- * temp checkout (spec stabilize-and-cleanup, WI-4).
+ * Git access for the gate runner: reading `HEAD`, the clean-tree check, and
+ * the `--fresh-clone` temp checkout (spec stabilize-and-cleanup, D-10 and WI-4).
  *
  * git is always spawned without a shell and with its arguments as an array,
  * so no value from the command line is ever parsed by a shell. The clone URL
@@ -108,6 +108,23 @@ export async function readHeadSha(cwd) {
   });
   const sha = result.stdout.trim().toLowerCase();
   return result.code === 0 && FULL_SHA_PATTERN.test(sha) ? sha : null;
+}
+
+/**
+ * Runs `git status --porcelain` in `cwd`. Its output is empty exactly when the
+ * work tree has no tracked change and no untracked, non-ignored file.
+ *
+ * @param {string} cwd A directory inside a git work tree.
+ * @returns {Promise<string | null>} What git printed (`''` for a clean tree),
+ *   or null when git failed.
+ */
+export async function readWorkingTreeStatus(cwd) {
+  const result = await runGit(['status', '--porcelain'], {
+    cwd,
+    timeoutMs: GIT_TIMEOUT_MS,
+    captureStdout: true,
+  });
+  return result.code === 0 ? result.stdout : null;
 }
 
 /** Thrown when the fresh clone cannot be made; the runner exits non-zero with no block. */
