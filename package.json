@@ -33,17 +33,17 @@
     "typed.js": "3.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "latest",
+    "@eslint/js": "10.0.1",
     "@parcel/transformer-css": "2.16.4",
     "@playwright/test": "1.65.1",
-    "eslint": "latest",
-    "eslint-config-prettier": "latest",
-    "eslint-plugin-prettier": "latest",
-    "globals": "latest",
+    "eslint": "10.2.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-prettier": "5.5.5",
+    "globals": "17.5.0",
     "jest": "30.5.2",
     "jest-environment-jsdom": "30.5.2",
     "parcel": "2.16.4",
-    "prettier": "latest",
+    "prettier": "3.8.3",
     "smol-toml": "1.9.1",
     "yaml": "2.9.1"
   },
