@@ -13,6 +13,8 @@ jobs:
   test:
     name: Test & Build
     runs-on: ubuntu-latest
+    env:
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -21,6 +23,9 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+
+      - name: Install Corepack
+        run: npm install -g corepack@0.36.0
 
       - name: Enable Corepack
         run: corepack enable
@@ -39,3 +44,9 @@ jobs:
 
       - name: Build
         run: yarn build
+
+      - name: Install Playwright Chromium
+        run: yarn playwright install --with-deps chromium
+
+      - name: Smoke tests
+        run: yarn test:smoke
