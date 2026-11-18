@@ -72,17 +72,20 @@ netlify.toml          # Netlify build + security headers + cache config
 
 ### Dependencies
 
-- [Node.js](https://nodejs.org/) `24.15.0` (use [nvm](https://github.com/nvm-sh/nvm) or [fnm](https://github.com/Schniz/fnm) to match `.nvmrc`)
-- [Corepack](https://nodejs.org/api/corepack.html) (ships with Node.js `16.9+`)
+- [Node.js](https://nodejs.org/) 26, at the exact version pinned in `.nvmrc` (use [nvm](https://github.com/nvm-sh/nvm) or [fnm](https://github.com/Schniz/fnm) to match it)
+- [Corepack](https://nodejs.org/api/corepack.html), installed with npm as shown below: Corepack is bundled only with Node.js 14.19 through 24.x, so Node 26 does not include it
 
 `package.json` pins Yarn 4 via the `packageManager` field. The system-default Yarn 1.x will reject this; **Corepack must be enabled first**.
 
 ```bash
-# Enable Corepack so Node delegates to the pinned Yarn version
-corepack enable
-
 # Switch to the pinned Node version (if using nvm)
 nvm use
+
+# Install Corepack, which Node 26 does not bundle
+npm install -g corepack@0.36.0
+
+# Enable Corepack so Node delegates to the pinned Yarn version
+corepack enable
 
 # Install dependencies
 yarn install
@@ -126,16 +129,16 @@ The site is deployed on **Netlify** at <https://fs3-portfolio.netlify.app>.
 |---|---|
 | Build command | `yarn build` |
 | Publish directory | `dist/` |
-| Node version | `24.15.0` |
-| Yarn version | `4.14.1` |
+| Node version | Pinned in `.nvmrc` |
+| Yarn version | `packageManager` field of `package.json` |
 
-Node and Yarn versions are pinned in the `[build.environment]` section of `netlify.toml` and kept in sync automatically via the `sync-runtime-versions` scheduled workflow.
+Node is pinned in `.nvmrc` and in `NODE_VERSION` under `[build.environment]` in `netlify.toml`, Yarn comes from the `packageManager` field of `package.json`, and the `sync-runtime-versions` scheduled workflow keeps them aligned.
 
 ### CI
 
 This repository uses two GitHub Actions workflows:
 
-- **`ci.yml`** — runs on every push and pull request to `main`, enabling Corepack, installing dependencies, then running ESLint, Prettier check, Jest, and Parcel build in sequence.
+- **`ci.yml`** — runs on every push and pull request to `main`, installing Corepack, enabling it, installing dependencies, then running ESLint, Prettier check, Jest, and Parcel build, installing Playwright Chromium, and running the smoke tests in sequence.
 - **`sync-runtime-versions.yml`** — runs weekly (and can also be triggered manually) to sync the Node and Yarn versions across `package.json`, `.nvmrc`, and `netlify.toml`, then opens a pull request when versions drift.
 
 ## Contributing
