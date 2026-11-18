@@ -2,7 +2,7 @@
 module.exports = {
   testEnvironment: 'jsdom',
   roots: ['<rootDir>/__tests__'],
-  testPathIgnorePatterns: ['/__tests__/__mocks__/'],
+  testPathIgnorePatterns: ['/__tests__/__mocks__/', '/__tests__/release/'],
   coverageDirectory: 'coverage',
   coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/'],
   collectCoverageFrom: ['src/js/utils.js'],

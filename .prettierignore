@@ -6,3 +6,5 @@ coverage/
 *.min.js
 src/css/icofont.min.css
 yarn.lock
+test-results/
+playwright-report/

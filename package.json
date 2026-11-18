@@ -9,10 +9,16 @@
     "build": "parcel build src/index.html --public-url ./",
     "test": "jest --coverage",
     "test:ci": "jest --coverage --ci",
-    "lint": "eslint src/js __tests__",
-    "lint:fix": "eslint src/js __tests__ --fix",
-    "format": "prettier --write src/js __tests__",
-    "format:check": "prettier --check src/js __tests__"
+    "lint": "eslint src/js __tests__ tests scripts",
+    "lint:fix": "eslint src/js __tests__ tests scripts --fix",
+    "format": "prettier --write src/js src/css __tests__ tests scripts",
+    "format:check": "prettier --check src/js src/css __tests__ tests scripts",
+    "gate": "node scripts/gate.mjs",
+    "gate:linux": "node scripts/gate-linux.mjs",
+    "verify:release": "jest -c jest.release.config.js",
+    "test:smoke": "playwright test --grep-invert @slow",
+    "test:e2e:slow": "playwright test --grep @slow",
+    "test:e2e:live": "BASE_URL=https://fs3portfolio.netlify.app playwright test --grep @live"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "7.3.1",
@@ -29,6 +35,7 @@
   "devDependencies": {
     "@eslint/js": "latest",
     "@parcel/transformer-css": "2.16.4",
+    "@playwright/test": "1.65.1",
     "eslint": "latest",
     "eslint-config-prettier": "latest",
     "eslint-plugin-prettier": "latest",
@@ -36,7 +43,9 @@
     "jest": "30.5.2",
     "jest-environment-jsdom": "30.5.2",
     "parcel": "2.16.4",
-    "prettier": "latest"
+    "prettier": "latest",
+    "smol-toml": "1.9.1",
+    "yaml": "2.9.1"
   },
   "packageManager": "yarn@4.18.1"
 }
