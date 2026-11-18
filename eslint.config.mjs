@@ -32,6 +32,15 @@ export default [
     },
   },
   {
+    // Node scripts: the gate and the dist server
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
     ignores: [
       'dist/',
       'node_modules/',
