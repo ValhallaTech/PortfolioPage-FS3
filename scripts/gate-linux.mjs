@@ -20,8 +20,8 @@
  * constant below: the validated values reach it as positional arguments
  * (`$1`..`$3`), never as text spliced into the script. The setup runs as root;
  * the gate itself runs as the unprivileged `node` user and cannot write to the
- * Playwright volume. It can write to the shared Yarn volume, so a gate step can
- * change what a later run installs.
+ * Playwright volume, the only state shared between runs. The Yarn cache is never
+ * shared: each run gets a private Yarn folder that `--rm` discards (SEC-EXEC-4).
  *
  * Exit codes:
  * - the container's exit code: the gate's own exit code, or non-zero when a
@@ -57,11 +57,20 @@ const NVMRC_PATTERN = /^v?(\d{1,3})(?:\.\d{1,6}){0,2}$/;
 /** An exact semver pin; it starts with a digit, so it can never read as an option. */
 const EXACT_VERSION_PATTERN = /^\d{1,6}\.\d{1,6}\.\d{1,6}(?:-[0-9A-Za-z][0-9A-Za-z.-]{0,63})?$/;
 
-/** Named volumes that keep reruns fast, and where they are mounted. */
+/** The one named volume, which keeps reruns fast, and where it is mounted. */
 const PLAYWRIGHT_VOLUME = 'portfolio-gate-playwright';
 const PLAYWRIGHT_MOUNT = '/ms-playwright';
-const YARN_VOLUME = 'portfolio-gate-yarn';
-const YARN_MOUNT = '/yarn-global';
+
+/**
+ * The run's private Yarn global folder (and so its cache). It lives in the
+ * container's own filesystem, not on a volume, so it starts empty and `--rm`
+ * discards it. Yarn 4 accepts a cache hit for a package with `conditions` (the
+ * platform-specific optional ones, native modules among them) without checking
+ * it against the lockfile checksum, so a cache that one run could write and a
+ * later run reads would let a gate step plant code in every later gate
+ * (SEC-EXEC-4, spec §3.4 WI-5 and RK-17).
+ */
+const YARN_FOLDER = '/yarn-global';
 
 /** git never prompts for credentials or opens an editor here. */
 const NON_INTERACTIVE_GIT_ENV = { GIT_TERMINAL_PROMPT: '0', GIT_EDITOR: 'true' };
@@ -74,8 +83,8 @@ const NON_INTERACTIVE_GIT_ENV = { GIT_TERMINAL_PROMPT: '0', GIT_EDITOR: 'true' }
  * The clone, the image Yarn 1 link removal, the Corepack install and the
  * Playwright install run as root. The gate runs as the image's `node` user, so
  * no gate step (a dependency's install script, a test) can change the browsers
- * on the shared Playwright volume that every later run executes. The shared
- * Yarn volume has no such protection: the gate writes to it (see below).
+ * on the shared Playwright volume that every later run executes. What the gate
+ * can write (the clone, the private Yarn folder) dies with the container.
  */
 const CONTAINER_SCRIPT = `set -euo pipefail
 sha="$1"
@@ -114,12 +123,10 @@ npx --yes "playwright@$playwright_pin" install --with-deps chromium
 # as the unprivileged node user, which can read the browsers but not change them.
 chown -R root:root "${PLAYWRIGHT_MOUNT}"
 chmod -R go-w "${PLAYWRIGHT_MOUNT}"
-# The clone and the Yarn folder are the gate's to write. The Yarn folder is the
-# shared volume every later run installs from, and Yarn 4 accepts a cache hit for
-# a package with 'conditions' (the platform-specific optional ones, native
-# modules among them) without checking it against the lockfile checksum. A gate
-# step can therefore plant an archive there that every later run loads unchecked.
-chown -R node:node /work "${YARN_MOUNT}"
+# The clone and the run's private Yarn folder are the gate's to write. Neither is
+# on a volume, so nothing a gate step writes there reaches a later run.
+mkdir -p -- "${YARN_FOLDER}"
+chown -R node:node /work "${YARN_FOLDER}"
 
 label="linux node:$node_major container"
 if [ "$removed_yarn1" -eq 1 ]; then
@@ -316,12 +323,10 @@ function buildDockerArgs({ sha, nodeMajor, playwrightPin }) {
     'no-new-privileges',
     '--volume',
     `${PLAYWRIGHT_VOLUME}:${PLAYWRIGHT_MOUNT}`,
-    '--volume',
-    `${YARN_VOLUME}:${YARN_MOUNT}`,
     '--env',
     `PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_MOUNT}`,
     '--env',
-    `YARN_GLOBAL_FOLDER=${YARN_MOUNT}`,
+    `YARN_GLOBAL_FOLDER=${YARN_FOLDER}`,
     '--env',
     'COREPACK_ENABLE_DOWNLOAD_PROMPT=0',
     '--env',
