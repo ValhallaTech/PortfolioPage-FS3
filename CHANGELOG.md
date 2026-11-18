@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Parcel build, Jest tests, a GitHub Actions CI workflow and a Netlify configuration, as part of
   the project overhaul ([#19]).
-- A push-triggered GitHub Actions workflow that runs `yarn config` ([#22]).
 - An inline Web3Forms contact form that submits with AJAX ([#25]).
 - ESLint and Prettier, with both checks enforced in CI ([#26]).
 - A script that keeps the Yarn and Node.js version pins in sync ([#30]).
