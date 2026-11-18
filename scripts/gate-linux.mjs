@@ -18,7 +18,9 @@
  * Every process is spawned without a shell, with its arguments as an array.
  * The only shell is `bash` inside the container, and its script is the fixed
  * constant below: the validated values reach it as positional arguments
- * (`$1`..`$3`), never as text spliced into the script.
+ * (`$1`..`$3`), never as text spliced into the script. The setup runs as root;
+ * the gate itself runs as the unprivileged `node` user and cannot write to the
+ * Playwright volume.
  *
  * Exit codes:
  * - the container's exit code: the gate's own exit code, or non-zero when a
@@ -67,6 +69,11 @@ const NON_INTERACTIVE_GIT_ENV = { GIT_TERMINAL_PROMPT: '0', GIT_EDITOR: 'true' }
  * The fixed script run by `bash` in the container. Arguments: `$1` the commit
  * SHA, `$2` the `@playwright/test` pin, `$3` the `.nvmrc` major. Each was
  * validated on the host; they are only ever expanded inside double quotes.
+ *
+ * The clone, the image Yarn 1 link removal, the Corepack install and the
+ * Playwright install run as root. The gate runs as the image's `node` user, so
+ * no gate step (a dependency's install script, a test) can change the browsers
+ * on the shared Playwright volume that every later run executes.
  */
 const CONTAINER_SCRIPT = `set -euo pipefail
 sha="$1"
@@ -99,6 +106,16 @@ npm install -g corepack@0.36.0 2>&1 | tee "$install_log"
 corepack enable
 npx --yes "playwright@$playwright_pin" install --with-deps chromium
 
+# The browser volume stays root's alone. Once a browser's marker file exists,
+# 'playwright install' trusts the files without checking them, so anything a
+# gate step wrote there would run in every later gate. The gate therefore runs
+# as the unprivileged node user, which can read the browsers but not change them.
+chown -R root:root "${PLAYWRIGHT_MOUNT}"
+chmod -R go-w "${PLAYWRIGHT_MOUNT}"
+# The clone and the Yarn folder are the gate's to write. Yarn checks each cache
+# archive against the lockfile checksum, so a changed archive fails the install.
+chown -R node:node /work "${YARN_MOUNT}"
+
 label="linux node:$node_major container"
 if [ "$removed_yarn1" -eq 1 ]; then
   label="$label, image Yarn 1 links removed"
@@ -109,7 +126,9 @@ fi
 rm -f -- "$install_log"
 
 cd /work
-exec node scripts/gate.mjs --env "$label"
+exec setpriv --reuid=node --regid=node --init-groups -- \\
+  env HOME=/home/node USER=node LOGNAME=node \\
+  node scripts/gate.mjs --env "$label"
 `;
 
 /** Thrown when a host check refuses the run; its message is printed as is. */
