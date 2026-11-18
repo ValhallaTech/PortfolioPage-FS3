@@ -34,7 +34,11 @@ export default [
   {
     // Playwright specs and helpers: `test` and `expect` come only from fixtures.js,
     // so every test gets the Web3Forms guard and the page-error guard (C-18, AC-90).
-    files: ['tests/e2e/**/*.js'],
+    // The extensions match Playwright's default testMatch, `**/*.@(spec|test).?(c|m)[jt]s?(x)`,
+    // so every file Playwright can collect is linted. This config has no TypeScript or JSX
+    // parser, so a .ts or JSX spec that uses that syntax fails lint with a parse error
+    // instead of running unguarded.
+    files: ['tests/e2e/**/*.{js,cjs,mjs,jsx,cjsx,mjsx,ts,cts,mts,tsx,ctsx,mtsx}'],
     ignores: ['tests/e2e/fixtures.js'],
     rules: {
       'no-restricted-imports': [
@@ -43,11 +47,26 @@ export default [
           paths: [
             {
               name: '@playwright/test',
-              importNames: ['test', 'expect'],
+              // `default` is the unguarded base test, the same object as the named `test`.
+              importNames: ['default', 'test', 'expect'],
               message:
                 'Import test and expect from tests/e2e/fixtures.js, which blocks real Web3Forms submissions (C-18, AC-90).',
             },
           ],
+        },
+      ],
+      // no-restricted-imports does not see require() or import(), so block both forms here.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.name='require'][arguments.0.value='@playwright/test']",
+          message:
+            'Import test and expect from tests/e2e/fixtures.js, which blocks real Web3Forms submissions (C-18, AC-90).',
+        },
+        {
+          selector: "ImportExpression[source.value='@playwright/test']",
+          message:
+            'Import test and expect from tests/e2e/fixtures.js, which blocks real Web3Forms submissions (C-18, AC-90).',
         },
       ],
     },
