@@ -26,8 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated Yarn to 4.14.0 ([#24]), then to 4.14.1 ([#29]).
 - Aligned the Yarn and Node.js version pins ([#30]).
 - Updated all dependencies to their new major versions ([#32]).
-- Optimized the site images ([#13]).
-- Updated `PortfolioPage_FS3.csproj` ([#14]).
 
 ### Removed
 
@@ -93,8 +91,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#10]: https://github.com/ValhallaTech/PortfolioPage-FS3/issues/10
 [#11]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/11
 [#12]: https://github.com/ValhallaTech/PortfolioPage-FS3/issues/12
-[#13]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/13
-[#14]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/14
 [#19]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/19
 [#21]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/21
 [#22]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/22
