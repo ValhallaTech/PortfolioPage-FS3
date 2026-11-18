@@ -32,6 +32,13 @@ export default [
     },
   },
   {
-    ignores: ['dist/', 'node_modules/', 'coverage/', '.parcel-cache/'],
+    ignores: [
+      'dist/',
+      'node_modules/',
+      'coverage/',
+      '.parcel-cache/',
+      'test-results/',
+      'playwright-report/',
+    ],
   },
 ];
