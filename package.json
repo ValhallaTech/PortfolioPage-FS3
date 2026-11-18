@@ -12,7 +12,9 @@
     "lint": "eslint src/js __tests__",
     "lint:fix": "eslint src/js __tests__ --fix",
     "format": "prettier --write src/js __tests__",
-    "format:check": "prettier --check src/js __tests__"
+    "format:check": "prettier --check src/js __tests__",
+    "gate": "node scripts/gate.mjs",
+    "gate:linux": "echo not implemented"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "7.3.1",
