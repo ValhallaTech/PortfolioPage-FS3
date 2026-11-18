@@ -78,10 +78,28 @@ const MAX_BUFFER = 256 * 1024 * 1024;
 /** How much of a child's output a failure message shows. */
 const OUTPUT_TAIL_CHARS = 4000;
 
-/** Jest's own variables never reach a child process (rule 6). */
-const JEST_VARIABLE_PREFIX = 'JEST_';
-/** Inherited Renovate settings are dropped, so only the harness configures the run. */
-const RENOVATE_VARIABLE_PREFIX = 'RENOVATE_';
+/**
+ * The only parent variables a child inherits, each copied only when set: what Node,
+ * npm and npx need to run (SEC-DEPLOY-1). Nothing else reaches a child, so neither a
+ * credential, a `JEST_*` variable (rule 6) nor an inherited Renovate setting does, and
+ * only the harness configures the run. Windows matches them ignoring case.
+ */
+const INHERITED_VARIABLES = [
+  'PATH',
+  'Path',
+  'PATHEXT',
+  'SystemRoot',
+  'ComSpec',
+  'TEMP',
+  'TMP',
+  'HOME',
+  'USERPROFILE',
+  'APPDATA',
+  'LOCALAPPDATA',
+];
+
+/** npx and npm run no lifecycle script of the tree they install (SEC-SCRIPT-1). */
+const NO_INSTALL_SCRIPTS = { npm_config_ignore_scripts: 'true' };
 
 /** Marker lines the fallback script prints on stdout. */
 const RESOLVED_MARKER = 'AC6_RESOLVED ';
@@ -195,17 +213,19 @@ let registry = null;
 let registryError = null;
 
 /**
- * The child's environment: this process's environment minus every `JEST_*` and
- * `RENOVATE_*` variable, plus `extra`.
+ * The child's environment: the allowlisted variables of this process's environment
+ * that are set, plus `npm_config_ignore_scripts=true`, plus `extra`.
  *
  * @param {Record<string, string>} extra Variables to set.
  * @returns {NodeJS.ProcessEnv} The environment.
  */
 function childEnvironment(extra = {}) {
+  const fold = (name) => (process.platform === 'win32' ? name.toUpperCase() : name);
+  const allowed = new Set(INHERITED_VARIABLES.map(fold));
   const inherited = Object.entries(process.env).filter(
-    ([name]) => !name.startsWith(JEST_VARIABLE_PREFIX) && !name.startsWith(RENOVATE_VARIABLE_PREFIX)
+    ([name, value]) => value !== undefined && allowed.has(fold(name))
   );
-  return { ...Object.fromEntries(inherited), ...extra };
+  return { ...Object.fromEntries(inherited), ...NO_INSTALL_SCRIPTS, ...extra };
 }
 
 /**

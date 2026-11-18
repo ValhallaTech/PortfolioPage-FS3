@@ -28,8 +28,27 @@ const MAX_BUFFER = 64 * 1024 * 1024;
 /** How much of the validator's output a failure message shows. */
 const OUTPUT_TAIL_CHARS = 4000;
 
-/** Jest's own variables never reach a child process (rule 6). */
-const JEST_VARIABLE_PREFIX = 'JEST_';
+/**
+ * The only parent variables the child inherits, each copied only when set: what Node,
+ * npm and npx need to run (SEC-DEPLOY-1). Nothing else reaches the child, so neither a
+ * credential nor a `JEST_*` variable (rule 6) does. Windows matches them ignoring case.
+ */
+const INHERITED_VARIABLES = [
+  'PATH',
+  'Path',
+  'PATHEXT',
+  'SystemRoot',
+  'ComSpec',
+  'TEMP',
+  'TMP',
+  'HOME',
+  'USERPROFILE',
+  'APPDATA',
+  'LOCALAPPDATA',
+];
+
+/** npx runs no lifecycle script of the tree it installs (SEC-SCRIPT-1). */
+const NO_INSTALL_SCRIPTS = { npm_config_ignore_scripts: 'true' };
 
 /**
  * Finds npm's `npx-cli.js` next to the running Node: `node_modules/npm` beside
@@ -48,14 +67,18 @@ function locateNpxCli() {
 }
 
 /**
- * The child's environment: this process's environment minus every `JEST_*` variable.
+ * The child's environment: the allowlisted variables of this process's environment
+ * that are set, plus `npm_config_ignore_scripts=true`.
  *
  * @returns {NodeJS.ProcessEnv} The environment.
  */
 function childEnvironment() {
-  return Object.fromEntries(
-    Object.entries(process.env).filter(([name]) => !name.startsWith(JEST_VARIABLE_PREFIX))
+  const fold = (name) => (process.platform === 'win32' ? name.toUpperCase() : name);
+  const allowed = new Set(INHERITED_VARIABLES.map(fold));
+  const inherited = Object.entries(process.env).filter(
+    ([name, value]) => value !== undefined && allowed.has(fold(name))
   );
+  return { ...Object.fromEntries(inherited), ...NO_INSTALL_SCRIPTS };
 }
 
 /**
