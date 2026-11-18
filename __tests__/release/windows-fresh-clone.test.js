@@ -36,8 +36,52 @@ const LS_REMOTE_TIMEOUT_MS = 120_000;
 /** Upper bound for the fresh-clone gate run; below the suite's testTimeout. */
 const GATE_TIMEOUT_MS = 55 * 60 * 1000;
 
+/** How much of the runner's stderr a failure message shows. */
+const STDERR_TAIL_CHARS = 4000;
+
 const STEP_ROW = /^\|\s*(\d+)\s*\|\s*`([^`]+)`\s*\|\s*([^|]+?)\s*\|\s*$/;
 const COMMIT_LINE = /^- Commit: `([^`]*)`\s*$/;
+
+/**
+ * Describes how the runner process ended: its exit status, signal, spawn error
+ * and the tail of its stderr.
+ *
+ * @param {import('node:child_process').SpawnSyncReturns<string>} run The finished process.
+ * @returns {string} The description.
+ */
+function describeRun(run) {
+  const stderr = (run.stderr ?? '').trimEnd();
+  const tail = stderr ? stderr.slice(-STDERR_TAIL_CHARS) : '(empty)';
+  const spawnError = run.error ? `, spawn error: ${run.error.message}` : '';
+  return (
+    `Gate runner: exit ${run.status}, signal ${run.signal}${spawnError}\n` +
+    `Gate runner stderr (last ${STDERR_TAIL_CHARS} characters):\n${tail}`
+  );
+}
+
+/**
+ * Runs `assertion` and, when it fails, adds the runner's exit status and stderr
+ * tail to the failure message, so a run that wrote no block shows why.
+ *
+ * @param {import('node:child_process').SpawnSyncReturns<string>} run The finished process.
+ * @param {() => void} assertion The `expect` call to run.
+ */
+function expectWithRunDetail(run, assertion) {
+  try {
+    assertion();
+  } catch (error) {
+    if (error instanceof Error) {
+      const detail = `\n\n${describeRun(run)}`;
+      const original = error.message;
+      error.message = `${original}${detail}`;
+      // V8 formats `stack` lazily, so it may already carry the new message.
+      if (typeof error.stack === 'string' && !error.stack.includes(detail)) {
+        error.stack = error.stack.replace(original, error.message);
+      }
+    }
+    throw error;
+  }
+}
 
 /**
  * Reads a text file, or returns '' when it does not exist.
@@ -185,12 +229,16 @@ describe('AC-1: the release commit passes the gate on a fresh Windows clone', ()
         windowsHide: true,
       }
     );
-    expect(run.status === PRECONDITION_EXIT ? preconditionMessage() : null).toBeNull();
+    expectWithRunDetail(run, () =>
+      expect(run.status === PRECONDITION_EXIT ? preconditionMessage() : null).toBeNull()
+    );
 
     const block = parseEvidenceBlock(readOptional(outFile));
-    expect({ sha: block.sha, exitCodes: block.exitCodes }).toEqual({
-      sha: release.sha,
-      exitCodes: [0, 0, 0, 0, 0, 0],
-    });
+    expectWithRunDetail(run, () =>
+      expect({ sha: block.sha, exitCodes: block.exitCodes }).toEqual({
+        sha: release.sha,
+        exitCodes: [0, 0, 0, 0, 0, 0],
+      })
+    );
   });
 });
