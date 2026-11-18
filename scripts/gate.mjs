@@ -1,92 +1,78 @@
 /**
- * Local gate runner (stub).
- *
- * CLI seam (spec stabilize-and-cleanup, section 3.7 chain A):
+ * Local gate runner (spec stabilize-and-cleanup, D-10 and WI-4).
  *
  *   node scripts/gate.mjs [--env <label>]
  *                         [--fresh-clone <url> --ref <sha> [--autocrlf]]
  *                         [--commands-file <json>]
  *                         [--out <file>]
  *
- * This is the WI-2 stub. It accepts every flag in the seam, ignores the
- * content of the commands file, runs no gate step and has no preflight.
- * It prints the v1 gate-evidence header and an empty step table to stdout,
- * writes the same text to `--out <file>` when given, and exits 0.
- * WI-4 replaces this with the real runner.
+ * Runs the six gate commands in order, with inherited stdio, and stops at the
+ * first non-zero exit; the remaining steps are recorded as "not run". Stdout
+ * ends with the v1 evidence block, after any output of the steps, and
+ * `--out <file>` receives the block alone.
+ *
+ * Exit codes:
+ * - the first non-zero step exit code, or 0 when all six steps exit 0;
+ * - 64: usage error, including a malformed `--commands-file` (no block);
+ * - 69: Yarn through Corepack is unavailable or not the `packageManager`
+ *   version (the D-10 preflight; no block);
+ * - 1: the runner itself failed, for example the fresh clone (no block).
+ *
+ * The six step commands run with `shell: true`, as the spec chooses. They are
+ * either the canonical constants or, in tests only, the strings of the
+ * commands file; no other command-line value ever reaches a shell.
  */
-import { exec } from 'node:child_process';
-import { writeFile } from 'node:fs/promises';
-import { parseArgs, promisify } from 'node:util';
+import { exec, spawn } from 'node:child_process';
+import { readFile, writeFile } from 'node:fs/promises';
+import { constants as osConstants } from 'node:os';
+import path from 'node:path';
+import { promisify } from 'node:util';
+
+import { EXIT_USAGE, UsageError, loadCommandsFile, parseGateArgs } from './gate/cli.mjs';
+import { CANONICAL_COMMANDS, NOT_RUN, formatEvidenceBlock } from './gate/evidence.mjs';
+import { createFreshClone, readHeadSha, removeFreshClone } from './gate/workspace.mjs';
 
 const execAsync = promisify(exec);
 
-/** Evidence block marker that AC-2 searches for. */
-const EVIDENCE_MARKER = '<!-- gate-evidence:v1 -->';
+/** Exit code of an unmet D-10 Windows host precondition (sysexits EX_UNAVAILABLE). */
+const EXIT_PRECONDITION = 69;
 
-/** Spec slug named in the evidence heading. */
-const SPEC_SLUG = 'stabilize-and-cleanup';
+/** Exit code when the runner itself fails, or a step cannot be started. */
+const EXIT_FAILURE = 1;
 
-/** Upper bound for each version probe, so a hung child never hangs the stub. */
-const PROBE_TIMEOUT_MS = 60_000;
+/** Shell convention for a process ended by a signal: 128 + the signal number. */
+const SIGNAL_EXIT_BASE = 128;
 
-/** Printed in place of a value the stub could not read. */
+/** Upper bound for the `yarn --version` preflight. */
+const PREFLIGHT_TIMEOUT_MS = 60_000;
+
+/** Fixed preflight command line; run through the shell to resolve Corepack's shims. */
+const YARN_VERSION_COMMAND = 'yarn --version';
+
+/** Variable that stops Corepack from waiting on a download prompt. */
+const COREPACK_PROMPT_VARIABLE = 'COREPACK_ENABLE_DOWNLOAD_PROMPT';
+
+/** `packageManager` value naming Yarn, with an optional `+<hash>` suffix. */
+const YARN_PACKAGE_MANAGER_PATTERN = /^yarn@(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:\+\S+)?$/;
+
+/** Printed in place of a commit SHA that could not be read. */
 const UNAVAILABLE = 'unavailable';
 
-/** Every option in the chain A seam. */
-const CLI_OPTIONS = {
-  env: { type: 'string' },
-  'fresh-clone': { type: 'string' },
-  ref: { type: 'string' },
-  autocrlf: { type: 'boolean' },
-  'commands-file': { type: 'string' },
-  out: { type: 'string' },
-};
-
 /**
- * @typedef {object} GateOptions
- * @property {string} [env] Environment label for the evidence block.
- * @property {string} [freshClone] Clone URL (accepted, unused by the stub).
- * @property {string} [ref] Commit to check out (accepted, unused by the stub).
- * @property {boolean} [autocrlf] Clone with core.autocrlf=true (accepted, unused by the stub).
- * @property {string} [commandsFile] Test-only commands file (accepted, content ignored by the stub).
- * @property {string} [out] File the evidence block is also written to.
- */
-
-/**
- * Parses the gate CLI arguments.
+ * Builds the D-10 Windows host precondition message.
  *
- * @param {string[]} argv Arguments after the script path.
- * @returns {GateOptions} The parsed options.
+ * @param {string} yarnVersion The `packageManager` Yarn version.
+ * @returns {string} The message, without a trailing newline.
  */
-function parseGateArgs(argv) {
-  const { values } = parseArgs({
-    args: argv,
-    options: CLI_OPTIONS,
-    strict: false,
-    allowPositionals: true,
-  });
-  return {
-    env: asString(values.env),
-    freshClone: asString(values['fresh-clone']),
-    ref: asString(values.ref),
-    autocrlf: values.autocrlf === true,
-    commandsFile: asString(values['commands-file']),
-    out: asString(values.out),
-  };
+function preconditionMessage(yarnVersion) {
+  return (
+    `Gate precondition: Yarn ${yarnVersion} through Corepack is not available. ` +
+    'Run npm install -g corepack@0.36.0, then corepack enable.'
+  );
 }
 
 /**
- * Narrows a parsed option value to a string.
- *
- * @param {unknown} value A value from `parseArgs`.
- * @returns {string | undefined} The value when it is a string.
- */
-function asString(value) {
-  return typeof value === 'string' ? value : undefined;
-}
-
-/**
- * Returns the default environment label for a host run.
+ * Returns the default Environment label for a host run.
  *
  * @returns {string} For example `windows host`.
  */
@@ -96,97 +82,187 @@ function defaultEnvironmentLabel() {
 }
 
 /**
- * Runs a fixed probe command through the shell and returns its trimmed stdout,
- * or `UNAVAILABLE` on any failure. The shell resolves the `.cmd` shims that
- * Corepack installs on Windows. Only constant command strings are passed here;
- * no caller input reaches the shell.
+ * Builds the environment for the preflight and the steps: this process's
+ * environment, with the Corepack download prompt turned off unless the
+ * variable is already set.
  *
- * @param {string} command Constant command line to run.
- * @param {import('node:child_process').ExecOptions} [options] Extra child options.
- * @returns {Promise<string>} The trimmed output.
+ * @returns {NodeJS.ProcessEnv} The step environment.
  */
-async function probe(command, options = {}) {
+function buildStepEnv() {
+  return process.env[COREPACK_PROMPT_VARIABLE] === undefined
+    ? { ...process.env, [COREPACK_PROMPT_VARIABLE]: '0' }
+    : { ...process.env };
+}
+
+/**
+ * Reads the Yarn version that `packageManager` names in `dir/package.json`.
+ *
+ * @param {string} dir Directory the steps run in.
+ * @returns {Promise<string>} The version, without any `+<hash>` suffix.
+ * @throws {Error} When package.json is unreadable or names no Yarn version.
+ */
+async function readExpectedYarnVersion(dir) {
+  const manifestPath = path.join(dir, 'package.json');
+  const manifest = JSON.parse(await readFile(manifestPath, { encoding: 'utf8' }));
+  const match = YARN_PACKAGE_MANAGER_PATTERN.exec(String(manifest?.packageManager ?? ''));
+  if (match === null) {
+    throw new Error(`${manifestPath} names no yarn@<version> packageManager`);
+  }
+  return match[1];
+}
+
+/**
+ * Runs `yarn --version` in `dir`.
+ *
+ * @param {string} dir Directory the steps run in.
+ * @param {NodeJS.ProcessEnv} env Step environment.
+ * @returns {Promise<string | null>} The trimmed version, or null when Yarn failed.
+ */
+async function probeYarnVersion(dir, env) {
   try {
-    const { stdout } = await execAsync(command, {
-      timeout: PROBE_TIMEOUT_MS,
+    const { stdout } = await execAsync(YARN_VERSION_COMMAND, {
+      cwd: dir,
+      env,
+      timeout: PREFLIGHT_TIMEOUT_MS,
       windowsHide: true,
-      ...options,
     });
-    const text = String(stdout).trim();
-    return text === '' ? UNAVAILABLE : text;
+    return String(stdout).trim();
   } catch {
-    return UNAVAILABLE;
+    return null;
   }
 }
 
 /**
- * Reads the commit SHA of `HEAD` in the current directory.
+ * Converts a finished child's code and signal into one exit code.
  *
- * @returns {Promise<string>} The 40-hex SHA, or `UNAVAILABLE`.
+ * @param {number | null} code Exit code, null when a signal ended the child.
+ * @param {NodeJS.Signals | null} signal The ending signal, if any.
+ * @returns {number} The exit code; never 0 for a signal.
  */
-function readHeadSha() {
-  return probe('git rev-parse HEAD');
+function toExitCode(code, signal) {
+  if (code !== null) {
+    return code;
+  }
+  const signalNumber = signal === null ? undefined : osConstants.signals[signal];
+  return signalNumber === undefined ? EXIT_FAILURE : SIGNAL_EXIT_BASE + signalNumber;
 }
 
 /**
- * Reads `yarn --version`, with the Corepack download prompt off unless the
- * caller already set it, so the probe never waits on input.
+ * Runs one step command through the shell with inherited stdio.
  *
- * @returns {Promise<string>} The Yarn version, or `UNAVAILABLE`.
+ * @param {string} command Shell command line.
+ * @param {string} cwd Directory the steps run in.
+ * @param {NodeJS.ProcessEnv} env Step environment.
+ * @returns {Promise<number>} The step's exit code; never rejects.
  */
-function readYarnVersion() {
-  return probe('yarn --version', {
-    env: { COREPACK_ENABLE_DOWNLOAD_PROMPT: '0', ...process.env },
+function runStep(command, cwd, env) {
+  return new Promise((resolve) => {
+    const child = spawn(command, { cwd, env, shell: true, stdio: 'inherit', windowsHide: true });
+    child.once('error', (error) => {
+      process.stderr.write(`gate: could not start "${command}": ${error.message}\n`);
+      resolve(EXIT_FAILURE);
+    });
+    child.once('close', (code, signal) => resolve(toExitCode(code, signal)));
   });
 }
 
 /**
- * Builds the v1 evidence block with an empty step table.
+ * Runs the steps in order and stops at the first non-zero exit.
  *
- * @param {{ sha: string, environment: string, nodeVersion: string, yarnVersion: string }} facts
- *   The header values.
- * @returns {string} The block, ending in a newline.
+ * @param {readonly string[]} commands The six shell commands.
+ * @param {string} cwd Directory the steps run in.
+ * @param {NodeJS.ProcessEnv} env Step environment.
+ * @returns {Promise<Array<number | typeof NOT_RUN>>} One cell per step.
  */
-function formatEvidenceBlock({ sha, environment, nodeVersion, yarnVersion }) {
-  return [
-    EVIDENCE_MARKER,
-    `### Gate evidence: ${SPEC_SLUG}`,
-    `- Commit: \`${sha}\``,
-    `- Environment: \`${environment}\``,
-    `- Node: \`${nodeVersion}\` · Yarn: \`${yarnVersion}\``,
-    '',
-    '| # | Command | Exit code |',
-    '| --- | --- | --- |',
-    '',
-  ].join('\n');
+async function runSteps(commands, cwd, env) {
+  const exitCodes = [];
+  for (const command of commands) {
+    const failed = exitCodes.some((code) => code !== 0);
+    exitCodes.push(failed ? NOT_RUN : await runStep(command, cwd, env));
+  }
+  return exitCodes;
 }
 
 /**
- * Entry point: prints the evidence block and writes it to `--out` when given.
+ * Runs the preflight and the six steps in `dir`, then prints the block and
+ * writes it to `--out` when given.
  *
- * @param {string[]} argv Arguments after the script path.
+ * @param {string} dir Directory the steps run in.
+ * @param {readonly string[]} commands The six shell commands.
+ * @param {import('./gate/cli.mjs').GateOptions} options Validated options.
  * @returns {Promise<number>} The process exit code.
  */
-async function main(argv) {
-  const options = parseGateArgs(argv);
-  const [sha, yarnVersion] = await Promise.all([readHeadSha(), readYarnVersion()]);
+async function runGate(dir, commands, options) {
+  const env = buildStepEnv();
+  const expectedYarnVersion = await readExpectedYarnVersion(dir);
+  const yarnVersion = await probeYarnVersion(dir, env);
+  if (yarnVersion !== expectedYarnVersion) {
+    process.stderr.write(`${preconditionMessage(expectedYarnVersion)}\n`);
+    return EXIT_PRECONDITION;
+  }
+
+  const sha = (await readHeadSha(dir)) ?? UNAVAILABLE;
+  const exitCodes = await runSteps(commands, dir, env);
+  const firstFailure = exitCodes.find((code) => code !== 0 && code !== NOT_RUN) ?? 0;
+
   const block = formatEvidenceBlock({
     sha,
     environment: options.env ?? defaultEnvironmentLabel(),
     nodeVersion: process.version,
     yarnVersion,
+    exitCodes,
   });
+  // The leading newline starts the block on its own line after any step output.
+  process.stdout.write(`\n${block}`);
 
-  process.stdout.write(block);
   if (options.out !== undefined) {
-    await writeFile(options.out, block, { encoding: 'utf8' });
+    try {
+      await writeFile(options.out, block, { encoding: 'utf8' });
+    } catch (error) {
+      process.stderr.write(`gate: could not write --out ${options.out}: ${error.message}\n`);
+      return firstFailure === 0 ? EXIT_FAILURE : firstFailure;
+    }
   }
-  return 0;
+  return firstFailure;
+}
+
+/**
+ * Entry point: validates the command line, makes the fresh clone when asked,
+ * runs the gate there or in the current directory, and removes the clone.
+ *
+ * @param {string[]} argv Arguments after the script path.
+ * @returns {Promise<number>} The process exit code.
+ */
+async function main(argv) {
+  let options;
+  let commands = CANONICAL_COMMANDS;
+  try {
+    options = parseGateArgs(argv, process.cwd());
+    if (options.commandsFile !== undefined) {
+      commands = await loadCommandsFile(options.commandsFile);
+    }
+  } catch (error) {
+    if (error instanceof UsageError) {
+      process.stderr.write(`gate: ${error.message}\n`);
+      return EXIT_USAGE;
+    }
+    throw error;
+  }
+
+  if (options.freshClone === undefined) {
+    return runGate(process.cwd(), commands, options);
+  }
+  const clone = await createFreshClone(options.freshClone);
+  try {
+    return await runGate(clone.dir, commands, options);
+  } finally {
+    await removeFreshClone(clone.dir);
+  }
 }
 
 try {
   process.exitCode = await main(process.argv.slice(2));
 } catch (error) {
   process.stderr.write(`gate: ${error instanceof Error ? error.message : String(error)}\n`);
-  process.exitCode = 1;
+  process.exitCode = EXIT_FAILURE;
 }
