@@ -51,6 +51,7 @@ const YARN_VERSION_COMMAND = 'yarn --version';
 
 /** Variable that stops Corepack from waiting on a download prompt. */
 const COREPACK_PROMPT_VARIABLE = 'COREPACK_ENABLE_DOWNLOAD_PROMPT';
+const JEST_VARIABLE_PREFIX = 'JEST_';
 
 /** `packageManager` value naming Yarn, with an optional `+<hash>` suffix. */
 const YARN_PACKAGE_MANAGER_PATTERN = /^yarn@(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:\+\S+)?$/;
@@ -83,15 +84,22 @@ function defaultEnvironmentLabel() {
 
 /**
  * Builds the environment for the preflight and the steps: this process's
- * environment, with the Corepack download prompt turned off unless the
- * variable is already set.
+ * environment minus every `JEST_*` variable, with the Corepack download prompt
+ * turned off unless the variable is already set.
+ *
+ * The `JEST_*` variables are dropped because a Jest test can start this
+ * runner, and Playwright refuses to load its tests when it inherits
+ * `JEST_WORKER_ID` (spec §3.4 WI-4, "Step environment").
  *
  * @returns {NodeJS.ProcessEnv} The step environment.
  */
 function buildStepEnv() {
-  return process.env[COREPACK_PROMPT_VARIABLE] === undefined
-    ? { ...process.env, [COREPACK_PROMPT_VARIABLE]: '0' }
-    : { ...process.env };
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([name]) => !name.startsWith(JEST_VARIABLE_PREFIX))
+  );
+  return env[COREPACK_PROMPT_VARIABLE] === undefined
+    ? { ...env, [COREPACK_PROMPT_VARIABLE]: '0' }
+    : env;
 }
 
 /**
