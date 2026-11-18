@@ -14,7 +14,7 @@
     "format": "prettier --write src/js __tests__",
     "format:check": "prettier --check src/js __tests__",
     "gate": "node scripts/gate.mjs",
-    "gate:linux": "echo not implemented",
+    "gate:linux": "node scripts/gate-linux.mjs",
     "verify:release": "jest -c jest.release.config.js",
     "test:smoke": "playwright test --grep-invert @slow",
     "test:e2e:slow": "playwright test --grep @slow",
