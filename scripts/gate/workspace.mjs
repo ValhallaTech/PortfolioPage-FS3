@@ -111,15 +111,18 @@ export async function readHeadSha(cwd) {
 }
 
 /**
- * Runs `git status --porcelain` in `cwd`. Its output is empty exactly when the
- * work tree has no tracked change and no untracked, non-ignored file.
+ * Runs `git status --porcelain=v1 --untracked-files=normal` in `cwd`. Its output
+ * is empty exactly when the work tree has no tracked change and no untracked,
+ * non-ignored file. The explicit `--untracked-files=normal` overrides a user or
+ * repo `status.showUntrackedFiles=no`, which would otherwise hide untracked
+ * files and let a dirty tree pass as clean (D-10).
  *
  * @param {string} cwd A directory inside a git work tree.
  * @returns {Promise<string | null>} What git printed (`''` for a clean tree),
  *   or null when git failed.
  */
 export async function readWorkingTreeStatus(cwd) {
-  const result = await runGit(['status', '--porcelain'], {
+  const result = await runGit(['status', '--porcelain=v1', '--untracked-files=normal'], {
     cwd,
     timeoutMs: GIT_TIMEOUT_MS,
     captureStdout: true,
