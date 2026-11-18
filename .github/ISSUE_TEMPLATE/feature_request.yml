@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest a new feature or an improvement to the portfolio site.
+title: '[Feature]: '
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. Please search the open issues first to check that it has not already been suggested.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the need or the limitation behind the request.
+      placeholder: Visitors cannot find the project list on a small screen.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the change you would like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe any other approaches you considered, and why you prefer the proposed one.
+    validations:
+      required: false
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add links, mockups or screenshots that help explain the request.
+    validations:
+      required: false

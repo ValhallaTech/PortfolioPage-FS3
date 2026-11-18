@@ -1,0 +1,59 @@
+name: Bug report
+description: Report something on the portfolio site that does not work as expected.
+title: '[Bug]: '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please search the open issues first to check that it has not already been reported.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the problem you saw.
+      placeholder: The contact form shows an error after I press Send.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+      description: Describe what should have happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the steps that make the problem happen.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: Page URL
+      description: The address of the page where the problem happened, if it is on one page.
+      placeholder: https://example.com/
+    validations:
+      required: false
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and operating system
+      description: The browser, its version and the operating system you used.
+      placeholder: Firefox 140 on Windows 11
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output or screenshots
+      description: Paste any browser console errors, or attach screenshots that show the problem.
+    validations:
+      required: false
