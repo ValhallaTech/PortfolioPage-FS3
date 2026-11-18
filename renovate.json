@@ -9,6 +9,12 @@
       "automerge": false,
       "automergeType": "pr",
       "matchPackageNames": ["*"]
+    },
+    {
+      "description": "Bootstrap gets its own group and never automerges, so a prerelease cannot ride along in a shared branch (D-8).",
+      "matchPackageNames": ["bootstrap"],
+      "groupName": "bootstrap",
+      "automerge": false
     }
   ],
   "enabledManagers": ["npm", "github-actions"],
