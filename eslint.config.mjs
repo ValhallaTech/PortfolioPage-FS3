@@ -32,6 +32,27 @@ export default [
     },
   },
   {
+    // Playwright specs and helpers: `test` and `expect` come only from fixtures.js,
+    // so every test gets the Web3Forms guard and the page-error guard (C-18, AC-90).
+    files: ['tests/e2e/**/*.js'],
+    ignores: ['tests/e2e/fixtures.js'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@playwright/test',
+              importNames: ['test', 'expect'],
+              message:
+                'Import test and expect from tests/e2e/fixtures.js, which blocks real Web3Forms submissions (C-18, AC-90).',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Node scripts: the gate and the dist server
     files: ['scripts/**/*.mjs'],
     languageOptions: {

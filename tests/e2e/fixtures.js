@@ -5,6 +5,9 @@ export const WEB3FORMS_URL = 'https://api.web3forms.com/**';
 
 /**
  * Every spec imports `test` and `expect` from here, so each test gets both guards.
+ * The `no-restricted-imports` rule for tests/e2e in eslint.config.mjs enforces this.
+ * The guard covers browser-context traffic only: APIRequestContext (`request`,
+ * `page.request`) is never routed, so no spec may send to Web3Forms through it.
  *
  * - `web3formsGuard` routes Web3Forms to `abort()` at context level and records each
  *   request it aborts. A test's own `page.route` mock takes precedence, because
