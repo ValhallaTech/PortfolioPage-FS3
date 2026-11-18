@@ -132,7 +132,9 @@ function git(args, cwd) {
 
 /**
  * Makes the scratch repository: one commit holding package.json, then one
- * untracked file in the working tree.
+ * untracked file in the working tree. status.showUntrackedFiles is set to no,
+ * so the check passes only if it overrides that config and still sees the
+ * untracked file.
  *
  * @param {string} dir Empty directory to make the repository in.
  * @returns {string} The SHA of the repository's HEAD.
@@ -140,6 +142,7 @@ function git(args, cwd) {
 function createDirtyScratchRepo(dir) {
   git(['init', '--quiet'], dir);
   git(['config', 'core.autocrlf', 'false'], dir);
+  git(['config', 'status.showUntrackedFiles', 'no'], dir);
   fs.writeFileSync(
     path.join(dir, 'package.json'),
     `${JSON.stringify(SCRATCH_MANIFEST, null, 2)}\n`,
