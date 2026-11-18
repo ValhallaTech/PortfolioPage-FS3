@@ -20,7 +20,8 @@
  * constant below: the validated values reach it as positional arguments
  * (`$1`..`$3`), never as text spliced into the script. The setup runs as root;
  * the gate itself runs as the unprivileged `node` user and cannot write to the
- * Playwright volume.
+ * Playwright volume. It can write to the shared Yarn volume, so a gate step can
+ * change what a later run installs.
  *
  * Exit codes:
  * - the container's exit code: the gate's own exit code, or non-zero when a
@@ -73,7 +74,8 @@ const NON_INTERACTIVE_GIT_ENV = { GIT_TERMINAL_PROMPT: '0', GIT_EDITOR: 'true' }
  * The clone, the image Yarn 1 link removal, the Corepack install and the
  * Playwright install run as root. The gate runs as the image's `node` user, so
  * no gate step (a dependency's install script, a test) can change the browsers
- * on the shared Playwright volume that every later run executes.
+ * on the shared Playwright volume that every later run executes. The shared
+ * Yarn volume has no such protection: the gate writes to it (see below).
  */
 const CONTAINER_SCRIPT = `set -euo pipefail
 sha="$1"
@@ -112,8 +114,11 @@ npx --yes "playwright@$playwright_pin" install --with-deps chromium
 # as the unprivileged node user, which can read the browsers but not change them.
 chown -R root:root "${PLAYWRIGHT_MOUNT}"
 chmod -R go-w "${PLAYWRIGHT_MOUNT}"
-# The clone and the Yarn folder are the gate's to write. Yarn checks each cache
-# archive against the lockfile checksum, so a changed archive fails the install.
+# The clone and the Yarn folder are the gate's to write. The Yarn folder is the
+# shared volume every later run installs from, and Yarn 4 accepts a cache hit for
+# a package with 'conditions' (the platform-specific optional ones, native
+# modules among them) without checking it against the lockfile checksum. A gate
+# step can therefore plant an archive there that every later run loads unchecked.
 chown -R node:node /work "${YARN_MOUNT}"
 
 label="linux node:$node_major container"
