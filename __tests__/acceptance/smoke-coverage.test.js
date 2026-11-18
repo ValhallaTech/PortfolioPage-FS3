@@ -34,10 +34,20 @@ const ROW_NAMES = [
 ];
 
 /**
- * Playwright exits 1 on `--list` when no test exists, and prints this (WI-6).
- * The spec reads that as an empty list, which still fails on all 12 rows.
+ * Playwright exits 1 on `--list` when no test exists, and prints this line (WI-6).
+ * The spec reads that as an empty list, which still fails on all 12 rows, but only
+ * when it is the only error in the output.
  */
-const NO_TESTS_FOUND = 'No tests found';
+const NO_TESTS_FOUND_LINE = /^\s*Error: No tests found\.?\s*$/;
+
+/**
+ * Any other line matching this is another error, such as Playwright refusing to
+ * load tests under Jest ("Playwright Test needs to be invoked via ...").
+ */
+const OTHER_ERROR_LINE = /error|needs to be invoked|jest/i;
+
+/** Jest's own variables; with `JEST_WORKER_ID` set, Playwright refuses to load tests. */
+const JEST_VARIABLE_PREFIX = 'JEST_';
 
 /** Upper bound for the listing process; it loads the config and the specs only. */
 const LIST_TIMEOUT_MS = 120_000;
@@ -89,17 +99,47 @@ function parseTitles(output) {
 }
 
 /**
- * Runs the listing and returns the listed titles, following WI-7's exit handling.
+ * The child's environment: this process's environment minus every `JEST_*`
+ * variable, so Playwright does not see that it runs under Jest, and no color codes.
  *
- * @returns {string[]} The listed titles; empty when the suite has no tests.
+ * @returns {NodeJS.ProcessEnv} The environment for the listing process.
  */
-function listSmokeTitles() {
+function listingEnvironment() {
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([name]) => !name.startsWith(JEST_VARIABLE_PREFIX))
+  );
+  return { ...env, FORCE_COLOR: '0' };
+}
+
+/**
+ * True when `Error: No tests found` appears and no other line looks like an error.
+ *
+ * @param {string} output The combined stdout and stderr of an exit-1 run.
+ * @returns {boolean} Whether the output describes an empty suite and nothing else.
+ */
+function isOnlyNoTestsFound(output) {
+  const lines = output.split(/\r?\n/);
+  const noTestsFound = lines.some((line) => NO_TESTS_FOUND_LINE.test(line));
+  const otherErrors = lines.filter(
+    (line) => !NO_TESTS_FOUND_LINE.test(line) && OTHER_ERROR_LINE.test(line)
+  );
+  return noTestsFound && otherErrors.length === 0;
+}
+
+/**
+ * Runs the listing and returns the listed titles and the raw output, following
+ * WI-7's exit handling.
+ *
+ * @returns {{ titles: string[], output: string }} The listed titles (empty when the
+ *   suite has no tests) and the combined stdout and stderr.
+ */
+function listSmokeTests() {
   const result = spawnSync(LIST_COMMAND, {
     cwd: REPO_ROOT,
     shell: true,
     encoding: 'utf8',
     timeout: LIST_TIMEOUT_MS,
-    env: { ...process.env, FORCE_COLOR: '0' },
+    env: listingEnvironment(),
   });
   const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
 
@@ -107,10 +147,10 @@ function listSmokeTitles() {
     throw harnessError(`could not run "${LIST_COMMAND}": ${result.error.message}`, output);
   }
   if (result.status === 0) {
-    return parseTitles(output);
+    return { titles: parseTitles(output), output };
   }
-  if (result.status === 1 && output.includes(NO_TESTS_FOUND)) {
-    return [];
+  if (result.status === 1 && isOnlyNoTestsFound(output)) {
+    return { titles: [], output };
   }
   throw harnessError(
     `"${LIST_COMMAND}" exited with status ${result.status}, signal ${result.signal}`,
@@ -122,12 +162,19 @@ describe('AC-89: the smoke suite covers every bootstrap6-analysis section 6 row'
   test(
     'at least one listed test title contains each of the 12 row names',
     () => {
-      const titles = listSmokeTitles();
+      const { titles, output } = listSmokeTests();
 
       const missingRows = ROW_NAMES.filter((row) => !titles.some((title) => title.includes(row)));
 
-      // On failure, the diff names every row that no listed title contains.
-      expect(missingRows).toEqual([]);
+      // On failure, the message names every row that no listed title contains, and
+      // carries the child's --list output so the red run shows why the list is empty.
+      if (missingRows.length > 0) {
+        throw new Error(
+          `No listed test title contains these ${missingRows.length} row names: ` +
+            `${missingRows.map((row) => `"${row}"`).join(', ')}\n` +
+            `--- playwright --list output ---\n${output}`
+        );
+      }
     },
     TEST_TIMEOUT_MS
   );
