@@ -6,6 +6,12 @@
  * parse, so it ignores every breakpoint. These checks fail on that output and pass once
  * the build has real targets.
  *
+ * Every unprefixed `image-set()` must also leave a plain `url()` for browsers that cannot
+ * parse it: either earlier in the same rule, or, when the declaration sits inside an
+ * `@supports` test of `image-set()` for that property, in a top-level rule with the same
+ * selector (the hero background in src/css/style.css). A `-webkit-image-set()` copy is
+ * not a fallback, because it keeps the `type()` those browsers cannot parse.
+ *
  * Each test reads `dist/` from `yarn build` on the Node side and never opens a page.
  * The fixtures.js guards are auto fixtures and still create a browser context; no test
  * here navigates it. Run `yarn build` first: every test asserts that `dist/` holds CSS,
@@ -26,9 +32,6 @@ const RANGE_FEATURE = /\([^()]*[<>=][^()]*\)/;
 
 /** An unprefixed `image-set(`; a `-webkit-image-set(` does not match. */
 const UNPREFIXED_IMAGE_SET = /(^|[^-\w])image-set\(/i;
-
-/** A `-webkit-image-set(`. */
-const WEBKIT_IMAGE_SET = /-webkit-image-set\(/i;
 
 /**
  * Every `.css` file under `dist/`, as paths relative to it with forward slashes.
@@ -75,8 +78,10 @@ function isPlainUrl(value) {
 }
 
 /**
- * Whether an earlier declaration of the same property in the same rule is a fallback:
- * a plain `url()`, or a `-webkit-image-set()`.
+ * Whether an earlier declaration of the same property in the same rule is a plain `url()`.
+ * A `-webkit-image-set()` copy does not count: the build keeps `type()` in it, which
+ * browsers without `image-set()` type support (Chrome 109, iOS 15-16) cannot parse, so
+ * they drop it as well.
  * @param {import('postcss').Declaration} decl
  * @returns {boolean}
  */
@@ -87,9 +92,7 @@ function hasFallbackInSameRule(decl) {
     .slice(0, siblings.indexOf(decl))
     .some(
       (node) =>
-        node.type === 'decl' &&
-        node.prop.toLowerCase() === property &&
-        (isPlainUrl(node.value) || WEBKIT_IMAGE_SET.test(node.value))
+        node.type === 'decl' && node.prop.toLowerCase() === property && isPlainUrl(node.value)
     );
 }
 
