@@ -23,6 +23,9 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const DIST_DIR = path.join(REPO_ROOT, 'dist');
 const NETLIFY_TOML = path.join(REPO_ROOT, 'netlify.toml');
 
+/** Stream errors that mean the client disconnected, which is not a server fault. */
+const CLIENT_GONE_ERRORS = new Set(['ERR_STREAM_PREMATURE_CLOSE', 'ERR_STREAM_UNABLE_TO_PIPE']);
+
 const CONTENT_TYPES = {
   '.avif': 'image/avif',
   '.css': 'text/css; charset=utf-8',
@@ -211,14 +214,24 @@ export function createHandler(realRoot, rules) {
     response.setHeader('Content-Length', file.size);
     response.writeHead(200);
 
+    // A client that disconnected while the file was opened cannot take a body, and
+    // pipeline() throws on a destroyed response without consuming the stream. Close the
+    // file here: Node treats a FileHandle left to garbage collection as a fatal error.
+    if (response.destroyed) {
+      await file.handle.close();
+      return;
+    }
     if (request.method === 'HEAD') {
       await file.handle.close();
       response.end();
       return;
     }
-    pipeline(file.handle.createReadStream(), response, (error) => {
-      // A client that disconnects mid-body is not a server fault.
-      if (error && error.code !== 'ERR_STREAM_PREMATURE_CLOSE') {
+    const body = file.handle.createReadStream();
+    pipeline(body, response, (error) => {
+      // Destroying the stream closes the FileHandle (autoClose) on every exit path.
+      if (!body.destroyed) body.destroy();
+      // A client that disconnects during the body is not a server fault.
+      if (error && !CLIENT_GONE_ERRORS.has(error.code)) {
         process.stderr.write(`serve-dist: ${error.stack ?? error}\n`);
       }
     });

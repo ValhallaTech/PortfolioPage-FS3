@@ -25,6 +25,25 @@ h6 {
 }
 
 /*--------------------------------------------------------------
+# Icons
+--------------------------------------------------------------*/
+
+/* The inline sprite in index.html only holds <symbol> definitions. */
+.svg-sprite {
+  display: none;
+}
+
+/* Each icon draws one sprite symbol at the box the Font Awesome webfont gave it:
+   1em tall, 1.25em wide, sitting 0.125em below the text baseline. */
+.icon {
+  fill: currentColor;
+  height: 1em;
+  overflow: visible;
+  vertical-align: -0.125em;
+  width: 1.25em;
+}
+
+/*--------------------------------------------------------------
 # Back to top button
 --------------------------------------------------------------*/
 
@@ -47,7 +66,7 @@ h6 {
   justify-content: center;
 }
 
-.back-to-top i {
+.back-to-top .icon {
   font-size: 24px;
   left: 8px;
   position: absolute;
@@ -77,10 +96,13 @@ h6 {
   z-index: 9997;
 }
 
+/* The photo is a square crop; aspect-ratio and object-fit keep it a circle regardless (AC-78). */
 #header .profile img {
+  aspect-ratio: 1;
   border: 8px solid #2c2f3f;
   display: block;
   margin: 15px auto;
+  object-fit: cover;
   width: 120px;
 }
 
@@ -165,10 +187,13 @@ h6 {
   transition: 0.3s;
 }
 
-.nav-menu a i {
+/* 1em wide plus a 6px margin keeps the webfont's 30px slot, so the label does not move,
+   while the glyph keeps its full 24px size. */
+.nav-menu a .icon {
   color: #6f7180;
   font-size: 24px;
-  padding-right: 8px;
+  margin-right: 6px;
+  width: 1em;
 }
 
 .nav-menu a:hover,
@@ -178,9 +203,9 @@ h6 {
   text-decoration: none;
 }
 
-.nav-menu a:hover i,
-.nav-menu .active > a i,
-.nav-menu li:hover > a i {
+.nav-menu a:hover .icon,
+.nav-menu .active > a .icon,
+.nav-menu li:hover > a .icon {
   color: #149ddd;
 }
 
@@ -201,8 +226,14 @@ h6 {
   z-index: 9998;
 }
 
-.mobile-nav-toggle i {
+.mobile-nav-toggle .icon {
   color: #149ddd;
+}
+
+/* The toggle carries both glyphs; its open state picks the one shown. */
+.mobile-nav-toggle[aria-expanded='true'] .nav-toggle-icon--open,
+.mobile-nav-toggle:not([aria-expanded='true']) .nav-toggle-icon--close {
+  display: none;
 }
 
 .mobile-nav-active {
@@ -213,7 +244,7 @@ h6 {
   left: 0;
 }
 
-.mobile-nav-active .mobile-nav-toggle i {
+.mobile-nav-active .mobile-nav-toggle .icon {
   color: #fff;
 }
 
@@ -221,11 +252,68 @@ h6 {
 # Hero Section
 --------------------------------------------------------------*/
 
+/*
+ * Hero background (D-4). The plain 1920 px JPEG is the fallback for browsers that cannot
+ * parse image-set() with type(). It lives outside the @supports block below because
+ * Lightning CSS folds a second background-image declaration in the same rule into the
+ * image-set() one and drops the url().
+ */
 #hero {
-  background: url('../images/hero-bg.jpg') top center;
+  background-image: url('../images/hero/hero-1920.jpg');
+  background-position: top center;
   background-size: cover;
   height: 100vh;
   width: 100%;
+}
+
+/*
+ * Each image-set() lists AVIF, then WebP, then the JPEG; the browser takes the first
+ * type it supports, at 1x or 2x where both exist. Phones in portrait get the
+ * 1080 x 1920 crop of the same scene. The @supports test uses strings, not url(), so the
+ * bundler does not treat its probe names as files.
+ */
+@supports (background-image: image-set('probe.avif' type('image/avif') 1x)) {
+  #hero {
+    background-image: image-set(
+      url('../images/hero/hero-1280.avif') type('image/avif') 1x,
+      url('../images/hero/hero-2560.avif') type('image/avif') 2x,
+      url('../images/hero/hero-1280.webp') type('image/webp') 1x,
+      url('../images/hero/hero-2560.webp') type('image/webp') 2x,
+      url('../images/hero/hero-1920.jpg') type('image/jpeg') 1x
+    );
+  }
+
+  @media (max-width: 767px) and (orientation: portrait) {
+    #hero {
+      background-image: image-set(
+        url('../images/hero/hero-portrait-1080x1920.avif') type('image/avif'),
+        url('../images/hero/hero-portrait-1080x1920.webp') type('image/webp'),
+        url('../images/hero/hero-1920.jpg') type('image/jpeg')
+      );
+    }
+  }
+
+  @media (min-width: 1281px) {
+    #hero {
+      background-image: image-set(
+        url('../images/hero/hero-1920.avif') type('image/avif') 1x,
+        url('../images/hero/hero-2560.avif') type('image/avif') 2x,
+        url('../images/hero/hero-1920.webp') type('image/webp') 1x,
+        url('../images/hero/hero-2560.webp') type('image/webp') 2x,
+        url('../images/hero/hero-1920.jpg') type('image/jpeg') 1x
+      );
+    }
+  }
+
+  @media (min-width: 1921px) {
+    #hero {
+      background-image: image-set(
+        url('../images/hero/hero-2560.avif') type('image/avif'),
+        url('../images/hero/hero-2560.webp') type('image/webp'),
+        url('../images/hero/hero-1920.jpg') type('image/jpeg')
+      );
+    }
+  }
 }
 
 #hero:before {
@@ -340,7 +428,7 @@ section {
   padding-bottom: 10px;
 }
 
-.about .content ul i {
+.about .content ul .icon {
   color: #149ddd;
   font-size: 20px;
   padding-right: 2px;
@@ -497,7 +585,7 @@ section {
   margin-bottom: 20px;
 }
 
-.services .icon {
+.services .service-icon {
   align-items: center;
   background: #149ddd;
   border: 1px solid #149ddd;
@@ -510,16 +598,16 @@ section {
   width: 54px;
 }
 
-.services .icon i {
+.services .service-icon .icon {
   color: #fff;
   font-size: 24px;
 }
 
-.services .icon-box:hover .icon {
+.services .icon-box:hover .service-icon {
   background: #fff;
 }
 
-.services .icon-box:hover .icon i {
+.services .icon-box:hover .service-icon .icon {
   color: #149ddd;
 }
 
@@ -660,16 +748,15 @@ section {
   width: 100%;
 }
 
-.contact .info i {
-  align-items: center;
+/* The 12px padding leaves a 20px (1em) glyph centered in the 44px circle. */
+.contact .info .icon {
   background: #dff3fc;
   border-radius: 50px;
   color: #149ddd;
-  display: flex;
   float: left;
   font-size: 20px;
   height: 44px;
-  justify-content: center;
+  padding: 12px;
   transition: all 0.3s ease-in-out;
   width: 44px;
 }
@@ -693,9 +780,9 @@ section {
   padding-top: 5px;
 }
 
-.contact .info .email:hover i,
-.contact .info .address:hover i,
-.contact .info .phone:hover i {
+.contact .info .email:hover .icon,
+.contact .info .address:hover .icon,
+.contact .info .phone:hover .icon {
   background: #149ddd;
   color: #fff;
 }
@@ -790,7 +877,7 @@ section {
   background: #37b3ed;
 }
 
-.contact-modal-btn i {
+.contact-modal-btn .icon {
   margin-right: 8px;
 }
 

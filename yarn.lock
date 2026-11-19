@@ -1656,10 +1656,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fortawesome/fontawesome-free@npm:7.3.1":
-  version: 7.3.1
-  resolution: "@fortawesome/fontawesome-free@npm:7.3.1"
-  checksum: 10c0/85b70ea64e69b9635ff0b949871acaaf0e6c6fd41860b8a78a5067123a42dd71144f7f7feea7aee013a485166ee8bf8ee3aafb15146dc0f55512d07015adddee
+"@fontsource/open-sans@npm:5.3.0":
+  version: 5.3.0
+  resolution: "@fontsource/open-sans@npm:5.3.0"
+  checksum: 10c0/c52a583617187cb731d2606b7f22337168db055df7600f79ad42a37d44764065ff1fe060069467c43a086296f43a6ffc0328dd2c8031c459bfb60d253f2522d6
+  languageName: node
+  linkType: hard
+
+"@fontsource/poppins@npm:5.3.0":
+  version: 5.3.0
+  resolution: "@fontsource/poppins@npm:5.3.0"
+  checksum: 10c0/869fe85c618645a84f4ff331fd61b3fd856a6df15a42fff21c311b599a81104541f7402feccb3446ad50ddd73cfea20bd9191e9cfa533a382ec68d9ba1093038
+  languageName: node
+  linkType: hard
+
+"@fontsource/raleway@npm:5.3.0":
+  version: 5.3.0
+  resolution: "@fontsource/raleway@npm:5.3.0"
+  checksum: 10c0/7d4c9e82431b7c2421f5071bc089a69dc204366d5ec69c273b3bf5332f8015cb760311b768b2423befcc29313e9c5087c06fc45d6118d86a7f62b163eb63618f
   languageName: node
   linkType: hard
 
@@ -6593,7 +6607,9 @@ __metadata:
     "@babel/core": "npm:7.29.13"
     "@babel/preset-env": "npm:7.29.14"
     "@eslint/js": "npm:10.0.1"
-    "@fortawesome/fontawesome-free": "npm:7.3.1"
+    "@fontsource/open-sans": "npm:5.3.0"
+    "@fontsource/poppins": "npm:5.3.0"
+    "@fontsource/raleway": "npm:5.3.0"
     "@parcel/transformer-css": "npm:2.16.4"
     "@playwright/test": "npm:1.65.1"
     "@popperjs/core": "npm:2.11.8"

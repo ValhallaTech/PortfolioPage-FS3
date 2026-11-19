@@ -55,22 +55,29 @@ export async function waitForPortfolioGrid(page) {
 }
 
 /**
- * Waits until all nine portfolio images have loaded.
+ * Waits until all nine portfolio images have loaded, then puts the page back at the scroll
+ * position it had on entry, so callers measure from where they left off.
+ *
+ * The images are `loading="lazy"` (AC-77), and the browser fetches one only once it nears
+ * the viewport. Each poll scrolls the first image still pending into view, as a reader
+ * scrolling the grid does, and the next poll gives the browser time to start its fetch.
  *
  * @param {import('@playwright/test').Page} page
  */
 export async function waitForPortfolioImages(page) {
+  const origin = await page.evaluate(() => ({ left: window.scrollX, top: window.scrollY }));
   await expect
     .poll(
       () =>
-        page
-          .locator(`${PORTFOLIO_ITEM} img`)
-          .evaluateAll((images) =>
-            images.filter((image) => !image.complete || image.naturalWidth === 0).map((i) => i.src)
-          ),
+        page.locator(`${PORTFOLIO_ITEM} img`).evaluateAll((images) => {
+          const pending = images.filter((image) => !image.complete || image.naturalWidth === 0);
+          pending[0]?.scrollIntoView({ block: 'center', behavior: 'instant' });
+          return pending.map((image) => image.src);
+        }),
       { message: 'every portfolio image has loaded' }
     )
     .toEqual([]);
+  await page.evaluate((position) => window.scrollTo({ ...position, behavior: 'instant' }), origin);
 }
 
 /**

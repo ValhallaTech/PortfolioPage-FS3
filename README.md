@@ -32,7 +32,8 @@ The site is a single-page application (`src/index.html`) composed of six section
 | Library | Purpose |
 |---|---|
 | Bootstrap 5 | Layout and modal |
-| Font Awesome 7 | Icons |
+| Fontsource `5.3.0` (Open Sans, Raleway, Poppins) | Self-hosted web fonts, imported from `src/js/main.js` |
+| Font Awesome Free 7.3.1 icon shapes | Inline SVG icon sprite in `src/index.html`, not an installed package (license notice kept in the sprite) |
 | Typed.js `^3.0.0` | Hero typing animation |
 | ScrollReveal `^4.0.9` | Scroll-triggered reveal animations |
 | Muuri `0.9.5` | Portfolio filter and layout |
