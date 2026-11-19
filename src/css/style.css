@@ -358,7 +358,17 @@ section {
   margin-bottom: 30px;
 }
 
-.portfolio #portfolio-flters {
+/* Muuri positions the items only once it has initialized; until then, and with
+   JS off, they flow in the Bootstrap row. */
+.portfolio-container.muuri {
+  position: relative;
+}
+
+.portfolio-container.muuri > .portfolio-item {
+  position: absolute;
+}
+
+.portfolio #portfolio-filters {
   background: #fff;
   border-radius: 50px;
   list-style: none;
@@ -367,28 +377,49 @@ section {
   text-align: center;
 }
 
-.portfolio #portfolio-flters li {
+.portfolio #portfolio-filters li {
+  display: inline-block;
+  margin-bottom: 5px;
+}
+
+.portfolio #portfolio-filters button {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-radius: 50px;
   color: #272829;
   cursor: pointer;
-  display: inline-block;
+  font: inherit;
   font-size: 14px;
   font-weight: 600;
   line-height: 1;
-  margin-bottom: 5px;
+  min-height: 44px;
+  min-width: 44px;
   padding: 10px 15px 8px 15px;
   text-transform: uppercase;
-  transition: all 0.3s ease-in-out;
+  transition: color 0.3s ease-in-out;
 }
 
-.portfolio #portfolio-flters li:hover,
-.portfolio #portfolio-flters li.filter-active {
+.portfolio #portfolio-filters button:hover,
+.portfolio #portfolio-filters button[aria-pressed='true'] {
   color: #149ddd;
 }
 
+.portfolio #portfolio-filters button[aria-pressed='true'] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.portfolio #portfolio-filters button:focus-visible {
+  outline: 2px solid #149ddd;
+  outline-offset: 2px;
+}
+
+/* No transition here: Muuri animates this element's opacity and transform. */
 .portfolio .portfolio-wrap {
   overflow: hidden;
   position: relative;
-  transition: 0.3s;
   z-index: 1;
 }
 
@@ -401,7 +432,7 @@ section {
   position: absolute;
   right: 0;
   top: 0;
-  transition: all ease-in-out 0.3s;
+  transition: opacity ease-in-out 0.3s;
   z-index: 2;
 }
 
@@ -413,7 +444,7 @@ section {
   opacity: 1;
   position: absolute;
   right: 0;
-  transition: all ease-in-out 0.3s;
+  transition: bottom ease-in-out 0.3s;
   z-index: 3;
 }
 
@@ -422,11 +453,12 @@ section {
   color: #fff;
   font-size: 28px;
   text-align: center;
-  transition: 0.3s;
+  transition: background 0.3s;
   width: 50%;
 }
 
-.portfolio .portfolio-wrap .portfolio-links a:hover {
+.portfolio .portfolio-wrap .portfolio-links a:hover,
+.portfolio .portfolio-wrap .portfolio-links a:focus-visible {
   background: rgba(20, 157, 221, 0.95);
 }
 
@@ -434,12 +466,27 @@ section {
   border-left: 1px solid #37b3ed;
 }
 
-.portfolio .portfolio-wrap:hover::before {
+.portfolio .portfolio-wrap:hover::before,
+.portfolio .portfolio-wrap:focus-within::before {
   opacity: 1;
 }
 
 .portfolio .portfolio-wrap:hover .portfolio-links {
   bottom: 0;
+}
+
+/* Keyboard focus reveals the links at once, so the browser never scrolls the
+   clipped wrap to bring a still-sliding link into view. */
+.portfolio .portfolio-wrap:focus-within .portfolio-links {
+  bottom: 0;
+  transition: none;
+}
+
+/* Touch screens have no hover, so the links are shown by default. */
+@media (hover: none) {
+  .portfolio .portfolio-wrap .portfolio-links {
+    bottom: 0;
+  }
 }
 
 /*--------------------------------------------------------------

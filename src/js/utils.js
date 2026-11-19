@@ -186,21 +186,43 @@ export function setupNavClickHandlers(doc, scrollFn, closeNavFn) {
 }
 
 /**
- * Set up portfolio filter click handlers
- * @param {NodeListOf<Element>|Element[]} filters - The filter list items
- * @param {Function} arrangeCallback - Callback to trigger isotope arrange
+ * Bind the portfolio filter buttons. A click marks the clicked button as the only
+ * pressed one (`aria-pressed="true"`, every other button `"false"`) and passes its
+ * `data-filter` value to `onFilter`.
+ * @param {NodeListOf<HTMLElement>|HTMLElement[]|null} buttons - The filter buttons
+ * @param {((filter: string) => void)|null} [onFilter] - Called with the clicked button's filter value
  */
-export function setupPortfolioFilters(filters, arrangeCallback) {
-  if (!filters || filters.length === 0) return;
-  filters.forEach((filter) => {
-    filter.addEventListener('click', function () {
-      filters.forEach((f) => f.classList.remove('filter-active'));
-      this.classList.add('filter-active');
-      if (arrangeCallback) {
-        arrangeCallback(this.getAttribute('data-filter'));
+export function setupPortfolioFilters(buttons, onFilter) {
+  if (!buttons || buttons.length === 0) return;
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => {
+      buttons.forEach((other) => {
+        other.setAttribute('aria-pressed', other === button ? 'true' : 'false');
+      });
+      if (typeof onFilter === 'function') {
+        onFilter(button.dataset.filter);
       }
     });
   });
+}
+
+/**
+ * The selector of the portfolio items a filter shows.
+ * @param {string} filter - A filter value: `all`, or a category such as `app`
+ * @returns {string} `.portfolio-item` for `all`, else `[data-category="<filter>"]`
+ */
+export function portfolioFilterSelector(filter) {
+  return filter === 'all' ? '.portfolio-item' : `[data-category="${filter}"]`;
+}
+
+/**
+ * The grid filter options for the visitor's motion preference.
+ * @param {boolean} reduce - Whether the visitor asks for reduced motion
+ * @returns {{ instant: boolean, layout: boolean|'instant' }} Instant show, hide and
+ *   layout under reduced motion; animated otherwise
+ */
+export function portfolioFilterOptions(reduce) {
+  return reduce ? { instant: true, layout: 'instant' } : { instant: false, layout: true };
 }
 
 /**

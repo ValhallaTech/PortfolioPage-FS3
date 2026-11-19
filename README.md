@@ -35,7 +35,7 @@ The site is a single-page application (`src/index.html`) composed of six section
 | Font Awesome 7 | Icons |
 | Typed.js `^3.0.0` | Hero typing animation |
 | ScrollReveal `^4.0.9` | Scroll-triggered reveal animations |
-| Isotope Layout `^3.0.6` | Portfolio filter/sort |
+| Muuri `0.9.5` | Portfolio filter and layout |
 | Swiper `^12` | Testimonials carousel |
 | GLightbox `^3.3.1` | Portfolio lightbox |
 
@@ -57,7 +57,7 @@ The site is a single-page application (`src/index.html`) composed of six section
 src/
   index.html          # Single-page HTML entry point
   js/
-    main.js           # App initialization (Typed, Isotope, Swiper, GLightbox, ScrollReveal, contact form)
+    main.js           # App initialization (Typed, Muuri, Swiper, GLightbox, ScrollReveal, contact form)
     utils.js          # Utility functions (nav, scroll, back-to-top, hash and lightbox links)
   css/
     style.css         # Custom styles

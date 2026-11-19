@@ -25,10 +25,12 @@ import {
   FILTER_ITEM_SETS,
   ITEM_NUMBERS,
   LIGHTBOX,
-  LIGHTBOX_IMAGE,
+  expectShownItems,
+  lightboxImageWidth,
   openLightboxFrom,
   portfolioFilter,
   portfolioItem,
+  waitForPortfolioGrid,
 } from './helpers/portfolio.js';
 
 /**
@@ -271,6 +273,8 @@ for (const [viewportName, viewport] of Object.entries({ desktop, small })) {
     }) => {
       test.setTimeout(LONG_WALK_TIMEOUT_MS);
       await page.goto('/');
+      // The shipped Muuri layout (C-32): items are positioned only once the grid is ready.
+      await waitForPortfolioGrid(page);
       for (const n of ITEM_NUMBERS) {
         await expect(portfolioItem(page, n), `item ${n} is identified once`).toHaveCount(1);
       }
@@ -280,14 +284,7 @@ for (const [viewportName, viewport] of Object.entries({ desktop, small })) {
           await portfolioFilter(page, filterName).click();
           await page.waitForTimeout(PORTFOLIO_SETTLE_MS);
 
-          for (const n of ITEM_NUMBERS) {
-            const item = portfolioItem(page, n);
-            if (shownItems.includes(n)) {
-              await expect(item, `${filterName} shows item ${n}`).toBeVisible();
-            } else {
-              await expect(item, `${filterName} hides item ${n}`).toBeHidden();
-            }
-          }
+          await expectShownItems(page, shownItems, filterName);
 
           await expect
             .poll(() =>
@@ -298,14 +295,7 @@ for (const [viewportName, viewport] of Object.entries({ desktop, small })) {
             .toBeLessThanOrEqual(0);
 
           await openLightboxFrom(portfolioItem(page, shownItems[0]));
-          await expect
-            .poll(() =>
-              page.evaluate((selector) => {
-                const image = document.querySelector(selector);
-                return image?.complete ? image.naturalWidth : 0;
-              }, LIGHTBOX_IMAGE)
-            )
-            .toBeGreaterThan(0);
+          await expect.poll(() => lightboxImageWidth(page)).toBeGreaterThan(0);
           await page.keyboard.press('Escape');
           await expect(page.locator(LIGHTBOX)).toHaveCount(0);
         });
