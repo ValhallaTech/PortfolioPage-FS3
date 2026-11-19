@@ -191,7 +191,7 @@ _Outcomes that would mean the problem is solved. Observable, not implementation.
 
 - **G-12** — Each of these changes is observable on the live site, measured against the thresholds Fred accepted at Gate 1 (C-33):
   - **a.** A phone-width visitor is not sent the 3840×2160, 469 KB hero image.
-  - **b.** No request goes to Google's font servers (C-11), and text is never invisible while fonts load.
+  - **b.** The page's own main frame sends no request to Google's font servers (C-11), and text is never invisible while fonts load. Requests from inside the Google Maps iframe that C-3 keeps are excluded.
   - **c.** The bytes spent on icons are proportionate to the about 25 icons shown, not 234 KB of webfonts.
   - **d.** Every image reserves its space before it loads, so nothing shifts. Images below the first screen do not compete with it at page load.
   - **e.** The profile photo renders as a circle.
@@ -280,7 +280,7 @@ existing-system, organizational. Mark each `hard` or `soft`._
 | C-8 | Sprint 1 cannot count on CI running before it merges. Local runs gate it. | hard | Fred, grilling R1-Q8 |
 | C-9 | All of report §5 (performance) and all of report §6 (security headers, dev-dependency advisories, `latest` devDependencies) are in sprint 1. | hard | Fred, grilling R1-Q9 |
 | C-10 | Sprint 1 ends with the content security policy in report-only state. | hard | Fred, grilling R2-Q2 |
-| C-11 | The page makes no requests to Google's font servers. | hard | Fred, grilling R2-Q3 |
+| C-11 | The page's own main frame makes no requests to Google's font servers. Requests from inside the Google Maps iframe that C-3 keeps are excluded, because that third-party frame fetches its own Google fonts. | hard | Fred, grilling R2-Q3; main-frame qualification by Fred, 2026-11-19, during PR-7 |
 | C-12 | Sprint 1 ends in a tagged release carrying version 4.0.0. | hard | Fred, grilling R1-Q12, R2-Q6 |
 | C-13 | The new CHANGELOG backfills releases 1.0.0 to 3.0.0 from the GitHub release notes. | hard | Fred, grilling R2-Q7 |
 | C-14 | The issue template is replaced by two YAML issue forms, one for bugs and one for features. | hard | Fred, grilling R1-Q10 |
@@ -494,7 +494,7 @@ Gate 1 resolved every earlier question, Q-13 included. Requirements that rest on
 | R-40 | Testimonial photos and the About photo do not repeat alt text already given nearby (C-30). | SHOULD | G-11 (l) |
 | R-41 | The contact form exposes a busy state while a submission is in flight (C-30). | SHOULD | G-11 (l) |
 | R-42 | A phone-width visitor is never sent the 3840 px-wide hero image. | MUST | G-12 (a) |
-| R-43 | The page makes no request to Google's font servers (C-11). | MUST | G-12 (b) |
+| R-43 | The page's own main frame makes no request to Google's font servers (C-11). Requests from inside the Google Maps iframe that C-3 keeps are excluded, because that third-party frame fetches its own Google fonts. | MUST | G-12 (b) |
 | R-44 | Text is never invisible while web fonts load. | MUST | G-12 (b) |
 | R-45 | The page keeps its current text font families and its icons after the font and icon sources change. _(rests on A-12)_ | MUST | G-12 (b), G-12 (c) |
 | R-46 | No icon webfont is shipped or requested. | MUST | G-12 (c) |
@@ -1250,14 +1250,15 @@ _Ground truth for evaluating execution agents. Every AC is written to be asserta
 - **Assertion:** for every response with `resourceType() === 'image'`, `createImageBitmap(blob).width < 3840`
 - **Executable as:** `e2e`
 
-#### AC-68 — No request goes to Google's font servers
+#### AC-68 — No request from the page's main frame goes to Google's font servers (Maps iframe excluded)
 
 - **Verifies:** R-43
 - **Given** both targets
 - **When** a full visit runs
-- **Then** nothing is requested from Google's font hosts
-- **Assertion:** the count of requests whose URL host is `fonts.googleapis.com` or `fonts.gstatic.com` is 0
+- **Then** the page's own main frame requests nothing from Google's font hosts
+- **Assertion:** the count of requests where `request.frame() === page.mainFrame()` and the URL host is `fonts.googleapis.com` or `fonts.gstatic.com` is 0
 - **Executable as:** `e2e`
+- **Note:** Requests issued from inside the `https://www.google.com/maps/embed` iframe are excluded. C-3 keeps the Manhattan map, and that third-party frame fetches its own Google fonts.
 
 #### AC-69 — The build output names no Google font host
 
@@ -1922,7 +1923,7 @@ Two CDN caching facts the plan relies on:
 | --- | --- | --- | --- |
 | Response headers on `/*` | `X-Frame-Options`, `X-XSS-Protection`, `X-Content-Type-Options`, `Referrer-Policy` | Drops `X-XSS-Protection`. Adds `Content-Security-Policy-Report-Only`, `Permissions-Policy` and `Cross-Origin-Opener-Policy: same-origin` (WI-58) | No. Report-only blocks nothing, and the page opens no cross-origin windows it scripts |
 | Production build output | `*.js.map` published | No source maps (WI-59) | Only for anyone debugging production from maps. The repo is public, so nothing is lost |
-| Third-party requests | `fonts.googleapis.com` and `fonts.gstatic.com` on every visit | None to Google Fonts. Web3Forms and the Google Maps embed are unchanged | No |
+| Third-party requests | `fonts.googleapis.com` and `fonts.gstatic.com` on every visit | None to Google Fonts from the page's main frame. Web3Forms and the Google Maps embed are unchanged, and the Maps iframe still fetches its own Google fonts (C-3) | No |
 | `src/js/utils.js` module format | CommonJS `module.exports` | ES module named exports (WI-32) | **Yes**, for any CommonJS consumer. The only consumer is `__tests__/utils.test.js`, converted in the same PR (WI-31) |
 | Runtime | Node 25.9.0 (end of life), Corepack assumed present | Node 26 LTS; Corepack installed with `npm install -g corepack@0.36.0` (WI-12, WI-13) | **Yes**, for contributors. Local setups need Node 26 and the Corepack install step. The README states both |
 | Netlify build environment | `NODE_VERSION = "25.9.0"`, `YARN_VERSION = "4.17.0"` | `NODE_VERSION` = the `.nvmrc` value. `YARN_VERSION` removed; Netlify takes Yarn from `packageManager` | No, if RK-2 holds. The deploy preview proves it before merge |
@@ -3316,7 +3317,7 @@ The report sprint-1 order is kept, minus phase (a):
 | AC-65 | `html-semantics.test.js`: About alt against the header alt | lint | S1 |
 | AC-66 | `motion.spec.js`: `aria-busy` with a delayed mock | e2e | S2 |
 | AC-67 | `assets.spec.js`: no image response decodes to 3840 px or wider at `phone` (`@live`) | e2e | S2 and S4 |
-| AC-68 | `assets.spec.js`: 0 Google font requests on a full visit (`@live`) | e2e | S2 and S4 |
+| AC-68 | `assets.spec.js`: 0 Google font requests from the page's main frame on a full visit; the Maps iframe's requests are excluded (`@live`) | e2e | S2 and S4 |
 | AC-69 | `build-output.spec.js`: no Google font hosts in `dist/` | build | S2 (`@build`) |
 | AC-70 | `build-output.spec.js`: `font-display` | build | S2 (`@build`) |
 | AC-71 | `assets.spec.js`: computed families and `document.fonts.check` (`@live`) | e2e | S2 and S4 |
