@@ -21,6 +21,9 @@
     "test:e2e:live": "BASE_URL=https://fs3portfolio.netlify.app playwright test --grep @live"
   },
   "dependencies": {
+    "@fontsource/open-sans": "5.3.0",
+    "@fontsource/poppins": "5.3.0",
+    "@fontsource/raleway": "5.3.0",
     "@fortawesome/fontawesome-free": "7.3.1",
     "@popperjs/core": "2.11.8",
     "bootstrap": "5.3.8",
