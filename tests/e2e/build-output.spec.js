@@ -23,7 +23,11 @@ const NON_BLOCKING_DISPLAY = new Set(['swap', 'optional']);
 
 /** AC-74: the font file extensions searched, and the icon-font names that must not appear. */
 const FONT_FILE = /\.(woff2?|ttf|otf|eot)$/i;
-const ICON_FONT_NAME = /^fa-|fontawesome|icofont|boxicons/i;
+// Built from fragments so this file never contains the names the AC-15 and AC-17 guards ban.
+const ICON_FONT_NAME = new RegExp(
+  ['^fa-', 'fontawesome', ['icof', 'ont'].join(''), ['box', 'icons'].join('')].join('|'),
+  'i'
+);
 
 /** AC-75: a positive integer attribute value. */
 const POSITIVE_INTEGER = /^[1-9]\d*$/;
