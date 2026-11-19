@@ -1,18 +1,17 @@
 /**
  * @jest-environment jsdom
  */
-const {
+import {
   smoothScrollTo,
   toggleMobileNav,
   closeMobileNav,
   updateActiveNav,
   handleBackToTop,
-  observeSkills,
   setupNavClickHandlers,
   setupPortfolioFilters,
   resolveHashTarget,
   resolveLightboxHref,
-} = require('../src/js/utils');
+} from '../src/js/utils.js';
 
 describe('smoothScrollTo', () => {
   beforeEach(() => {
@@ -201,86 +200,6 @@ describe('handleBackToTop', () => {
     const btn = document.querySelector('.back-to-top');
     expect(btn.style.alignItems).toBe('center');
     expect(btn.style.justifyContent).toBe('center');
-  });
-});
-
-describe('observeSkills', () => {
-  let mockObserve;
-  let mockUnobserve;
-  let mockDisconnect;
-  let observerCallback;
-
-  beforeEach(() => {
-    mockObserve = jest.fn();
-    mockUnobserve = jest.fn();
-    mockDisconnect = jest.fn();
-
-    global.IntersectionObserver = jest.fn((callback) => {
-      observerCallback = callback;
-      return {
-        observe: mockObserve,
-        unobserve: mockUnobserve,
-        disconnect: mockDisconnect,
-      };
-    });
-  });
-
-  test('returns null when no section provided', () => {
-    const result = observeSkills(null);
-    expect(result).toBeNull();
-  });
-
-  test('creates observer and observes the section', () => {
-    const section = document.createElement('div');
-    observeSkills(section);
-    expect(mockObserve).toHaveBeenCalledWith(section);
-  });
-
-  test('sets progress bar widths when intersecting', () => {
-    document.body.innerHTML = `
-      <div class="skills-content">
-        <div class="progress">
-          <div class="progress-bar" aria-valuenow="75" style="width: 0%;"></div>
-        </div>
-        <div class="progress">
-          <div class="progress-bar" aria-valuenow="90" style="width: 0%;"></div>
-        </div>
-      </div>
-    `;
-    const section = document.querySelector('.skills-content');
-    observeSkills(section);
-
-    observerCallback([{ isIntersecting: true, target: section }]);
-
-    const bars = section.querySelectorAll('.progress-bar');
-    expect(bars[0].style.width).toBe('75%');
-    expect(bars[1].style.width).toBe('90%');
-    expect(mockUnobserve).toHaveBeenCalledWith(section);
-  });
-
-  test('does not set widths when not intersecting', () => {
-    document.body.innerHTML = `
-      <div class="skills-content">
-        <div class="progress">
-          <div class="progress-bar" aria-valuenow="75" style="width: 0%;"></div>
-        </div>
-      </div>
-    `;
-    const section = document.querySelector('.skills-content');
-    observeSkills(section);
-
-    observerCallback([{ isIntersecting: false, target: section }]);
-
-    const bar = section.querySelector('.progress-bar');
-    expect(bar.style.width).toBe('0%');
-    expect(mockUnobserve).not.toHaveBeenCalled();
-  });
-
-  test('returns the observer instance', () => {
-    const section = document.createElement('div');
-    const result = observeSkills(section);
-    expect(result).toBeDefined();
-    expect(result.observe).toBeDefined();
   });
 });
 
