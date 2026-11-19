@@ -288,6 +288,7 @@ function initContactForm() {
       clearTimeout(autoCloseTimer);
       autoCloseTimer = null;
       form.reset();
+      form.removeAttribute('aria-busy');
       errorMessage.style.display = 'none';
       sentMessage.style.display = 'none';
       submitBtn.disabled = false;
@@ -308,6 +309,7 @@ function initContactForm() {
     abortController = new AbortController();
     const { signal } = abortController;
 
+    form.setAttribute('aria-busy', 'true');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Sending...';
     errorMessage.style.display = 'none';
@@ -351,9 +353,11 @@ function initContactForm() {
       errorMessage.style.display = 'block';
       sentMessage.style.display = 'none';
     } finally {
-      // Skip button reset when aborted; hidden.bs.modal has already reset it
+      // Skip the reset when aborted: hidden.bs.modal has already reset the form, or a newer
+      // request has set the busy state and owns it now.
       if (!signal.aborted) {
         abortController = null;
+        form.removeAttribute('aria-busy');
         submitBtn.disabled = false;
         submitBtn.textContent = defaultButtonText;
       }
