@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Every responsive breakpoint was ignored by iOS Safari before 16.4, which cannot parse the
+  range-syntax media queries (`@media (width>=1200px)`) that the build emitted with no browser
+  targets set. `package.json` now sets `"browserslist": "defaults, iOS >= 15"`, so the CSS uses
+  `min-width` and `max-width` queries, and Swiper's nested CSS rules are flattened for browsers
+  that ignored them (Chrome 109 to 111, iOS Safari before 17.2).
+
 ## [3.0.0] - 2026-04-20
 
 ### Added
