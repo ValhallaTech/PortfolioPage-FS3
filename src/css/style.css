@@ -66,6 +66,20 @@ h6 {
   font-family: 'Raleway', sans-serif;
 }
 
+/* Skip link (AC-49): hidden by .visually-hidden-focusable until focused, then fixed
+   above the sidebar, the nav toggle and the footer. */
+.skip-link:focus {
+  background: var(--color-accent-strong);
+  border-radius: 4px;
+  color: var(--color-white);
+  font-weight: 600;
+  left: 16px;
+  padding: 12px 16px;
+  position: fixed;
+  top: 16px;
+  z-index: 100000;
+}
+
 /*--------------------------------------------------------------
 # Icons
 --------------------------------------------------------------*/
@@ -148,7 +162,7 @@ h6 {
   width: 120px;
 }
 
-#header .profile h1 {
+#header .profile .profile-name {
   font-family: 'Poppins', sans-serif;
   font-size: 24px;
   font-weight: 600;
@@ -157,8 +171,8 @@ h6 {
   text-align-last: center;
 }
 
-#header .profile h1 a,
-#header .profile h1 a:hover {
+#header .profile .profile-name a,
+#header .profile .profile-name a:hover {
   color: var(--color-white);
   text-decoration: none;
 }
@@ -400,6 +414,14 @@ h6 {
 @media (min-width: 1024px) {
   #hero {
     background-attachment: fixed;
+  }
+}
+
+/* #hero sits in #main but stays full-bleed under the docked 300 px sidebar. */
+@media (min-width: 1200px) {
+  #hero {
+    margin-left: -300px;
+    width: calc(100% + 300px);
   }
 }
 
@@ -694,16 +716,20 @@ section {
   width: 90px;
 }
 
-.testimonials .testimonial-item h3 {
+/* The name and role are paragraphs (AC-48); they keep the heading typeface. */
+.testimonials .testimonial-item .testimonial-name {
   color: var(--color-testimonial-name);
+  font-family: 'Raleway', sans-serif;
   font-size: 18px;
   font-weight: bold;
   margin: 10px 0 5px 0;
 }
 
-.testimonials .testimonial-item h4 {
+.testimonials .testimonial-item .testimonial-role {
   color: var(--color-testimonial-role);
+  font-family: 'Raleway', sans-serif;
   font-size: 14px;
+  font-weight: 500;
   margin: 0;
 }
 
@@ -726,7 +752,7 @@ section {
   top: 10px;
 }
 
-.testimonials .testimonial-item p {
+.testimonials .testimonial-item .testimonial-quote {
   background: var(--color-white);
   border-radius: 6px;
   box-shadow: 0 2px 15px var(--color-shadow-soft);
@@ -737,7 +763,7 @@ section {
   position: relative;
 }
 
-.testimonials .testimonial-item p::after {
+.testimonials .testimonial-item .testimonial-quote::after {
   border-left: 20px solid transparent;
   border-right: 20px solid transparent;
   border-top: 20px solid var(--color-white);
@@ -803,7 +829,7 @@ section {
   width: 44px;
 }
 
-.contact .info h4 {
+.contact .info h3 {
   color: var(--color-contact-heading);
   font-size: 22px;
   font-weight: 600;
