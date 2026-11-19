@@ -1,16 +1,26 @@
 /**
- * Writes dist/THIRD-PARTY-NOTICES.txt from the license file of every runtime dependency (F1).
+ * Writes dist/THIRD-PARTY-NOTICES.txt from the license files of the direct runtime dependencies (F1).
  * The Parcel production build strips license comments from the bundles, so this file carries
  * the copyright and permission notices that the deployed site must ship. `yarn build` runs it
  * right after Parcel.
  *
- * Runtime dependencies are the keys of package.json `dependencies`. Each one is read from its
- * installed package under node_modules, never from the version descriptor, which may be a
- * `patch:` or other protocol string. The output is sorted by package name and holds no
- * timestamp, so the same install always produces the same bytes.
+ * Runtime dependencies are the keys of package.json `dependencies`, and only those: the
+ * notices cover the direct dependencies, not the packages they pull in transitively. Each one
+ * is read from its installed package under node_modules, never from the version descriptor,
+ * which may be a `patch:` or other protocol string. The output is sorted by package name and
+ * holds no timestamp, so the same install always produces the same bytes.
  *
- * A dependency that ships no license file is left out of the notices with a warning on
- * stderr; providing one is that package's responsibility. Only a missing dist/ fails the run.
+ * A dependency that ships no LICENSE*, LICENCE* or COPYING* file is skipped: it is left out of
+ * the notices, a warning naming it goes to stderr, and the run still succeeds. Providing one
+ * is that package's responsibility.
+ *
+ * The run exits 1, with the reason on stderr, when:
+ *   - dist/ does not exist (run the Parcel build first);
+ *   - the repository's package.json cannot be read or parsed;
+ *   - a `dependencies` key is not a valid npm package name;
+ *   - a dependency is not installed, or its package.json cannot be read or parsed;
+ *   - reading a license file or writing the notices file fails.
+ * In every case but the last, nothing is written. Otherwise it exits 0.
  *
  * Usage: node scripts/third-party-notices.mjs
  */
@@ -200,7 +210,9 @@ async function isDirectory(dir) {
  * @param {WriteThirdPartyNoticesOptions} [options] The repository root override.
  * @returns {Promise<WriteThirdPartyNoticesResult>} The written path, the listed count and the
  *   dependencies skipped for having no license file.
- * @throws {Error} When dist/ is missing, or a dependency is not installed. Nothing is written.
+ * @throws {Error} When dist/ is missing, package.json cannot be read, a dependency name is
+ *   invalid, a dependency is not installed, or a file read or the write fails. Except for a
+ *   failed write, nothing is written.
  */
 export async function writeThirdPartyNotices({ cwd = REPO_ROOT } = {}) {
   const root = path.resolve(cwd);
