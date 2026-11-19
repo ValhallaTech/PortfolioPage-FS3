@@ -10,9 +10,6 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'swiper/swiper.css';
 import 'swiper/modules/pagination.css';
 import 'glightbox/dist/css/glightbox.min.css';
-import '@fortawesome/fontawesome-free/css/fontawesome.min.css';
-import '@fortawesome/fontawesome-free/css/solid.min.css';
-import '@fortawesome/fontawesome-free/css/brands.min.css';
 // Self-hosted text fonts (D-2): latin subset only, and only the weights the page renders.
 import '@fontsource/open-sans/latin-400.css';
 import '@fontsource/open-sans/latin-400-italic.css';

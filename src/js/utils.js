@@ -16,15 +16,23 @@ export function smoothScrollTo(target) {
 }
 
 /**
+ * Report the mobile nav state on its toggle. CSS shows the bars or the xmark glyph from
+ * `aria-expanded`, so no icon class changes here.
+ * @param {boolean} isOpen - Whether the mobile nav is open
+ */
+function setMobileNavExpanded(isOpen) {
+  const toggle = document.querySelector('.mobile-nav-toggle');
+  if (toggle) {
+    toggle.setAttribute('aria-expanded', String(isOpen));
+  }
+}
+
+/**
  * Toggle mobile nav active state
  */
 export function toggleMobileNav() {
-  document.body.classList.toggle('mobile-nav-active');
-  const icon = document.querySelector('.mobile-nav-toggle i');
-  if (icon) {
-    icon.classList.toggle('fa-bars');
-    icon.classList.toggle('fa-xmark');
-  }
+  const isOpen = document.body.classList.toggle('mobile-nav-active');
+  setMobileNavExpanded(isOpen);
 }
 
 /**
@@ -33,11 +41,7 @@ export function toggleMobileNav() {
 export function closeMobileNav() {
   if (document.body.classList.contains('mobile-nav-active')) {
     document.body.classList.remove('mobile-nav-active');
-    const icon = document.querySelector('.mobile-nav-toggle i');
-    if (icon) {
-      icon.classList.remove('fa-xmark');
-      icon.classList.add('fa-bars');
-    }
+    setMobileNavExpanded(false);
   }
 }
 
