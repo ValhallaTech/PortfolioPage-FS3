@@ -1,0 +1,13 @@
+diff --git a/dist/muuri.module.js b/dist/muuri.module.js
+index d2a9e0f1ba6e8cb21bca9c8fb17d4d935d933b2c..88ebe7bb44c623c9f5e8ac71a27bf4db4d5232bd 100644
+--- a/dist/muuri.module.js
++++ b/dist/muuri.module.js
+@@ -7497,7 +7497,7 @@ Grid.AutoScroller = AutoScroller;
+  * @static
+  * @type {Packer}
+  */
+-Grid.defaultPacker = new Packer(2);
++Grid.defaultPacker = new Packer(0);
+ 
+ /**
+  * Default options for Grid instance.
