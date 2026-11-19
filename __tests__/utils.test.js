@@ -112,82 +112,116 @@ describe('smoothScrollTo', () => {
   });
 });
 
+/**
+ * The mobile nav toggle as src/index.html ships it: closed, controlling the header,
+ * with both SVG glyphs present and CSS choosing one from aria-expanded.
+ * @param {'true' | 'false'} expanded - The initial aria-expanded value
+ * @returns {string} The toggle markup
+ */
+const mobileNavToggleFixture = (expanded) => `
+  <button aria-controls="header" aria-expanded="${expanded}" class="d-xl-none mobile-nav-toggle" type="button">
+    <svg aria-hidden="true" class="icon nav-toggle-icon nav-toggle-icon--open" focusable="false"><use href="#icon-bars"></use></svg>
+    <svg aria-hidden="true" class="icon nav-toggle-icon nav-toggle-icon--close" focusable="false"><use href="#icon-xmark"></use></svg>
+  </button>
+  <header id="header"></header>
+`;
+
+/** @returns {string | null} The aria-expanded value on the mobile nav toggle */
+const toggleExpanded = () =>
+  document.querySelector('.mobile-nav-toggle').getAttribute('aria-expanded');
+
+/** @returns {boolean} Whether the body carries the open-nav class */
+const isNavOpen = () => document.body.classList.contains('mobile-nav-active');
+
 describe('toggleMobileNav', () => {
   beforeEach(() => {
-    document.body.innerHTML = `
-      <button class="mobile-nav-toggle">
-        <i class="fa-solid fa-bars"></i>
-      </button>
-    `;
     document.body.className = '';
+    document.body.innerHTML = mobileNavToggleFixture('false');
   });
 
   test('adds mobile-nav-active class on first toggle', () => {
     toggleMobileNav();
-    expect(document.body.classList.contains('mobile-nav-active')).toBe(true);
+    expect(isNavOpen()).toBe(true);
   });
 
   test('removes mobile-nav-active class on second toggle', () => {
     toggleMobileNav();
     toggleMobileNav();
-    expect(document.body.classList.contains('mobile-nav-active')).toBe(false);
+    expect(isNavOpen()).toBe(false);
   });
 
-  test('toggles icon classes', () => {
-    const icon = document.querySelector('.mobile-nav-toggle i');
+  test('sets aria-expanded to true when it opens the nav', () => {
     toggleMobileNav();
-    expect(icon.classList.contains('fa-xmark')).toBe(true);
-    expect(icon.classList.contains('fa-bars')).toBe(false);
+    expect(toggleExpanded()).toBe('true');
   });
 
-  test('restores icon classes on second toggle', () => {
-    const icon = document.querySelector('.mobile-nav-toggle i');
+  test('sets aria-expanded back to false when it closes the nav', () => {
     toggleMobileNav();
     toggleMobileNav();
-    expect(icon.classList.contains('fa-bars')).toBe(true);
-    expect(icon.classList.contains('fa-xmark')).toBe(false);
+    expect(toggleExpanded()).toBe('false');
   });
 
-  test('handles missing icon element gracefully', () => {
+  test('keeps aria-expanded in step with the body class over repeated toggles', () => {
+    const observed = [];
+    for (let i = 0; i < 3; i += 1) {
+      toggleMobileNav();
+      observed.push([isNavOpen(), toggleExpanded()]);
+    }
+    expect(observed).toEqual([
+      [true, 'true'],
+      [false, 'false'],
+      [true, 'true'],
+    ]);
+  });
+
+  test('leaves the toggle glyphs and their classes in place', () => {
+    toggleMobileNav();
+    const glyphs = Array.from(document.querySelectorAll('.mobile-nav-toggle svg')).map((svg) =>
+      svg.getAttribute('class')
+    );
+    expect(glyphs).toEqual([
+      'icon nav-toggle-icon nav-toggle-icon--open',
+      'icon nav-toggle-icon nav-toggle-icon--close',
+    ]);
+  });
+
+  test('still opens the nav when the toggle button is missing', () => {
     document.body.innerHTML = '';
     expect(() => toggleMobileNav()).not.toThrow();
+    expect(isNavOpen()).toBe(true);
   });
 });
 
 describe('closeMobileNav', () => {
   beforeEach(() => {
-    document.body.innerHTML = `
-      <button class="mobile-nav-toggle">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-    `;
+    document.body.className = '';
+    document.body.innerHTML = mobileNavToggleFixture('true');
   });
 
   test('removes mobile-nav-active when active', () => {
     document.body.classList.add('mobile-nav-active');
     closeMobileNav();
-    expect(document.body.classList.contains('mobile-nav-active')).toBe(false);
+    expect(isNavOpen()).toBe(false);
   });
 
-  test('restores navigation icon when closing', () => {
+  test('sets aria-expanded to false when it closes the nav', () => {
     document.body.classList.add('mobile-nav-active');
     closeMobileNav();
-    const icon = document.querySelector('.mobile-nav-toggle i');
-    expect(icon.classList.contains('fa-bars')).toBe(true);
-    expect(icon.classList.contains('fa-xmark')).toBe(false);
+    expect(toggleExpanded()).toBe('false');
   });
 
   test('does nothing when nav is not active', () => {
-    document.body.classList.remove('mobile-nav-active');
+    document.body.innerHTML = mobileNavToggleFixture('false');
     closeMobileNav();
-    expect(document.body.classList.contains('mobile-nav-active')).toBe(false);
+    expect(isNavOpen()).toBe(false);
+    expect(toggleExpanded()).toBe('false');
   });
 
-  test('handles missing icon gracefully when active', () => {
+  test('closes the nav when the toggle button is missing', () => {
     document.body.innerHTML = '';
     document.body.classList.add('mobile-nav-active');
     expect(() => closeMobileNav()).not.toThrow();
-    expect(document.body.classList.contains('mobile-nav-active')).toBe(false);
+    expect(isNavOpen()).toBe(false);
   });
 });
 
