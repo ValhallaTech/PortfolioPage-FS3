@@ -14,6 +14,8 @@ import {
   setupScrollHandlers,
   setupNavClickHandlers,
   setupPortfolioFilters,
+  portfolioFilterSelector,
+  portfolioFilterOptions,
   resolveHashTarget,
   resolveLightboxHref,
 } from '../src/js/utils.js';
@@ -915,63 +917,137 @@ describe('resolveLightboxHref', () => {
   });
 });
 
+/**
+ * The portfolio filter buttons, as `index.html` renders them: one button per
+ * filter value, `all` pressed by default.
+ */
+const FILTER_FIXTURE = `
+  <ul id="portfolio-filters">
+    <li><button type="button" data-filter="all" aria-pressed="true">All</button></li>
+    <li><button type="button" data-filter="app" aria-pressed="false">App</button></li>
+    <li><button type="button" data-filter="card" aria-pressed="false">Card</button></li>
+    <li><button type="button" data-filter="web" aria-pressed="false">Web</button></li>
+  </ul>
+`;
+
+/**
+ * Render the filter fixture and return its buttons.
+ * @returns {NodeListOf<HTMLButtonElement>} The four filter buttons, in document order
+ */
+function renderFilterButtons() {
+  document.body.innerHTML = FILTER_FIXTURE;
+  return document.querySelectorAll('#portfolio-filters button');
+}
+
+/**
+ * The `aria-pressed` value of every button, in document order.
+ * @param {NodeListOf<HTMLButtonElement>} buttons - The filter buttons
+ * @returns {(string|null)[]} Each button's `aria-pressed` attribute
+ */
+function pressedStates(buttons) {
+  return Array.from(buttons, (button) => button.getAttribute('aria-pressed'));
+}
+
 describe('setupPortfolioFilters', () => {
-  test('calls arrange callback with filter value on click', () => {
-    document.body.innerHTML = `
-      <ul id="portfolio-flters">
-        <li class="filter-active" data-filter="*">All</li>
-        <li data-filter=".filter-app">App</li>
-        <li data-filter=".filter-web">Web</li>
-      </ul>
-    `;
-    const filters = document.querySelectorAll('#portfolio-flters li');
-    const arrangeFn = jest.fn();
-    setupPortfolioFilters(filters, arrangeFn);
+  test('calls onFilter with the clicked button data-filter value', () => {
+    const buttons = renderFilterButtons();
+    const onFilter = jest.fn();
+    setupPortfolioFilters(buttons, onFilter);
 
-    filters[1].click();
+    buttons[1].click();
 
-    expect(arrangeFn).toHaveBeenCalledWith('.filter-app');
-    expect(filters[0].classList.contains('filter-active')).toBe(false);
-    expect(filters[1].classList.contains('filter-active')).toBe(true);
+    expect(onFilter).toHaveBeenCalledTimes(1);
+    expect(onFilter).toHaveBeenCalledWith('app');
   });
 
-  test('does nothing with empty filters', () => {
-    const arrangeFn = jest.fn();
-    expect(() => setupPortfolioFilters([], arrangeFn)).not.toThrow();
-    expect(arrangeFn).not.toHaveBeenCalled();
+  test('does nothing with an empty button list', () => {
+    const onFilter = jest.fn();
+
+    expect(() => setupPortfolioFilters([], onFilter)).not.toThrow();
+    expect(onFilter).not.toHaveBeenCalled();
   });
 
-  test('does nothing with null filters', () => {
+  test('does nothing with null buttons', () => {
     expect(() => setupPortfolioFilters(null, jest.fn())).not.toThrow();
   });
 
-  test('handles missing arrange callback', () => {
-    document.body.innerHTML = `
-      <ul id="portfolio-flters">
-        <li data-filter="*">All</li>
-      </ul>
-    `;
-    const filters = document.querySelectorAll('#portfolio-flters li');
-    expect(() => setupPortfolioFilters(filters, null)).not.toThrow();
-    expect(() => filters[0].click()).not.toThrow();
+  test('still updates aria-pressed when onFilter is missing', () => {
+    const buttons = renderFilterButtons();
+    setupPortfolioFilters(buttons, null);
+
+    expect(() => buttons[2].click()).not.toThrow();
+    expect(pressedStates(buttons)).toEqual(['false', 'false', 'true', 'false']);
   });
 
-  test('switches active filter correctly between items', () => {
+  test('keeps exactly one button aria-pressed="true" as the pressed filter moves', () => {
+    const buttons = renderFilterButtons();
+    const onFilter = jest.fn();
+    setupPortfolioFilters(buttons, onFilter);
+
+    buttons[1].click();
+    expect(pressedStates(buttons)).toEqual(['false', 'true', 'false', 'false']);
+
+    buttons[3].click();
+    expect(pressedStates(buttons)).toEqual(['false', 'false', 'false', 'true']);
+
+    buttons[0].click();
+    expect(pressedStates(buttons)).toEqual(['true', 'false', 'false', 'false']);
+    expect(onFilter.mock.calls).toEqual([['app'], ['web'], ['all']]);
+  });
+
+  test('keeps the clicked button pressed when it is clicked again', () => {
+    const buttons = renderFilterButtons();
+    const onFilter = jest.fn();
+    setupPortfolioFilters(buttons, onFilter);
+
+    buttons[2].click();
+    buttons[2].click();
+
+    expect(pressedStates(buttons)).toEqual(['false', 'false', 'true', 'false']);
+    expect(onFilter.mock.calls).toEqual([['card'], ['card']]);
+  });
+});
+
+describe('portfolioFilterSelector', () => {
+  test('returns every portfolio item for the all filter', () => {
+    expect(portfolioFilterSelector('all')).toBe('.portfolio-item');
+  });
+
+  test.each(['app', 'card', 'web'])(
+    'returns the data-category selector for the %s filter',
+    (category) => {
+      expect(portfolioFilterSelector(category)).toBe(`[data-category="${category}"]`);
+    }
+  );
+
+  test('selects exactly the items of the filtered category', () => {
     document.body.innerHTML = `
-      <ul id="portfolio-flters">
-        <li class="filter-active" data-filter="*">All</li>
-        <li data-filter=".filter-app">App</li>
-        <li data-filter=".filter-web">Web</li>
-      </ul>
+      <div class="portfolio-container">
+        <div class="portfolio-item" data-category="app" data-portfolio-id="1"></div>
+        <div class="portfolio-item" data-category="web" data-portfolio-id="2"></div>
+        <div class="portfolio-item" data-category="card" data-portfolio-id="3"></div>
+        <div class="portfolio-item" data-category="app" data-portfolio-id="4"></div>
+      </div>
     `;
-    const filters = document.querySelectorAll('#portfolio-flters li');
-    setupPortfolioFilters(filters, jest.fn());
+    const idsFor = (filter) =>
+      Array.from(
+        document.querySelectorAll(portfolioFilterSelector(filter)),
+        (item) => item.dataset.portfolioId
+      );
 
-    filters[1].click();
-    expect(filters[1].classList.contains('filter-active')).toBe(true);
+    expect(idsFor('all')).toEqual(['1', '2', '3', '4']);
+    expect(idsFor('app')).toEqual(['1', '4']);
+    expect(idsFor('card')).toEqual(['3']);
+    expect(idsFor('web')).toEqual(['2']);
+  });
+});
 
-    filters[2].click();
-    expect(filters[1].classList.contains('filter-active')).toBe(false);
-    expect(filters[2].classList.contains('filter-active')).toBe(true);
+describe('portfolioFilterOptions', () => {
+  test('returns instant show, hide and layout under reduced motion', () => {
+    expect(portfolioFilterOptions(true)).toEqual({ instant: true, layout: 'instant' });
+  });
+
+  test('returns animated show, hide and layout without reduced motion', () => {
+    expect(portfolioFilterOptions(false)).toEqual({ instant: false, layout: true });
   });
 });
