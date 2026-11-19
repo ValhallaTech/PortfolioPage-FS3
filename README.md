@@ -52,6 +52,13 @@ The site is a single-page application (`src/index.html`) composed of six section
 | Prettier | Code formatting |
 | Renovate Bot | Automated dependency updates |
 
+### Supported browsers
+
+The build targets the Browserslist query `defaults, iOS >= 15`, set in the `browserslist` field of `package.json`. Change it there; Parcel reads it for both the CSS and the JS output.
+
+- `defaults` is Browserslist's default set: browsers with more than 0.5 % usage, the last two versions of each browser, and Firefox ESR, leaving out browsers without updates for 24 months.
+- `iOS >= 15` adds Safari on iOS 15 and later. Without it, Lightning CSS (Parcel's CSS transformer) keeps range-syntax media queries such as `@media (width>=1200px)`, which iOS Safari before 16.4 cannot parse, so those browsers lose every breakpoint. The iOS 15 floor makes it emit `min-width`/`max-width` instead, and it also flattens the nested CSS in Swiper's stylesheet.
+
 ### Key files
 
 ```

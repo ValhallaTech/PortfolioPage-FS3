@@ -4,6 +4,7 @@
   "description": "Fred Smith III Portfolio Page",
   "private": true,
   "source": "src/index.html",
+  "browserslist": "defaults, iOS >= 15",
   "scripts": {
     "start": "parcel src/index.html",
     "build": "parcel build src/index.html --public-url ./ && node scripts/third-party-notices.mjs",
