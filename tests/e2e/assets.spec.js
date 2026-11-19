@@ -148,6 +148,30 @@ async function decodedImageWidth({ base64, contentType }) {
 }
 
 /**
+ * AC-68: describes a Google font request when the page's main frame issued it, or when
+ * its frame cannot be read. `request.frame()` throws for a service-worker request and
+ * for a navigation request sent before its frame exists; such a request may still be
+ * the main frame's, so it is reported rather than dropped. Requests from any other
+ * frame, such as the Google Maps embed, return null.
+ * @param {import('@playwright/test').Request} request
+ * @param {import('@playwright/test').Page} page
+ * @returns {string | null} The failure line, or null when the request does not count
+ */
+function mainFrameFontRequest(request, page) {
+  if (!GOOGLE_FONT_HOSTS.has(new URL(request.url()).host)) return null;
+  let frame;
+  try {
+    frame = request.frame();
+  } catch (error) {
+    const worker = request.serviceWorker();
+    const origin = worker ? `service worker ${worker.url()}` : 'no frame';
+    return `${request.url()} (frame unknown, ${origin}: ${String(error)})`;
+  }
+  if (frame !== page.mainFrame()) return null;
+  return `${request.url()} (main frame ${frame.url()})`;
+}
+
+/**
  * Measures each slot of a group: the slot passes when it, or a descendant, is an `svg`
  * or `i` whose bounding box is at least `minPx` square.
  * @param {import('@playwright/test').Page} page
@@ -222,22 +246,22 @@ test.describe('at desktop', () => {
   test.use(desktop);
 
   test(
-    'AC-68: a full visit requests nothing from Google font hosts',
+    'AC-68: the main frame requests nothing from Google font hosts during a full visit',
     { tag: '@live' },
     async ({ page, context }) => {
       test.setTimeout(FULL_VISIT_TIMEOUT_MS);
-      const googleFontRequests = [];
+      const mainFrameFontRequests = [];
       context.on('request', (request) => {
-        if (GOOGLE_FONT_HOSTS.has(new URL(request.url()).host)) {
-          googleFontRequests.push(`${request.url()} (frame ${request.frame().url()})`);
-        }
+        const line = mainFrameFontRequest(request, page);
+        if (line) mainFrameFontRequests.push(line);
       });
 
       await fullVisit(page);
 
-      expect(googleFontRequests, 'requests to fonts.googleapis.com or fonts.gstatic.com').toEqual(
-        []
-      );
+      expect(
+        mainFrameFontRequests,
+        'main-frame requests to fonts.googleapis.com or fonts.gstatic.com'
+      ).toEqual([]);
     }
   );
 
