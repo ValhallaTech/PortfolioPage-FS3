@@ -37,7 +37,19 @@ import {
 } from './utils.js';
 
 /**
- * Initialize Typed.js
+ * Stops the typing cursor once the last phrase is typed (C-31): it stays visible but no
+ * longer blinks.
+ * @param {Typed} typed
+ */
+function stopTypedCursor(typed) {
+  if (!typed.cursor) return;
+  typed.cursor.classList.remove('typed-cursor--blink');
+  typed.cursor.classList.add('typed-cursor--done');
+}
+
+/**
+ * Initialize Typed.js: each phrase is typed once, in order, and the effect stops on the
+ * last one. The cursor CSS lives in style.css, so Typed.js inserts no <style> (D-6).
  * @param {Element} el - The typed element
  * @returns {Typed|null}
  */
@@ -48,10 +60,12 @@ function initTyped(el) {
   const strings = items.split(',').map((s) => s.trim());
   return new Typed(el, {
     strings,
-    loop: true,
+    loop: false,
+    autoInsertCss: false,
     typeSpeed: 100,
     backSpeed: 50,
     backDelay: 2000,
+    onComplete: stopTypedCursor,
   });
 }
 
