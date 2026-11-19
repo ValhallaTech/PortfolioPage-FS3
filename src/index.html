@@ -146,20 +146,20 @@
 
                 <div class="row" data-sr="fade-up">
                     <div class="col-lg-12 d-flex justify-content-center">
-                        <ul id="portfolio-flters">
-                            <li class="filter-active" data-filter="*">All</li>
-                            <li data-filter=".filter-app">App</li>
-                            <li data-filter=".filter-card">Card</li>
-                            <li data-filter=".filter-web">Web</li>
+                        <ul id="portfolio-filters">
+                            <li><button type="button" data-filter="all" aria-pressed="true">All</button></li>
+                            <li><button type="button" data-filter="app" aria-pressed="false">App</button></li>
+                            <li><button type="button" data-filter="card" aria-pressed="false">Card</button></li>
+                            <li><button type="button" data-filter="web" aria-pressed="false">Web</button></li>
                         </ul>
                     </div>
                 </div>
 
                 <div class="portfolio-container row" data-sr="fade-up" data-sr-delay="100">
 
-                    <div class="col-lg-4 col-md-6 filter-app portfolio-item">
+                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="app" data-portfolio-id="1">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 1" class="img-fluid" src="./images/portfolio/portfolio-1.jpg">
+                            <img alt="Portfolio item 1" class="img-fluid" src="./images/portfolio/portfolio-1.jpg" width="800" height="600">
                             <div class="portfolio-links">
                                 <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-1.jpg" title="App 1">
                                     <i class="fa-solid fa-plus"></i>
@@ -171,9 +171,9 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 filter-web portfolio-item">
+                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="web" data-portfolio-id="2">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 2" class="img-fluid" src="./images/portfolio/portfolio-2.jpg">
+                            <img alt="Portfolio item 2" class="img-fluid" src="./images/portfolio/portfolio-2.jpg" width="800" height="600">
                             <div class="portfolio-links">
                                 <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-2.jpg" title="Web 3">
                                     <i class="fa-solid fa-plus"></i>
@@ -185,9 +185,9 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 filter-app portfolio-item">
+                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="app" data-portfolio-id="3">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 3" class="img-fluid" src="./images/portfolio/portfolio-3.jpg">
+                            <img alt="Portfolio item 3" class="img-fluid" src="./images/portfolio/portfolio-3.jpg" width="800" height="600">
                             <div class="portfolio-links">
                                 <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-3.jpg" title="App 2">
                                     <i class="fa-solid fa-plus"></i>
@@ -199,9 +199,9 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 filter-card portfolio-item">
+                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="card" data-portfolio-id="4">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 4" class="img-fluid" src="./images/portfolio/portfolio-4.jpg">
+                            <img alt="Portfolio item 4" class="img-fluid" src="./images/portfolio/portfolio-4.jpg" width="800" height="600">
                             <div class="portfolio-links">
                                 <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-4.jpg" title="Card 2">
                                     <i class="fa-solid fa-plus"></i>
@@ -213,9 +213,9 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 filter-web portfolio-item">
+                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="web" data-portfolio-id="5">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 5" class="img-fluid" src="./images/portfolio/portfolio-5.jpg">
+                            <img alt="Portfolio item 5" class="img-fluid" src="./images/portfolio/portfolio-5.jpg" width="800" height="600">
                             <div class="portfolio-links">
                                 <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-5.jpg" title="Web 2">
                                     <i class="fa-solid fa-plus"></i>
@@ -227,9 +227,9 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 filter-app portfolio-item">
+                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="app" data-portfolio-id="6">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 6" class="img-fluid" src="./images/portfolio/portfolio-6.jpg">
+                            <img alt="Portfolio item 6" class="img-fluid" src="./images/portfolio/portfolio-6.jpg" width="800" height="600">
                             <div class="portfolio-links">
                                 <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-6.jpg" title="App 3">
                                     <i class="fa-solid fa-plus"></i>
@@ -241,9 +241,9 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 filter-card portfolio-item">
+                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="card" data-portfolio-id="7">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 7" class="img-fluid" src="./images/portfolio/portfolio-7.jpg">
+                            <img alt="Portfolio item 7" class="img-fluid" src="./images/portfolio/portfolio-7.jpg" width="800" height="600">
                             <div class="portfolio-links">
                                 <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-7.jpg" title="Card 1">
                                     <i class="fa-solid fa-plus"></i>
@@ -255,9 +255,9 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 filter-card portfolio-item">
+                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="card" data-portfolio-id="8">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 8" class="img-fluid" src="./images/portfolio/portfolio-8.jpg">
+                            <img alt="Portfolio item 8" class="img-fluid" src="./images/portfolio/portfolio-8.jpg" width="800" height="600">
                             <div class="portfolio-links">
                                 <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-8.jpg" title="Card 3">
                                     <i class="fa-solid fa-plus"></i>
@@ -269,9 +269,9 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 filter-web portfolio-item">
+                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="web" data-portfolio-id="9">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 9" class="img-fluid" src="./images/portfolio/portfolio-9.jpg">
+                            <img alt="Portfolio item 9" class="img-fluid" src="./images/portfolio/portfolio-9.jpg" width="800" height="600">
                             <div class="portfolio-links">
                                 <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-9.jpg" title="Web 3">
                                     <i class="fa-solid fa-plus"></i>

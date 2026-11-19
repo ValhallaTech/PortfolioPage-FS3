@@ -1,6 +1,6 @@
 import Typed from 'typed.js';
 import ScrollReveal from 'scrollreveal';
-import Isotope from 'isotope-layout';
+import Muuri from 'muuri';
 import Swiper from 'swiper';
 import { Autoplay, Pagination } from 'swiper/modules';
 import GLightbox from 'glightbox';
@@ -22,6 +22,8 @@ import {
   setupScrollHandlers,
   setupNavClickHandlers,
   setupPortfolioFilters,
+  portfolioFilterSelector,
+  portfolioFilterOptions,
   resolveHashTarget,
   resolveLightboxHref,
 } from './utils.js';
@@ -45,25 +47,50 @@ function initTyped(el) {
   });
 }
 
+/** The media query a visitor's reduced-motion preference is read from. */
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
 /**
- * Initialize portfolio Isotope filter
- * @param {Element} container - The portfolio container element
- * @returns {Isotope|null}
+ * Whether the visitor currently asks for reduced motion.
+ * @returns {boolean}
  */
-function initPortfolioFilter(container) {
+function prefersReducedMotion() {
+  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
+// Sprint 3: Muuri owns the transform, opacity and display of .portfolio-item and .portfolio-wrap, so do not animate them with GSAP.
+/**
+ * Initialize the portfolio Muuri grid and bind its filter buttons.
+ * @param {Element} container - The portfolio container element
+ * @returns {Muuri|null}
+ */
+function initPortfolioGrid(container) {
   if (!container) return null;
 
-  const iso = new Isotope(container, {
-    itemSelector: '.portfolio-item',
-    layoutMode: 'fitRows',
+  const duration = prefersReducedMotion() ? 0 : 300;
+  const grid = new Muuri(container, {
+    items: '.portfolio-item',
+    layoutOnInit: true,
+    layoutOnResize: 150,
+    dragEnabled: false,
+    showDuration: duration,
+    hideDuration: duration,
+    layoutDuration: duration,
   });
 
-  const filters = document.querySelectorAll('#portfolio-flters li');
-  setupPortfolioFilters(filters, (filterValue) => {
-    iso.arrange({ filter: filterValue });
+  window.addEventListener('load', () => {
+    grid.refreshItems().layout(true);
   });
 
-  return iso;
+  const buttons = document.querySelectorAll('#portfolio-filters button[data-filter]');
+  setupPortfolioFilters(buttons, (filterValue) => {
+    grid.filter(
+      portfolioFilterSelector(filterValue),
+      portfolioFilterOptions(prefersReducedMotion())
+    );
+  });
+
+  return grid;
 }
 
 /**
@@ -273,9 +300,8 @@ function init() {
     });
   }
 
-  // Portfolio isotope
-  const portfolioContainer = document.querySelector('.portfolio-container');
-  initPortfolioFilter(portfolioContainer);
+  // Portfolio grid
+  initPortfolioGrid(document.querySelector('.portfolio-container'));
 
   // GLightbox
   initLightbox();

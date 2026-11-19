@@ -4394,13 +4394,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"desandro-matches-selector@npm:^2.0.0":
-  version: 2.0.2
-  resolution: "desandro-matches-selector@npm:2.0.2"
-  checksum: 10c0/f4b1f42e6ccd6c97e93e3f99a64461eef2722075b03d8a9e349e31766436f8b385d1fd50802b024dae951dc69399f13de20a139c1187000fd5e2fcf11cb5eb00
-  languageName: node
-  linkType: hard
-
 "detect-libc@npm:^1.0.3":
   version: 1.0.3
   resolution: "detect-libc@npm:1.0.3"
@@ -4688,13 +4681,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ev-emitter@npm:^1.0.0":
-  version: 1.1.1
-  resolution: "ev-emitter@npm:1.1.1"
-  checksum: 10c0/332dcb444de2b1d81035fb22a10dd33926311baa7ea6fc24f1de7b60c6eff5b7e133611000fce740471f0c8f95259d3914d49b4201af2d85a51f0aeb8cb1ceda
-  languageName: node
-  linkType: hard
-
 "execa@npm:^5.1.1":
   version: 5.1.1
   resolution: "execa@npm:5.1.1"
@@ -4818,15 +4804,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fizzy-ui-utils@npm:^2.0.0, fizzy-ui-utils@npm:^2.0.4":
-  version: 2.0.7
-  resolution: "fizzy-ui-utils@npm:2.0.7"
-  dependencies:
-    desandro-matches-selector: "npm:^2.0.0"
-  checksum: 10c0/4c36d45db4e2e0cf1507aa9633af6710a12bdc047146fa89505e10aedc5bfb16cbfb0da686d5dfd89a37e1da4bce86bbee365e22be88705ab4ffccd530b4902a
-  languageName: node
-  linkType: hard
-
 "flat-cache@npm:^4.0.0":
   version: 4.0.1
   resolution: "flat-cache@npm:4.0.1"
@@ -4895,13 +4872,6 @@ __metadata:
   version: 4.2.0
   resolution: "get-port@npm:4.2.0"
   checksum: 10c0/ecce4233b720e7c6612aedc334ee8bb62b7d44db7ad6a55e58f7b3a17993ecfcb1bb218b8bb1ee197d0971c12e420aad2b3f95a93e4a117f2186f926ebcd2d42
-  languageName: node
-  linkType: hard
-
-"get-size@npm:^2.0.0, get-size@npm:^2.0.2":
-  version: 2.0.3
-  resolution: "get-size@npm:2.0.3"
-  checksum: 10c0/c9703caa61b4d38385eab34aa5068f3a25ab40f6d9cda6dac3f0dc4dcd8da38f7b0283035e71c9f52a47b670b9315372cae46f58d66ad709a4939e57c1fdc6cc
   languageName: node
   linkType: hard
 
@@ -5182,19 +5152,6 @@ __metadata:
   version: 4.0.0
   resolution: "isexe@npm:4.0.0"
   checksum: 10c0/5884815115bceac452877659a9c7726382531592f43dc29e5d48b7c4100661aed54018cb90bd36cb2eaeba521092570769167acbb95c18d39afdccbcca06c5ce
-  languageName: node
-  linkType: hard
-
-"isotope-layout@npm:3.0.6":
-  version: 3.0.6
-  resolution: "isotope-layout@npm:3.0.6"
-  dependencies:
-    desandro-matches-selector: "npm:^2.0.0"
-    fizzy-ui-utils: "npm:^2.0.4"
-    get-size: "npm:^2.0.0"
-    masonry-layout: "npm:^4.1.0"
-    outlayer: "npm:^2.1.0"
-  checksum: 10c0/ffd3d9848f35c94efded5ecdfc14ae09c8ea4cd741ed62fe7d727ffe272896ba496e14c98726ff4d5886fd8a7fa817ecc9996da33b416c52290521b2f48763d4
   languageName: node
   linkType: hard
 
@@ -6068,16 +6025,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"masonry-layout@npm:^4.1.0":
-  version: 4.2.2
-  resolution: "masonry-layout@npm:4.2.2"
-  dependencies:
-    get-size: "npm:^2.0.2"
-    outlayer: "npm:^2.1.0"
-  checksum: 10c0/991044cf7c22acbbb1135690314d68f9f237ef17315494c9dd25ed00fa0c526a8eb27d6bcf99a141a9d049bd62c5c251f66f9c8a4c201ca9c0944d8e44c0f09f
-  languageName: node
-  linkType: hard
-
 "merge-stream@npm:^2.0.0":
   version: 2.0.0
   resolution: "merge-stream@npm:2.0.0"
@@ -6240,6 +6187,13 @@ __metadata:
     msgpackr-extract:
       optional: true
   checksum: 10c0/e52c62cda60398261541dc6fdb06b0db473ff83b9b1cb8f34535fb9ac33325e3c2f9bfdfbb87bf7ff5f70b532b6477c8e95bd3537ecb695493e30e22d7176ceb
+  languageName: node
+  linkType: hard
+
+"muuri@npm:0.9.5":
+  version: 0.9.5
+  resolution: "muuri@npm:0.9.5"
+  checksum: 10c0/1e7f99a1690d118faa34434a25602a2f00ab30fc19e824bf19676572755391169aa295495244cc501f3d77cfdbaa4d3160fe136148cee11afb897744ffee1113
   languageName: node
   linkType: hard
 
@@ -6421,17 +6375,6 @@ __metadata:
   version: 1.6.1
   resolution: "ordered-binary@npm:1.6.1"
   checksum: 10c0/27aca7a681b859acdc3607784288462662a4a0575b1c727ef8710c3e81e3a7703d2d64e4401dbba049c50d4ec4d89acbe198fdf5ca975a4709962ecfc42f2bbf
-  languageName: node
-  linkType: hard
-
-"outlayer@npm:^2.1.0":
-  version: 2.1.1
-  resolution: "outlayer@npm:2.1.1"
-  dependencies:
-    ev-emitter: "npm:^1.0.0"
-    fizzy-ui-utils: "npm:^2.0.0"
-    get-size: "npm:^2.0.2"
-  checksum: 10c0/863f5568e16833d11d048a760ddd92395a9e1e49b51b669d863ff4ffda4cf8f6d91ebb2c4c20e26ca30175cb295f8f436075772a56c7e17ae40d3f095d449a53
   languageName: node
   linkType: hard
 
@@ -6654,9 +6597,9 @@ __metadata:
     eslint-plugin-prettier: "npm:5.5.5"
     glightbox: "npm:3.3.1"
     globals: "npm:17.5.0"
-    isotope-layout: "npm:3.0.6"
     jest: "npm:30.5.2"
     jest-environment-jsdom: "npm:30.5.2"
+    muuri: "npm:0.9.5"
     parcel: "npm:2.16.4"
     postcss: "npm:8.5.33"
     prettier: "npm:3.8.3"
