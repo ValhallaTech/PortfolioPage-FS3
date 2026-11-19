@@ -2,12 +2,13 @@ import Typed from 'typed.js';
 import ScrollReveal from 'scrollreveal';
 import Muuri from 'muuri';
 import Swiper from 'swiper';
-import { Autoplay, Pagination } from 'swiper/modules';
+import { A11y, Autoplay, Pagination } from 'swiper/modules';
 import GLightbox from 'glightbox';
 import { Modal } from 'bootstrap';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'swiper/swiper.css';
+import 'swiper/modules/a11y.css';
 import 'swiper/modules/pagination.css';
 import 'glightbox/dist/css/glightbox.min.css';
 // Self-hosted text fonts (D-2): latin subset only, and only the weights the page renders.
@@ -100,17 +101,97 @@ function initPortfolioGrid(container) {
   return grid;
 }
 
+/** The autoplay toggle's name and sprite icon, by whether autoplay is running (D-14). */
+const AUTOPLAY_TOGGLE_STATES = Object.freeze({
+  running: Object.freeze({ label: 'Pause testimonials', icon: '#icon-pause' }),
+  stopped: Object.freeze({ label: 'Play testimonials', icon: '#icon-play' }),
+});
+
+/**
+ * Shows whether the carousel rotates: the toggle's name and icon, and whether slide
+ * changes are announced (off while rotating, as the WAI-ARIA carousel pattern says).
+ * @param {Swiper} swiper
+ * @param {Element} toggle - The autoplay toggle button
+ */
+function showAutoplayState(swiper, toggle) {
+  const running = swiper.autoplay.running;
+  const { label, icon } = running ? AUTOPLAY_TOGGLE_STATES.running : AUTOPLAY_TOGGLE_STATES.stopped;
+  toggle.querySelector('.visually-hidden').textContent = label;
+  toggle.querySelector('use').setAttribute('href', icon);
+  swiper.wrapperEl.setAttribute('aria-live', running ? 'off' : 'polite');
+}
+
+/**
+ * Pauses autoplay while keyboard focus is inside the carousel, and only there (D-14).
+ * pause() and resume() do nothing while autoplay is stopped, so leaving the carousel never
+ * restarts rotation that the toggle or reduced motion stopped.
+ * @param {Swiper} swiper
+ * @param {Element} container - The swiper container element
+ */
+function pauseWhileFocused(swiper, container) {
+  const leaves = (event) => !container.contains(event.relatedTarget);
+  container.addEventListener('focusin', (event) => {
+    if (leaves(event)) swiper.autoplay.pause();
+  });
+  container.addEventListener('focusout', (event) => {
+    if (leaves(event)) swiper.autoplay.resume();
+  });
+  // Swiper resumes a paused autoplay when a slide transition ends, as after a bullet is
+  // pressed; keep it paused while focus is still inside.
+  swiper.on('autoplayResume', () => {
+    if (container.contains(document.activeElement)) swiper.autoplay.pause();
+  });
+}
+
+/**
+ * Wires the Pause/Play toggle and the reduced-motion preference to autoplay (D-14). The
+ * toggle uses stop() and start(); reduced motion stops autoplay right after construction,
+ * before the first delay ends, and follows live changes of the preference without
+ * restarting rotation the visitor stopped. The toggle is hidden while Swiper is locked
+ * (every slide in view), when there is nothing to rotate.
+ * @param {Swiper} swiper
+ * @param {Element|null} toggle - The autoplay toggle button
+ */
+function bindAutoplayControls(swiper, toggle) {
+  let stoppedByVisitor = false;
+
+  if (toggle) {
+    const showLock = () => {
+      toggle.hidden = swiper.isLocked;
+    };
+    swiper.on('autoplayStart autoplayStop', () => showAutoplayState(swiper, toggle));
+    swiper.on('lock unlock', showLock);
+    toggle.addEventListener('click', () => {
+      stoppedByVisitor = swiper.autoplay.running;
+      if (stoppedByVisitor) swiper.autoplay.stop();
+      else swiper.autoplay.start();
+    });
+    showAutoplayState(swiper, toggle);
+    showLock();
+  }
+
+  const reducedMotion = window.matchMedia(REDUCED_MOTION_QUERY);
+  const followMotionPreference = () => {
+    if (reducedMotion.matches) swiper.autoplay.stop();
+    else if (!stoppedByVisitor && !swiper.autoplay.running) swiper.autoplay.start();
+  };
+  if (reducedMotion.matches) swiper.autoplay.stop();
+  reducedMotion.addEventListener('change', followMotionPreference);
+}
+
 /**
  * Initialize testimonials Swiper carousel
  * @param {Element} container - The swiper container element
+ * @param {Element|null} toggle - The autoplay toggle button
  * @returns {Swiper|null}
  */
-function initTestimonialsCarousel(container) {
+function initTestimonialsCarousel(container, toggle) {
   if (!container) return null;
-  return new Swiper(container, {
-    modules: [Autoplay, Pagination],
-    autoplay: { delay: 5000, disableOnInteraction: false },
-    loop: true,
+  const swiper = new Swiper(container, {
+    modules: [A11y, Autoplay, Pagination],
+    autoplay: { delay: 5000, disableOnInteraction: false, pauseOnMouseEnter: true },
+    loop: false,
+    rewind: true,
     pagination: { el: '.testimonials .swiper-pagination', clickable: true },
     breakpoints: {
       0: { slidesPerView: 1, spaceBetween: 20 },
@@ -118,6 +199,9 @@ function initTestimonialsCarousel(container) {
       900: { slidesPerView: 3, spaceBetween: 20 },
     },
   });
+  pauseWhileFocused(swiper, container);
+  bindAutoplayControls(swiper, toggle);
+  return swiper;
 }
 
 /**
@@ -314,7 +398,10 @@ function init() {
   initLightbox();
 
   // Testimonials carousel
-  initTestimonialsCarousel(document.querySelector('.testimonials-carousel'));
+  initTestimonialsCarousel(
+    document.querySelector('.testimonials-carousel'),
+    document.querySelector('.testimonials-autoplay-toggle')
+  );
 
   // Init ScrollReveal
   initScrollReveal();
