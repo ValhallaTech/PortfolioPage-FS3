@@ -1,8 +1,3 @@
-/**
- * Template Name: iPortfolio - v2.0.0
- * Overhauled: jQuery removed, using vanilla JS with modern libraries
- */
-
 import Typed from 'typed.js';
 import ScrollReveal from 'scrollreveal';
 import Isotope from 'isotope-layout';
@@ -20,18 +15,17 @@ import '@fortawesome/fontawesome-free/css/solid.min.css';
 import '@fortawesome/fontawesome-free/css/brands.min.css';
 import '../css/style.css';
 
-const {
+import {
   smoothScrollTo,
   toggleMobileNav,
   closeMobileNav,
   updateActiveNav,
   handleBackToTop,
-  observeSkills,
   setupNavClickHandlers,
   setupPortfolioFilters,
   resolveHashTarget,
   resolveLightboxHref,
-} = require('./utils');
+} from './utils.js';
 
 /**
  * Initialize Typed.js
@@ -114,7 +108,7 @@ function initLightbox() {
 }
 
 /**
- * Initialize ScrollReveal (replaces AOS)
+ * Initialize ScrollReveal
  */
 function initScrollReveal() {
   const sr = ScrollReveal({
@@ -283,21 +277,17 @@ function init() {
     });
   }
 
-  // Skills section - Intersection Observer (replaces waypoints)
-  const skillsSection = document.querySelector('.skills-content');
-  observeSkills(skillsSection);
-
   // Portfolio isotope
   const portfolioContainer = document.querySelector('.portfolio-container');
   initPortfolioFilter(portfolioContainer);
 
-  // GLightbox (replaces venobox)
+  // GLightbox
   initLightbox();
 
-  // Testimonials carousel (Swiper replaces owl.carousel)
+  // Testimonials carousel
   initTestimonialsCarousel(document.querySelector('.testimonials-carousel'));
 
-  // Init ScrollReveal (replaces AOS)
+  // Init ScrollReveal
   initScrollReveal();
 
   // Contact form

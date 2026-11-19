@@ -7,7 +7,7 @@
  * Smooth scroll to an element
  * @param {HTMLElement} target - The element to scroll to
  */
-function smoothScrollTo(target) {
+export function smoothScrollTo(target) {
   if (!target) return;
   window.scrollTo({
     top: target.offsetTop,
@@ -18,7 +18,7 @@ function smoothScrollTo(target) {
 /**
  * Toggle mobile nav active state
  */
-function toggleMobileNav() {
+export function toggleMobileNav() {
   document.body.classList.toggle('mobile-nav-active');
   const icon = document.querySelector('.mobile-nav-toggle i');
   if (icon) {
@@ -30,7 +30,7 @@ function toggleMobileNav() {
 /**
  * Close mobile nav
  */
-function closeMobileNav() {
+export function closeMobileNav() {
   if (document.body.classList.contains('mobile-nav-active')) {
     document.body.classList.remove('mobile-nav-active');
     const icon = document.querySelector('.mobile-nav-toggle i');
@@ -44,7 +44,7 @@ function closeMobileNav() {
 /**
  * Update active nav link based on scroll position
  */
-function updateActiveNav() {
+export function updateActiveNav() {
   const sections = document.querySelectorAll('section');
   const navLinks = document.querySelectorAll('.nav-menu a');
   const scrollPos = window.scrollY + 200;
@@ -76,7 +76,7 @@ function updateActiveNav() {
 /**
  * Handle back-to-top button visibility
  */
-function handleBackToTop() {
+export function handleBackToTop() {
   const backToTop = document.querySelector('.back-to-top');
   if (!backToTop) return;
   if (window.scrollY > 100) {
@@ -89,37 +89,12 @@ function handleBackToTop() {
 }
 
 /**
- * Animate skill progress bars using Intersection Observer
- * @param {Element} skillsSection - The skills section element
- * @returns {IntersectionObserver|null}
- */
-function observeSkills(skillsSection) {
-  if (!skillsSection) return null;
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const bars = entry.target.querySelectorAll('.progress .progress-bar');
-          bars.forEach((bar) => {
-            bar.style.width = bar.getAttribute('aria-valuenow') + '%';
-          });
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.2 }
-  );
-  observer.observe(skillsSection);
-  return observer;
-}
-
-/**
  * Set up navigation click handlers for smooth scrolling
  * @param {Document} doc - The document object
  * @param {Function} scrollFn - The scroll function to use
  * @param {Function} closeNavFn - The close mobile nav function
  */
-function setupNavClickHandlers(doc, scrollFn, closeNavFn) {
+export function setupNavClickHandlers(doc, scrollFn, closeNavFn) {
   doc.addEventListener('click', (e) => {
     const link = e.target.closest('.nav-menu a, .scrollto');
     if (!link) return;
@@ -146,7 +121,7 @@ function setupNavClickHandlers(doc, scrollFn, closeNavFn) {
  * @param {NodeList} filters - The filter list items
  * @param {Function} arrangeCallback - Callback to trigger isotope arrange
  */
-function setupPortfolioFilters(filters, arrangeCallback) {
+export function setupPortfolioFilters(filters, arrangeCallback) {
   if (!filters || filters.length === 0) return;
   filters.forEach((filter) => {
     filter.addEventListener('click', function () {
@@ -167,7 +142,7 @@ function setupPortfolioFilters(filters, arrangeCallback) {
  * @param {Document} doc - The document to search
  * @returns {HTMLElement|null} The element whose id matches the decoded fragment, or null
  */
-function resolveHashTarget(hash, doc) {
+export function resolveHashTarget(hash, doc) {
   if (!doc || typeof hash !== 'string' || !hash.startsWith('#')) return null;
   let id;
   try {
@@ -190,7 +165,7 @@ function resolveHashTarget(hash, doc) {
  * @param {Document} doc - The document the link belongs to (supplies baseURI and URL)
  * @returns {string|null} The absolute image URL, or null when no acceptable URL exists
  */
-function resolveLightboxHref(link, doc) {
+export function resolveLightboxHref(link, doc) {
   if (!link || !doc) return null;
   const wrap = link.closest('.portfolio-wrap');
   if (!wrap) return null;
@@ -211,16 +186,3 @@ function resolveLightboxHref(link, doc) {
   if (url.origin !== pageOrigin) return null;
   return url.href;
 }
-
-module.exports = {
-  smoothScrollTo,
-  toggleMobileNav,
-  closeMobileNav,
-  updateActiveNav,
-  handleBackToTop,
-  observeSkills,
-  setupNavClickHandlers,
-  setupPortfolioFilters,
-  resolveHashTarget,
-  resolveLightboxHref,
-};
