@@ -54,7 +54,7 @@ const BACK_TO_TOP_THRESHOLD = 100;
  * Mark one nav link as the current location and clear every other one.
  * The highlight class sits on the link's parent `<li>`; `aria-current="location"`
  * sits on the link itself so assistive technology announces it.
- * @param {Iterable<Element>} navLinks - Every `.nav-menu a` element
+ * @param {NodeListOf<Element>|Element[]} navLinks - Every `.nav-menu a` element
  * @param {Element|null} activeLink - The link to mark, or null to clear all
  */
 export function markCurrentNavLink(navLinks, activeLink) {
@@ -77,8 +77,8 @@ export function markCurrentNavLink(navLinks, activeLink) {
  * page (`scrollY + 200 < 300`) the first nav item is active. When no rule applies
  * the current highlight is left as it is. Reads only the references it is given,
  * so it runs no DOM queries.
- * @param {Iterable<HTMLElement>} sections - The page's `section` elements
- * @param {ArrayLike<Element>} navLinks - Every `.nav-menu a` element
+ * @param {NodeListOf<HTMLElement>|HTMLElement[]} sections - The page's `section` elements
+ * @param {NodeListOf<Element>|Element[]} navLinks - Every `.nav-menu a` element
  * @param {number} scrollY - The window's vertical scroll offset
  */
 export function updateActiveNav(sections, navLinks, scrollY) {
@@ -187,7 +187,7 @@ export function setupNavClickHandlers(doc, scrollFn, closeNavFn) {
 
 /**
  * Set up portfolio filter click handlers
- * @param {NodeList} filters - The filter list items
+ * @param {NodeListOf<Element>|Element[]} filters - The filter list items
  * @param {Function} arrangeCallback - Callback to trigger isotope arrange
  */
 export function setupPortfolioFilters(filters, arrangeCallback) {
