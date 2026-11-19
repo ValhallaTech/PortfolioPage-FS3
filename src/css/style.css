@@ -96,10 +96,13 @@ h6 {
   z-index: 9997;
 }
 
+/* The photo is a square crop; aspect-ratio and object-fit keep it a circle regardless (AC-78). */
 #header .profile img {
+  aspect-ratio: 1;
   border: 8px solid #2c2f3f;
   display: block;
   margin: 15px auto;
+  object-fit: cover;
   width: 120px;
 }
 
@@ -249,11 +252,57 @@ h6 {
 # Hero Section
 --------------------------------------------------------------*/
 
+/*
+ * Hero background (D-4). Each media block lists AVIF, then WebP, then the 1920 px JPEG
+ * fallback; the browser takes the first type it supports, at 1x or 2x where both exist.
+ * Phones in portrait get the 1080 x 1920 crop of the same scene. The JPEG sits inside
+ * image-set() because Lightning CSS folds a separate url() fallback declaration into
+ * the image-set() one and drops it.
+ */
 #hero {
-  background: url('../images/hero-bg.jpg') top center;
+  background-image: image-set(
+    url('../images/hero/hero-1280.avif') type('image/avif') 1x,
+    url('../images/hero/hero-2560.avif') type('image/avif') 2x,
+    url('../images/hero/hero-1280.webp') type('image/webp') 1x,
+    url('../images/hero/hero-2560.webp') type('image/webp') 2x,
+    url('../images/hero/hero-1920.jpg') type('image/jpeg') 1x
+  );
+  background-position: top center;
   background-size: cover;
   height: 100vh;
   width: 100%;
+}
+
+@media (max-width: 767px) and (orientation: portrait) {
+  #hero {
+    background-image: image-set(
+      url('../images/hero/hero-portrait-1080x1920.avif') type('image/avif'),
+      url('../images/hero/hero-portrait-1080x1920.webp') type('image/webp'),
+      url('../images/hero/hero-1920.jpg') type('image/jpeg')
+    );
+  }
+}
+
+@media (min-width: 1281px) {
+  #hero {
+    background-image: image-set(
+      url('../images/hero/hero-1920.avif') type('image/avif') 1x,
+      url('../images/hero/hero-2560.avif') type('image/avif') 2x,
+      url('../images/hero/hero-1920.webp') type('image/webp') 1x,
+      url('../images/hero/hero-2560.webp') type('image/webp') 2x,
+      url('../images/hero/hero-1920.jpg') type('image/jpeg') 1x
+    );
+  }
+}
+
+@media (min-width: 1921px) {
+  #hero {
+    background-image: image-set(
+      url('../images/hero/hero-2560.avif') type('image/avif'),
+      url('../images/hero/hero-2560.webp') type('image/webp'),
+      url('../images/hero/hero-1920.jpg') type('image/jpeg')
+    );
+  }
 }
 
 #hero:before {
