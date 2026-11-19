@@ -4,7 +4,7 @@
 | --- | --- |
 | Slug | `stabilize-and-cleanup` |
 | Created | 2026-11-16 |
-| Stage | `approved` |
+| Stage | `draft` |
 | Brief | ✅ complete |
 | PRD | ✅ complete |
 | Technical Plan | ✅ complete |
@@ -1890,6 +1890,8 @@ _Written 2026-11-17 against `main` at `1dc41e6` plus the hotfix branch of draft 
 
 _Revised again on 2026-11-17, before execution, for ten defects the workflow-architect found while designing the Workflow scripts. Fred chose to have the Architect fix §3 ("Architect revises spec"). The fixes: the lint scope (WI-10, §3.3), the empty-suite exits of Playwright (WI-6, WI-7, chain C), how the second of two PRs reconciles shared manifests (§3.5 rule 6), `yaml` moved into PR-1 (WI-3, WI-11, WI-24), same-file work no longer marked parallel (§3.5 rule 7; PR-1, PR-5, PR-7 and PR-9), the Linux gate cloning from `origin` instead of a bind mount (WI-5, WI-11), Corepack on Node 25 in PR-1 (RK-22), a non-vacuous AC-2 test (WI-3), and the `--commands-file` format (chain A). The coordinator then raised three more gaps, fixed in the same revision: Corepack as a precondition on Fred's Windows host (D-10, Phase 0, WI-4 preflight); how the AC-1 test finds the release SHA before the tag exists (`AC1_REF`, WI-3, WI-65); and this section's status line, which now says that approval is shown only by `Stage`. On 2026-11-18, running PR-1 found one more defect, and Fred approved the repair ("Yes, repair both"): the `node:25` image's preinstalled Yarn 1 blocks the Corepack install with `EEXIST`. That is fixed in WI-5, D-1, D-10 and RK-22. The same rule is applied to WI-11's AC-9 test and its §3.7 row. Also on 2026-11-18: WI-7 and the chain C seam now run `--list` without Jest's `JEST_*` variables, and they count `No tests found` as an empty list only when it is the only error. WI-4's step environment and WI-61's child commands drop the `JEST_*` variables for the same reason. Then, from PR-1's security review (SEC-EXEC-2), Fred chose "Refuse, except tests (Recommended)": the runner refuses a dirty tree with exit 65 (D-10, WI-4, chain A). From SEC-EXEC-4, Fred chose "Private cache per run (Recommended)": `gate:linux` no longer shares a Yarn cache volume (WI-5, RK-17). WI-5 also records SEC-EXEC-1, already made in commit `9ff63a7`: setup runs as root, the Playwright volume is made root-owned and read-only to `node`, and the gate runs as `node`. No Gate 1 or Gate 2 decision changed. Each fix records its evidence where it is made, and in "Facts this plan rests on"._
 
+_**Architect remark, 2026-11-19: correction found while executing PR-6.** WI-40's AC-124 test failed at `desktop` on the PR-6 head `9d58ed0`. On the first frame after the `App` click, all 9 items still showed at their old positions, and the next frame showed {1, 3, 6} in place. D-16 had claimed that `{ instant: true, layout: 'instant' }` puts the final set on the first frame, marked "Verified in the source". That claim was wrong. The source read covered `filter` passing `instant` to show and hide, but missed that Muuri's default packer computes every layout in two web workers, so the layout and the visibility change that waits for it both land after the click handler returns. The same workers break D-16's CSP claim: Muuri creates them from a `blob:` URL when the module loads, and D-6's `script-src 'self'` does not match `blob:`, so AC-83 would fail in PR-10. The fix is a one-line Yarn patch to Muuri that builds its default packer with 0 workers. Layout then runs synchronously, the filter options stay the same, and D-6 stays the same. It is recorded in D-16, WI-37, the dependency table, RK-7, RK-20 and "Facts this plan rests on". AC-124 is unchanged: Fred chose to fix the page, not the AC. No other AC changed. `Stage` is back to `draft` for Fred to re-approve._
+
 ### 3.1 Affected systems & repos
 
 | System / repo | Nature of change | Owner domain |
@@ -1927,7 +1929,7 @@ Two CDN caching facts the plan relies on:
 | npm scripts | `build`, `test`, `test:ci`, `lint`, `lint:fix`, `format`, `format:check`, `start` | Adds `test:smoke`, `test:e2e:slow`, `test:e2e:live`, `verify:release`, `gate`, `gate:linux`. `build` gains `--no-source-maps`. `format` and `format:check` cover `src/css`, `tests` and `scripts`. `lint` and `lint:fix` cover `tests` and `scripts` but not `src/css`: ESLint lints only JS and exits 2 on a directory with no file it lints (WI-10) | No |
 | Renovate | One group, automerge paused | `bootstrap` in its own group with `automerge: false`, placed last so it wins. The group pause stays (WI-19) | No |
 | GitHub | No ruleset requires a check. The General Ruleset (`15072163`) holds pull request, CodeQL code scanning and code quality rules | A new dedicated ruleset requires `Test & Build` on the default branch, with `enforcement: disabled` until billing returns (WI-21). The General Ruleset is not modified | No, while disabled |
-| Portfolio layout engine | Isotope 3.0.6 (`fitRows`), GPL-3.0 or commercial | Muuri 0.9.5, MIT. It animates filtering, and does so instantly under reduced motion (WI-37) | No. The layout keeps the same three, two and one column widths |
+| Portfolio layout engine | Isotope 3.0.6 (`fitRows`), GPL-3.0 or commercial | Muuri 0.9.5, MIT, with a one-line Yarn patch that builds its layout packer with no web workers (D-16). It animates filtering, and does so instantly under reduced motion (WI-37) | No. The layout keeps the same three, two and one column widths |
 | Issue intake | One Markdown template | Bug form and feature form (WI-26) | No |
 
 **DOM contract for the tests** (resolves Q-12(f)). The ACs follow roles. These are the selectors at release.
@@ -1979,7 +1981,7 @@ Every package is pinned to an exact version at install time, matching the repo's
 | `@fontsource/open-sans` | runtime | exact at install | OFL-1.1 *(inferred from `@fontsource/poppins`)* | Self-hosted Open Sans (C-11, D-2) | WI-42 |
 | `@fontsource/raleway` | runtime | exact at install | OFL-1.1 *(inferred, as above)* | Self-hosted Raleway | WI-42 |
 | `@fontsource/poppins` | runtime | 5.3.0 | OFL-1.1 | Self-hosted Poppins | WI-42 |
-| `muuri` | runtime | 0.9.5, pinned exactly (`"muuri": "0.9.5"`) | MIT | Portfolio filter and layout engine, replacing Isotope (D-16). No dependencies. 83,530 B minified, 23,075 B gzip, against Isotope's 32,475 B and 9,326 B | WI-37 |
+| `muuri` | runtime | 0.9.5, pinned exactly (`"muuri": "0.9.5"`), with a one-line Yarn `patch:` that sets `Grid.defaultPacker = new Packer(0)` (D-16; added 2026-11-19, so not part of the Gate 2 approval of this list) | MIT | Portfolio filter and layout engine, replacing Isotope (D-16). No dependencies. 83,530 B minified, 23,075 B gzip, against Isotope's 32,475 B and 9,326 B | WI-37 |
 
 **Removed:** `isotope-layout` (WI-37), `boxicons` and `just-validate` (WI-28), `@fortawesome/fontawesome-free` (WI-43).
 
@@ -2140,6 +2142,11 @@ The `build` script gains `--no-source-maps` (resolves D-5; WI-59). Local `yarn s
 
 - **Package and import:**
   - `muuri` is pinned exactly to `0.9.5`.
+  - **Patched to lay out synchronously** *(added 2026-11-19)*. A Yarn patch (`yarn patch muuri`, then `yarn patch-commit -s`) changes one line of `dist/muuri.module.js`, from `Grid.defaultPacker = new Packer(2);` to `Grid.defaultPacker = new Packer(0);`. That is line 7500 in the published file.
+    - *Why:* unpatched, the default packer creates two web workers when the module loads, and every `layout()` posts its work to one of them and waits for the reply. So a layout, and every show or hide that waits for it, finishes after the code that asked for it has returned. With 0 workers, `Packer` uses its in-thread `PackerProcessor` instead, and `layout()` computes and applies the positions before it returns. That includes the first layout inside `new Muuri(...)`. *(Verified 2026-11-19; see "Facts this plan rests on".)*
+    - *What it costs:* the layout of 9 items runs on the main thread instead of a worker. That is negligible at this size. Normal-motion animation is unchanged, because animations still start on Muuri's next animation-frame tick.
+    - *Scope:* only `dist/muuri.module.js` is patched, because that is the file Parcel loads. `dist/muuri.js`, `dist/muuri.min.js` and `src/` are not loaded and stay as published.
+    - *Lost:* (1) a per-grid `layout` function wrapping a private `new Muuri.Packer(0)` makes the filter synchronous with no patch, but the default packer still creates its workers when the module loads, so the CSP violation remains (see **CSP**). (2) Swapping `Muuri.defaultPacker` at runtime fails for the same reason: the workers already exist by then. (3) Adding `worker-src blob:` to D-6 would weaken a security control to permit two worker threads the page does not need. (4) `syncWithLayout: false` alone hides items at once, but leaves the positions waiting on the worker, so the first frame still shows the old positions.
   - `main.js` uses `import Muuri from 'muuri';`. Parcel resolves the package's `module` field to `dist/muuri.module.js`, because the package has no `exports` map.
   - `yarn remove isotope-layout` runs in the same change.
 - **Markup.** Muuri needs an outer item for positioning and a first direct child whose visibility it animates. Today's markup already has that shape:
@@ -2151,7 +2158,7 @@ The `build` script gains `--no-source-maps` (resolves D-5; WI-59). Local `yarn s
   - The `col-lg-4 col-md-6` classes stay. Item widths remain Bootstrap's 33.333%, 50% and 100%, with the `.row > *` gutter padding inside each item.
   - `position: absolute` applies **only once Muuri has initialized**: `.portfolio-container.muuri { position: relative }` and `.portfolio-container.muuri > .portfolio-item { position: absolute }`. Until then, and with JS off, the items flow in the Bootstrap row and are all shown.
   - An absolutely positioned item's percentage width resolves against the relative container, so the widths are the same in both states.
-  - Muuri's default layout (`fillGaps: false`, left to right, top first) places equal-sized items exactly where the flow row put them. The switch to absolute therefore moves nothing. *(Inferred; AC-76 and AC-121 check it.)*
+  - Muuri's default layout (`fillGaps: false`, left to right, top first) places equal-sized items exactly where the flow row put them. The switch to absolute therefore moves nothing. *(Inferred; AC-76 and AC-121 check it.)* With the patch, the constructor adds the `muuri` class and runs the first layout in the same synchronous call, so no frame shows absolutely positioned items before their positions are set. *(Verified 2026-11-19 in the source: the constructor calls `addClass` and then `this.layout(true)`.)*
   - `layoutOnResize` (150 ms) runs `refreshItems().layout()`, so the columns follow the Bootstrap breakpoints. *(Verified in the source.)*
   - `.portfolio .portfolio-item { margin-bottom: 30px }` stays. Muuri includes item margins in its layout.
 - **Image sizing before the first layout (CLS):**
@@ -2164,7 +2171,16 @@ The `build` script gains `--no-source-maps` (resolves D-5; WI-59). Local `yarn s
   - `portfolioFilterOptions(prefersReducedMotion)` reads `matchMedia('(prefers-reduced-motion: reduce)')` **on every click**, so a live preference change applies. It returns `{ instant: true, layout: 'instant' }` under reduce, and `{ instant: false, layout: true }` otherwise.
   - The constructor sets `showDuration`, `hideDuration` and `layoutDuration` to `0` when reduce is already set at init, so a resize under reduce does not animate either.
   - Muuri passes `instant` through to show and hide, which then set their styles without animating. *(Verified in the source.)*
-  - That is R-81 and AC-124: the final set appears on the first frame, and no animation runs.
+  - ~~That is R-81 and AC-124: the final set appears on the first frame, and no animation runs.~~ *Corrected 2026-11-19, during PR-6:* `instant` alone does not meet AC-124. Unpatched, the layout runs in a web worker, and show and hide wait for the layout's `layoutStart` event before they change anything, because `syncWithLayout` is not `false`. So nothing changes during the click handler, and the final state first shows one frame late. WI-40's AC-124 test observed exactly that on `9d58ed0`.
+  - **How the patch meets AC-124.** With the patched packer, `grid.filter(selector, { instant: true, layout: 'instant' })` finishes everything before it returns, in this order:
+    1. `show` and `hide` register for the next `layoutStart`. They are called with `layout: false`, so they do not start a layout of their own.
+    2. `filter` then calls `layout(true)`. The in-thread packer computes the layout and calls back at once.
+    3. That callback sets the container height and emits `layoutStart`. Show and hide then run with `instant`: they set the visibility styles, and each hidden item gets `display: none`.
+    4. The callback then moves each item with `instant`, which sets its `transform` directly instead of scheduling an animation.
+
+    The first frame after the click is therefore final, and no animation is started (R-81, AC-124). *(Verified 2026-11-19 in the installed source; the AC-124 test is the control.)*
+  - The default `syncWithLayout` stays. Once layout is synchronous, `syncWithLayout: false` adds nothing, and it would only reorder steps that already finish inside the same call. So `portfolioFilterOptions` keeps its return values.
+  - Normal motion is unchanged: show, hide and layout animations still start on Muuri's next animation-frame tick and run for 300 ms.
 - **Hidden items:**
   - Muuri ends a hide by setting `display: none` on the item through the CSSOM. Hidden items leave the tab order and the accessibility tree.
   - DOM order stays the visual order.
@@ -2173,13 +2189,14 @@ The `build` script gains `--no-source-maps` (resolves D-5; WI-59). Local `yarn s
   - Links stay `a.glightbox` inside `.portfolio-links`. #69's `resolveLightboxHref` keeps reading the sibling `<img>`.
   - Hidden items' links are `display: none` and cannot be clicked. Every visible item opens the lightbox (AC-120).
   - GLightbox's gallery still includes all nine slides, as it does today.
-- **CSP.** Muuri 0.9.5 writes styles only per property (`element.style[prop] = …`) and animates through `element.animate()` (the Web Animations API). It never calls `setAttribute('style')`, never assigns `style.cssText`, and never creates a `<style>` element. CSP `style-src` does not govern either mechanism, so the D-6 policy needs no change. *(Verified 2026-11-17 by reading `unpkg.com/muuri@0.9.5/dist/muuri.module.js` in three windows: `setStyles`, `ItemVisibility._finishHide`, the resize handler, `filter`.)*
+- **CSP.** Muuri 0.9.5 writes styles only per property (`element.style[prop] = …`) and animates through `element.animate()` (the Web Animations API). It never calls `setAttribute('style')`, never assigns `style.cssText`, and never creates a `<style>` element. CSP `style-src` does not govern either mechanism. *(Verified 2026-11-17 by reading `unpkg.com/muuri@0.9.5/dist/muuri.module.js` in three windows: `setStyles`, `ItemVisibility._finishHide`, the resize handler, `filter`.)*
+  - *Workers, corrected 2026-11-19.* The 2026-11-17 read missed one more mechanism. When the module loads, unpatched Muuri runs `URL.createObjectURL(new Blob(…))` and then `new Worker(blobUrl)` twice, for its default packer. D-6 sets no `worker-src` or `child-src`, so workers fall back to `script-src 'self'`, and `'self'` never matches a `blob:` URL. Under the report-only policy every page load would then report a violation, and AC-83 would fail in PR-10. The patch (0 workers) leaves `createWorkerProcessors` uncalled, so no `blob:` URL and no worker is ever created. With the patch, the D-6 policy needs no change. *(Verified 2026-11-19: the worker code in the installed source, and the `'self'` rule in CSP Level 3 §6.7.2.8, step 4: "If url's scheme is "blob", return "Does Not Match"".)*
 - **Sprint 3 (GSAP) interaction:**
   - Muuri owns `transform` on `.portfolio-item` (position), `opacity` and `transform` on `.portfolio-wrap` (visibility), and `display` on hidden items.
   - GSAP must not animate any of those properties on those elements. That is gsap-analysis §5 G5, which applied to Isotope too. Scroll reveals target the section or `.portfolio-container`, never items.
   - gsap-analysis §7 step 7 (Isotope → GSAP Flip) no longer applies while Muuri stays. Replacing Muuri with Flip later would be its own decision.
   - Anything that changes the container's width outside a window resize must call `grid.refreshItems().layout()`.
-- **Cost and maintenance.** About +14 KB gzip net of removing Isotope, against at least 500 KB saved elsewhere (M-2). The last Muuri release was 0.9.5 on 2021-07-09 (RK-20).
+- **Cost and maintenance.** About +14 KB gzip net of removing Isotope, against at least 500 KB saved elsewhere (M-2). The last Muuri release was 0.9.5 on 2021-07-09 (RK-20). The patch adds one file, `.yarn/patches/muuri-npm-0.9.5-<hash>.patch`, which `.gitignore` already allows (`!.yarn/patches`). Because the pin is exact and no newer release exists, the patch never has to be rebased.
 
 #### Facts this plan rests on
 
@@ -2227,6 +2244,28 @@ The `build` script gains `--no-source-maps` (resolves D-5; WI-59). Local `yarn s
 - Yarn Berry resolves conflict markers in `yarn.lock` during `yarn install` (YN0049, YN0048). It reads the two sides through `git rev-parse MERGE_HEAD HEAD` or `REBASE_HEAD`, so it must run before the merge is committed (YN0083). Under `--immutable` it refuses (YN0047). Read via Context7 `/yarnpkg/berry`, error-codes reference.
 - `initTyped`, `initTestimonialsCarousel` and `initContactForm` all live in `src/js/main.js` (lines 39, 79 and 143 on `main` at `1dc41e6`). Read with a search of `src/js`. This is why WI-52, WI-53 and WI-54 no longer run in parallel.
 - Nothing in `src/js` or `src/index.html` imports `boxicons` or `just-validate`. `main.js:18-20` imports the three Font Awesome CSS files, and `index.html:17` is the Google Fonts `<link>`. Read with a search of `src`.
+
+**Verified 2026-11-19, for the PR-6 correction (D-16)**
+
+Read by the Architect in the PR-6 worktree's installed `node_modules/muuri/dist/muuri.module.js`. Its `package.json` reads `"version": "0.9.5"` and `"module": "dist/muuri.module.js"`. Line numbers are in that file.
+
+- `Grid.defaultPacker = new Packer(2);` (7500) runs when the module loads.
+- `Packer(numWorkers)` (6928–6953) calls `createWorkerProcessors` only when `numWorkers` is above 0 and `window.Worker`, `URL` and `Blob` exist. Otherwise it builds an in-thread `PackerProcessor`.
+- `createWorkerProcessors` (6859–6880) creates a `blob:` URL with `URL.createObjectURL(new Blob(…))` and calls `new Worker(blobUrl)` once per worker. `rg` finds no other `new Worker` or `createObjectURL` in the file.
+- `Packer.prototype.createLayout` (7073–7135):
+  - With a processor, it computes the layout and calls `callback(layout)` before returning.
+  - With workers, it posts the work to a worker and returns. The callback runs later, from the worker's `onmessage`.
+- `Grid.prototype.layout` (7841–7906) passes `this._onLayoutDataReceived` as that callback.
+- `_onLayoutDataReceived` (8548–8662) sets the container styles, emits `layoutStart`, and then calls `_layout.start(instant === true, …)` on each item that moved.
+- `ItemLayout.prototype.start` (5092–5146) sets the translate directly when there is no animation. Otherwise it schedules the animation with `addLayoutTick`.
+- `filter` (8110–8184) calls `show` and `hide` with `layout: false` and the caller's `instant` and `syncWithLayout`. It then calls `this.layout(layout === 'instant')`.
+- `_setItemsVisibility` (8676–8780) defers the visibility change to the next `layoutStart` while `syncWithLayout !== false`. It refreshes newly shown items' sizes synchronously through `refreshItems(…, true)`.
+- `ItemVisibility.prototype._startAnimation` (5818–5869) sets the target styles and finishes at once when `instant` is set. `_finishHide` (5887–5894) sets `display = 'none'` in the same call.
+- The constructor (7388–7401) adds `containerClass` and then calls `this.layout(true)` when `layoutOnInit` is set.
+- `Grid.Packer = Packer` (7484) is public. Context7 `/haltu/muuri` (README, "option: layout") states that the default layout algorithm "will use two shared web workers to compute the layouts asynchronously", and that Muuri falls back to synchronous layout calculations without workers.
+- CSP Level 3, §6.7.2.8 ("Does url match expression in origin with redirect count?"), step 4: for `'self'`, "If url's scheme is "blob", return "Does Not Match"". MDN `worker-src`: when it is absent, the browser falls back to `child-src`, then `script-src`, then `default-src`. Read at `w3.org/TR/CSP3/` and `developer.mozilla.org` (`Content-Security-Policy/worker-src`).
+- *Not verified here:* whether a browser blocks a CSP-refused `new Worker` by throwing or by an `error` event. It does not matter, because the patch never creates one. AC-83 is the control.
+- *Not verified here:* whether `yarn patch-commit -s` in Yarn 4.18.1 writes the `patch:` reference into `resolutions` or into the dependency entry. WI-37 commits whichever it writes. Context7 `/yarnpkg/berry` documents the `yarn patch` → `yarn patch-commit -s` flow and the `.yarn/patches` location.
 
 **Inferred, not verified, and checked by the work itself**
 
@@ -2728,6 +2767,12 @@ S1 tests implement the Conventions' tracked-file search in Node (`git ls-files` 
 - **satisfies:** AC-118, AC-35, AC-36, AC-37, AC-42, AC-43, AC-119, AC-120, AC-121, AC-122, AC-123, AC-124
 - **change:** The D-16 design. In detail:
   - **Packages:** run `yarn remove isotope-layout`, then `yarn add muuri@0.9.5 --exact`.
+  - **Muuri patch** *(added 2026-11-19; D-16, "Patched to lay out synchronously")*:
+    - Run `yarn patch muuri`. In the folder it prints, change only `dist/muuri.module.js` line 7500 from `Grid.defaultPacker = new Packer(2);` to `Grid.defaultPacker = new Packer(0);`.
+    - Run `yarn patch-commit -s <folder>`.
+    - Commit `.yarn/patches/muuri-npm-0.9.5-<hash>.patch`, the `package.json` change it makes, and `yarn.lock`.
+    - `yarn install --immutable` must then pass on a clean checkout.
+    - No `main.js` code touches `Muuri.defaultPacker` or the `layout` option.
   - **`main.js`:**
     - Replace the Isotope import with `import Muuri from 'muuri';`.
     - `initPortfolioGrid(container)` creates `new Muuri(container, { items: '.portfolio-item', layoutOnInit: true, layoutOnResize: 150, dragEnabled: false, showDuration, hideDuration, layoutDuration })`. The three durations are `0` when `prefers-reduced-motion: reduce` matches at init, and `300` otherwise.
@@ -2736,7 +2781,7 @@ S1 tests implement the Conventions' tracked-file search in Node (`git ls-files` 
   - **`utils.js`** gets three pure, unit-testable exports:
     - `setupPortfolioFilters(buttons, onFilter)` binds the buttons, keeps exactly one `aria-pressed="true"`, and calls `onFilter(button.dataset.filter)`.
     - `portfolioFilterSelector(filter)` returns `'.portfolio-item'` for `all`, and `[data-category="<filter>"]` otherwise.
-    - `portfolioFilterOptions(reduce)` returns `{ instant: true, layout: 'instant' }` or `{ instant: false, layout: true }`.
+    - `portfolioFilterOptions(reduce)` returns `{ instant: true, layout: 'instant' }` or `{ instant: false, layout: true }`. The 2026-11-19 correction leaves these values unchanged. They give AC-124's first-frame result only because the Muuri patch makes layout synchronous. Do not add `syncWithLayout`.
   - **`index.html`:**
     - The filter list becomes `<ul id="portfolio-filters">` with `<li><button type="button" data-filter="all|app|card|web" aria-pressed="…">`.
     - Each `.portfolio-item` gets `data-category` and `data-portfolio-id`, and loses its `filter-*` class. It keeps `col-lg-4 col-md-6` and its `.portfolio-wrap` first child.
@@ -2746,10 +2791,11 @@ S1 tests implement the Conventions' tracked-file search in Node (`git ls-files` 
     - Remove `transition` from `.portfolio-wrap`, as Muuri requires. Hover transitions stay on the overlay `::before` and the links only.
     - Button reset, and the pressed style on `[aria-pressed="true"]`.
     - `.portfolio-wrap:focus-within` reveals the action links and the overlay. `@media (hover: none)` shows the links by default.
-  - **CSP:** no inline `style` attribute anywhere. Muuri writes through the CSSOM and the Web Animations API only (D-16, verified).
+  - **CSP:** no inline `style` attribute anywhere. Muuri writes through the CSSOM and the Web Animations API only (D-16, verified). With the patch it also creates no `blob:` URL and no worker, so D-6 needs no `worker-src` (D-16, **CSP**).
   - **Sprint 3:** add a one-line comment above `initPortfolioGrid`: Muuri owns the `transform`, `opacity` and `display` of `.portfolio-item` and `.portfolio-wrap`, so do not animate them with GSAP.
 - **done when:**
-  - WI-36's test passes, and WI-40's tests pass, including AC-124 and AC-76's CLS check at `phone` and `desktop`.
+  - WI-36's test passes, and WI-40's tests pass, including AC-124 and AC-76's CLS check at `phone` and `desktop`. AC-124 must pass at both `desktop` and `small` with WI-40's test unedited. The test does not change, because the defect it found was in the page.
+  - The patch file's diff is exactly the one line in `dist/muuri.module.js`, and `yarn install --immutable` passes with it.
   - `yarn build` emits no `isotope` module.
   - Fred records AC-123 (accept or reject) in PR-6.
 
@@ -3144,7 +3190,7 @@ The report sprint-1 order is kept, minus phase (a):
 | RK-4 | Timing-based tests make the gate flaky: scroll waits, the 11 s carousel checks, the 60 s typing checks | med | med | Slow tests sit outside the smoke command (`@slow`). Web-first assertions and `expect.poll` replace fixed sleeps where an AC allows. `retries: 0` in the gate, because a flaky test is a defect that goes back to its author | WI-8, WI-35, WI-40, WI-46, WI-51, WI-55 |
 | RK-5 | The Chromium-only baseline misses WebKit regressions in sprint 2, such as the Bootstrap 6 dialog on Safari 18 | med | med | The `phone` viewport uses iPhone 13 metrics. Sprint 2 can add a WebKit project with one config entry and `playwright install webkit`. Accepted for sprint 1 | WI-6, WI-8 |
 | RK-6 | WI-10's whole-file Prettier pass over `style.css` conflicts with any branch already editing CSS | low | low | It lands in PR-1, in a formatting-only commit, and no CSS work starts before PR-1 merges | WI-10 |
-| RK-7 | CSP report-only violations from libraries. Verified sources: Typed.js `<style>` injection, and GLightbox `setAttribute('style')` when a slide has a title or description. Muuri 0.9.5 was checked and writes only through the CSSOM and the Web Animations API | med | med | WI-53 turns off `autoInsertCss`. WI-49 adds no `data-title` or `data-description`. AC-83 catches the rest. The Security Reviewer decides any inline-style allowance in writing, never silently | WI-49, WI-53, WI-58, WI-60 |
+| RK-7 | CSP report-only violations from libraries. Verified sources: Typed.js `<style>` injection, and GLightbox `setAttribute('style')` when a slide has a title or description. Muuri 0.9.5 was checked and writes only through the CSSOM and the Web Animations API. *(Corrected 2026-11-19:* unpatched, it also creates two `blob:` workers when the module loads, which `script-src 'self'` does not allow) | med | med | WI-53 turns off `autoInsertCss`. WI-49 adds no `data-title` or `data-description`. WI-37's Muuri patch builds the packer with 0 workers, so no worker is created. AC-83 catches the rest. The Security Reviewer decides any inline-style allowance in writing, never silently | WI-49, WI-53, WI-58, WI-60 |
 | RK-8 | Some high or critical dev advisories have no fix in a compatible range (A-15) | med | med | `yarn up -R` first, then targeted `resolutions` with the gate re-run after each. If an advisory needs a tool swap, WI-23 halts and the finding goes to Fred. It is not dropped | WI-23 |
 | RK-9 | The ESM switch drags Parcel into Babel, or coverage falls below 80% once `observeSkills` and its tests go | low | med | The Babel config sits inline in `jest.config.js` (D-12). WI-34, WI-39 and WI-45 add tests for every new function. The threshold fails the gate if they fall short | WI-31, WI-32 |
 | RK-10 | The font and icon swap changes rendering. A missed weight gives faux bold; a mis-sized `.icon` shifts layout | med | low | WI-42 derives the weights from computed styles. AC-71 and AC-72 automate the measurable part. AC-73 compares against WI-1's live screenshots | WI-42, WI-43 |
@@ -3157,7 +3203,7 @@ The report sprint-1 order is kept, minus phase (a):
 | RK-17 | The Linux gate depends on network access on every run: the clone from GitHub, apt for Playwright dependencies, Corepack and npm, and, since SEC-EXEC-4, every package that `yarn install --immutable` needs, because each run starts with an empty Yarn cache | med | low | Only the browsers are cached between runs, in the read-only `portfolio-gate-playwright` volume. The Yarn cache is never shared, by decision (SEC-EXEC-4): slower runs are the accepted price of closing the cache-poisoning hole. The image tag is pinned to the `.nvmrc` major. A network failure is reported as a gate failure and never recorded as a pass | WI-5 |
 | RK-18 | **Monitoring:** the site has no production telemetry. A failed deploy, or a CSP violation on a real visitor, would go unseen | med | med | Signals and where they are watched: (1) Netlify deploy status for every PR preview and production deploy, which Fred watches in the Netlify UI and its failure notifications. (2) `yarn test:e2e:live` and the live S5 checks after each sprint-1 production deploy and at release. (3) The AC-83 full visit, as the report-only CSP's only signal, because no collector exists (D-6). (4) M-4 and M-5 are measured once, on the release commit: M-4 is the AC-87 audit run, M-5 the AC-12 check, with target 0 for both (§2.4). Fred dropped the weekly follow-up at Gate 2, so nothing watches for drift after 4.0.0. That is an accepted gap, not a tracked one. No new telemetry is built: none of these changes needs one | WI-58, WI-60, WI-65 |
 | RK-19 | **Rollback:** a shipped change misbehaves | low | med | Code: `git revert` of the PR's merge commit, and Netlify "Publish deploy" on the previous production deploy, which is instant. Settings: delete or edit the ruleset (`gh api`), reopen #56 or #68, revert `renovate.json`. **Point of no return: WI-65 pushing tag `4.0.0` and publishing the GitHub release.** It is gated in §3.5 by a verified production deploy, green live, slow and release suites, and a green Windows AC-1 gate | WI-65 |
-| RK-20 | Muuri has had no release since 0.9.5 (2021-07-09). A future browser change could break its layout or Web Animations path with no upstream fix. Its absolute positioning also constrains sprint 3, because GSAP must not animate the item and wrap transforms | low (near term), med (over time) | med | Pin it exactly (`0.9.5`). The smoke `Portfolio filter` row and AC-119 to AC-122 and AC-124 fail loudly on any breakage. The D-16 sprint-3 rules and the code comment in WI-37 record what GSAP must not touch. If Muuri breaks later, the exit is a small swap: no library (the `hidden`-attribute design in the Gate 2 record) or GSAP Flip. That would be its own decision | WI-37, WI-40 |
+| RK-20 | Muuri has had no release since 0.9.5 (2021-07-09). A future browser change could break its layout or Web Animations path with no upstream fix. Its absolute positioning also constrains sprint 3, because GSAP must not animate the item and wrap transforms | low (near term), med (over time) | med | Pin it exactly (`0.9.5`). The one-line Yarn patch (D-16) is tied to that exact version. If the version ever changes, the patch fails to apply and `yarn install` stops loudly instead of shipping asynchronous layout again, and AC-124 and AC-83 guard the same behavior. The smoke `Portfolio filter` row and AC-119 to AC-122 and AC-124 fail loudly on any breakage. The D-16 sprint-3 rules and the code comment in WI-37 record what GSAP must not touch. If Muuri breaks later, the exit is a small swap: no library (the `hidden`-attribute design in the Gate 2 record) or GSAP Flip. That would be its own decision | WI-37, WI-40 |
 | RK-21 | Muuri's switch from flow to absolute layout shifts the portfolio or the sections below it: CLS (AC-76), the `Layout` smoke row, or a container height that does not cover its items (AC-122) | low | med | Absolute positioning applies only under `.muuri`. The nine images carry `width="800" height="600"` before the first layout, and a `load` handler re-lays out instantly. The portfolio sits below the first screen at every AC viewport. AC-76, AC-121 and AC-122 run at `phone`, `small` and `desktop` and at nine widths | WI-37, WI-40 |
 | RK-22 | PR-1's Linux gate runs on Node 25, because `.nvmrc` reads 25.9.0 until WI-12 in PR-2. That has two effects. (1) The `node:25-bookworm` image ships Yarn 1.22.22, linked at `/usr/local/bin/yarn`, so a plain `npm install -g corepack@0.36.0` fails with `EEXIST`. `corepack enable` is then never reached, and `yarn install --immutable` runs against Yarn 1. This happened in PR-1's run (WI-4's green verify, and Phase 0). (2) `corepack@0.36.0`'s engines (`^22.22.2 \|\| ^24.15.0 \|\| >=26.0.0`) exclude Node 25, so for that one PR Corepack runs outside its supported range and may misbehave | high (1), low (2) | med (1): no gate step can pass; low (2) | (1) WI-5 removes the image's Yarn 1 `yarn` and `yarnpkg` links before the install, only when they are symlinks into `/opt/yarn-v*`. It then installs without `--force` and adds `image Yarn 1 links removed` to the evidence label. On `node:26` the step changes nothing. (2) PR-1's gate goes ahead on Node 25, with the out-of-range install made visible: npm treats `engines` as advisory without `engine-strict`, so the install proceeds with an `EBADENGINE` warning *(verified 2026-11-17 via Context7 `/npm/cli`)*, and WI-5 then labels the evidence `corepack@0.36.0 outside its engines`. A real incompatibility fails a gate step, which halts and goes to Fred; it is never worked around or recorded as a pass. The exposure ends at WI-12, after which every gate runs on Node 26, inside the range. *Lost:* a `node:26` container for PR-1 would produce evidence for a Node line that PR-1's commits do not declare. An older Corepack pinned for PR-1 alone would test an install that no later environment, and no part of D-1, uses | WI-5, WI-12 |
 
@@ -3364,7 +3410,7 @@ At Gate 2 the Architect recommended no library. The reasons were that nine equal
 | jQuery | No (v4 is a plain class) | No | No | No |
 | ESM / Parcel | `type: module`; `exports` provides `import` and `./style.css` | `module: dist/muuri.module.js` | `module: build/minimasonry.esm.js` | Not applicable |
 | Filtering accessibility | Adds the class `jg-filtered`; DOM order kept. The layout depends on JS, so with JS off the entries stay hidden | Hides after an animation (then `display: none`); DOM order kept. Animations ignore reduced motion unless configured | Depends on how hiding is done by hand | DOM order kept; hidden items leave the tab order and the accessibility tree; works with JS off |
-| CSP | Sets individual style properties (CSSOM): compliant | Per-property CSSOM plus `element.animate()`: compliant. Verified after Gate 2 in `muuri.module.js` | Transforms by style properties (README): compliant | Compliant |
+| CSP | Sets individual style properties (CSSOM): compliant | Per-property CSSOM plus `element.animate()`: compliant. Verified after Gate 2 in `muuri.module.js`. *Corrected 2026-11-19:* unpatched, it also creates `blob:` workers, which D-6 does not allow. WI-37's patch removes them (D-16) | Transforms by style properties (README): compliant | Compliant |
 
 **How the others compared:**
 - **MiniMasonry.js** is the lightest of the three, but has no filtering of its own.
