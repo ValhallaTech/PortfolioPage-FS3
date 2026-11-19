@@ -41,6 +41,12 @@ h6 {
   z-index: 99999;
 }
 
+.back-to-top.is-visible {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
 .back-to-top i {
   font-size: 24px;
   left: 8px;

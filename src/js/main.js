@@ -19,8 +19,7 @@ import {
   smoothScrollTo,
   toggleMobileNav,
   closeMobileNav,
-  updateActiveNav,
-  handleBackToTop,
+  setupScrollHandlers,
   setupNavClickHandlers,
   setupPortfolioFilters,
   resolveHashTarget,
@@ -262,11 +261,8 @@ function init() {
     }
   });
 
-  // Scroll handlers
-  window.addEventListener('scroll', () => {
-    updateActiveNav();
-    handleBackToTop();
-  });
+  // Scroll handlers: cached element references, at most one update per frame
+  setupScrollHandlers(document, window);
 
   // Back to top click
   const backToTop = document.querySelector('.back-to-top');

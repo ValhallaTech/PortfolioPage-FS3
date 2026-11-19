@@ -41,51 +41,122 @@ export function closeMobileNav() {
   }
 }
 
+/** Offset from the viewport top at which a section counts as the one in view. */
+const ACTIVE_SECTION_OFFSET = 200;
+
+/** Below this offset scroll position the first nav item is the active one. */
+const TOP_OF_PAGE_LIMIT = 300;
+
+/** Scroll distance in pixels past which the back-to-top button is shown. */
+const BACK_TO_TOP_THRESHOLD = 100;
+
 /**
- * Update active nav link based on scroll position
+ * Mark one nav link as the current location and clear every other one.
+ * The highlight class sits on the link's parent `<li>`; `aria-current="location"`
+ * sits on the link itself so assistive technology announces it.
+ * @param {Iterable<Element>} navLinks - Every `.nav-menu a` element
+ * @param {Element|null} activeLink - The link to mark, or null to clear all
  */
-export function updateActiveNav() {
-  const sections = document.querySelectorAll('section');
-  const navLinks = document.querySelectorAll('.nav-menu a');
-  const scrollPos = window.scrollY + 200;
+export function markCurrentNavLink(navLinks, activeLink) {
+  navLinks.forEach((link) => {
+    const isActive = link === activeLink;
+    if (link.parentElement) {
+      link.parentElement.classList.toggle('active', isActive);
+    }
+    if (isActive) {
+      link.setAttribute('aria-current', 'location');
+    } else {
+      link.removeAttribute('aria-current');
+    }
+  });
+}
+
+/**
+ * Update the active nav link for a scroll position.
+ * A section is in view when `scrollY + 200` falls inside it; near the top of the
+ * page (`scrollY + 200 < 300`) the first nav item is active. When no rule applies
+ * the current highlight is left as it is. Reads only the references it is given,
+ * so it runs no DOM queries.
+ * @param {Iterable<HTMLElement>} sections - The page's `section` elements
+ * @param {ArrayLike<Element>} navLinks - Every `.nav-menu a` element
+ * @param {number} scrollY - The window's vertical scroll offset
+ */
+export function updateActiveNav(sections, navLinks, scrollY) {
+  if (!sections || !navLinks) return;
+  const scrollPos = scrollY + ACTIVE_SECTION_OFFSET;
+  let matched = false;
+  let activeLink = null;
 
   sections.forEach((section) => {
     const top = section.offsetTop;
     const bottom = top + section.offsetHeight;
-    const id = section.getAttribute('id');
-
     if (scrollPos >= top && scrollPos <= bottom) {
-      navLinks.forEach((link) => {
-        link.parentElement.classList.remove('active');
-      });
-      const activeLink = document.querySelector(`.nav-menu a[href="#${id}"]`);
-      if (activeLink) {
-        activeLink.parentElement.classList.add('active');
-      }
+      const href = `#${section.getAttribute('id')}`;
+      matched = true;
+      activeLink = Array.from(navLinks).find((link) => link.getAttribute('href') === href) || null;
     }
   });
 
-  if (scrollPos < 300) {
-    const firstItem = document.querySelector('.nav-menu ul li:first-child');
-    if (firstItem) {
-      firstItem.classList.add('active');
-    }
+  if (scrollPos < TOP_OF_PAGE_LIMIT && navLinks.length > 0) {
+    matched = true;
+    activeLink = navLinks[0];
+  }
+
+  if (matched) {
+    markCurrentNavLink(navLinks, activeLink);
   }
 }
 
 /**
- * Handle back-to-top button visibility
+ * Show the back-to-top button past the 100 px threshold by toggling `is-visible`.
+ * The display rule lives in style.css; no inline styles are written.
+ * @param {Element|null} backToTop - The `.back-to-top` element
+ * @param {number} scrollY - The window's vertical scroll offset
  */
-export function handleBackToTop() {
-  const backToTop = document.querySelector('.back-to-top');
+export function handleBackToTop(backToTop, scrollY) {
   if (!backToTop) return;
-  if (window.scrollY > 100) {
-    backToTop.style.display = 'flex';
-    backToTop.style.alignItems = 'center';
-    backToTop.style.justifyContent = 'center';
-  } else {
-    backToTop.style.display = 'none';
-  }
+  backToTop.classList.toggle('is-visible', scrollY > BACK_TO_TOP_THRESHOLD);
+}
+
+/**
+ * Wire the scroll-driven UI: the active nav link and back-to-top visibility.
+ * Sections, nav links and the back-to-top button are queried once here and cached.
+ * A passive scroll listener coalesces events through requestAnimationFrame, so any
+ * number of scroll events in one frame cost a single update. One update is also
+ * scheduled at once, so a page loaded mid-scroll starts in the right state.
+ * @param {Document} doc - The document to query
+ * @param {Window} win - The window whose scroll events drive the updates
+ * @returns {Function} Teardown that removes the listener and cancels a pending frame
+ */
+export function setupScrollHandlers(doc, win) {
+  const sections = doc.querySelectorAll('section');
+  const navLinks = doc.querySelectorAll('.nav-menu a');
+  const backToTop = doc.querySelector('.back-to-top');
+  let frameId = null;
+
+  const update = () => {
+    frameId = null;
+    const { scrollY } = win;
+    updateActiveNav(sections, navLinks, scrollY);
+    handleBackToTop(backToTop, scrollY);
+  };
+
+  const onScroll = () => {
+    if (frameId === null) {
+      frameId = win.requestAnimationFrame(update);
+    }
+  };
+
+  win.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  return () => {
+    win.removeEventListener('scroll', onScroll);
+    if (frameId !== null) {
+      win.cancelAnimationFrame(frameId);
+      frameId = null;
+    }
+  };
 }
 
 /**
@@ -106,9 +177,7 @@ export function setupNavClickHandlers(doc, scrollFn, closeNavFn) {
       scrollFn(target);
 
       if (link.closest('.nav-menu')) {
-        doc.querySelectorAll('.nav-menu .active').forEach((el) => el.classList.remove('active'));
-        const li = link.closest('li');
-        if (li) li.classList.add('active');
+        markCurrentNavLink(doc.querySelectorAll('.nav-menu a'), link);
       }
 
       closeNavFn();
