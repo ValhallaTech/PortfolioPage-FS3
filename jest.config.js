@@ -6,6 +6,16 @@ module.exports = {
   coverageDirectory: 'coverage',
   coveragePathIgnorePatterns: ['/node_modules/', '/__tests__/'],
   collectCoverageFrom: ['src/js/utils.js'],
+  transform: {
+    '\\.[jt]s$': [
+      'babel-jest',
+      {
+        presets: [['@babel/preset-env', { targets: { node: 'current' } }]],
+        configFile: false,
+        babelrc: false,
+      },
+    ],
+  },
   coverageThreshold: {
     global: {
       branches: 80,

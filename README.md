@@ -19,7 +19,7 @@ The site is a single-page application (`src/index.html`) composed of six section
 | Section | Description |
 |---|---|
 | **Hero** | Animated typing headline powered by Typed.js |
-| **About** | Bio, personal details, and animated skills progress bars |
+| **About** | Bio and personal details |
 | **Portfolio** | Filterable image gallery (App / Card / Web) with a lightbox viewer |
 | **Services** | Six service cards: Web Development, Mobile App Developer, Quality Assurance, C# Programming, .NET Core Framework Development, UI/UX Design |
 | **Testimonials** | Auto-playing carousel |
@@ -33,13 +33,11 @@ The site is a single-page application (`src/index.html`) composed of six section
 |---|---|
 | Bootstrap 5 | Layout and modal |
 | Font Awesome 7 | Icons |
-| Boxicons | Additional icons |
 | Typed.js `^3.0.0` | Hero typing animation |
 | ScrollReveal `^4.0.9` | Scroll-triggered reveal animations |
 | Isotope Layout `^3.0.6` | Portfolio filter/sort |
 | Swiper `^12` | Testimonials carousel |
 | GLightbox `^3.3.1` | Portfolio lightbox |
-| just-validate `^4.3.0` | Contact form validation |
 
 **Dev tooling**
 
@@ -59,8 +57,8 @@ The site is a single-page application (`src/index.html`) composed of six section
 src/
   index.html          # Single-page HTML entry point
   js/
-    main.js           # App initialisation (Typed, Isotope, Swiper, GLightbox, ScrollReveal, contact form)
-    utils.js          # Utility functions (nav, scroll, skill animation, etc.)
+    main.js           # App initialization (Typed, Isotope, Swiper, GLightbox, ScrollReveal, contact form)
+    utils.js          # Utility functions (nav, scroll, back-to-top, hash and lightbox links)
   css/
     style.css         # Custom styles
   images/             # Profile photo, portfolio images, favicons

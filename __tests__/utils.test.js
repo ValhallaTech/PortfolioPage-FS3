@@ -1,18 +1,80 @@
 /**
  * @jest-environment jsdom
  */
-const {
+import fs from 'node:fs';
+import path from 'node:path';
+import postcss from 'postcss';
+import {
   smoothScrollTo,
   toggleMobileNav,
   closeMobileNav,
+  markCurrentNavLink,
   updateActiveNav,
   handleBackToTop,
-  observeSkills,
+  setupScrollHandlers,
   setupNavClickHandlers,
   setupPortfolioFilters,
   resolveHashTarget,
   resolveLightboxHref,
-} = require('../src/js/utils');
+} from '../src/js/utils.js';
+
+const STYLE_CSS = path.resolve(__dirname, '..', 'src', 'css', 'style.css');
+
+/**
+ * The nav and section fixture shared by the scroll-driven tests.
+ * Every section is 500 px tall: hero 0-500, about 500-1000, portfolio 1000-1500.
+ */
+const NAV_FIXTURE = `
+  <nav class="nav-menu">
+    <ul>
+      <li class="active"><a href="#hero">Home</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#portfolio">Portfolio</a></li>
+    </ul>
+  </nav>
+  <section id="hero" style="height: 500px;"></section>
+  <section id="about" style="height: 500px;"></section>
+  <section id="portfolio" style="height: 500px;"></section>
+`;
+
+/**
+ * jsdom does no layout, so offsetTop and offsetHeight are always 0.
+ * Give each section the box the fixture describes.
+ * @param {Document} doc - The document holding the sections
+ */
+const layOutSections = (doc) => {
+  doc.querySelectorAll('section').forEach((section, index) => {
+    Object.defineProperty(section, 'offsetTop', { configurable: true, value: index * 500 });
+    Object.defineProperty(section, 'offsetHeight', { configurable: true, value: 500 });
+  });
+};
+
+/** @returns {Element[]} The nav items that carry the active class */
+const activeItems = () => Array.from(document.querySelectorAll('.nav-menu li.active'));
+
+/** @returns {string[]} The href of every nav link that carries aria-current */
+const currentLinkHrefs = () =>
+  Array.from(document.querySelectorAll('.nav-menu a[aria-current]')).map((link) =>
+    link.getAttribute('href')
+  );
+
+/**
+ * Parse style.css and collect the declarations of every rule whose selector list
+ * contains the given selector, in source order.
+ * @param {string} selector - The exact selector to look for
+ * @returns {Record<string, string>} Property to value; later rules win
+ */
+const declarationsFor = (selector) => {
+  const declarations = {};
+  const root = postcss.parse(fs.readFileSync(STYLE_CSS, 'utf8'), { from: STYLE_CSS });
+  root.walkRules((rule) => {
+    if (!rule.selectors.includes(selector)) return;
+    rule.walkDecls((decl) => {
+      declarations[decl.prop] = decl.value;
+    });
+  });
+  return declarations;
+};
 
 describe('smoothScrollTo', () => {
   beforeEach(() => {
@@ -127,160 +189,407 @@ describe('closeMobileNav', () => {
   });
 });
 
-describe('updateActiveNav', () => {
+describe('markCurrentNavLink', () => {
+  let navLinks;
+
   beforeEach(() => {
-    document.body.innerHTML = `
-      <nav class="nav-menu">
-        <ul>
-          <li class="active"><a href="#hero">Home</a></li>
-          <li><a href="#about">About</a></li>
-          <li><a href="#portfolio">Portfolio</a></li>
-        </ul>
-      </nav>
-      <section id="hero" style="height: 500px;"></section>
-      <section id="about" style="height: 500px;"></section>
-      <section id="portfolio" style="height: 500px;"></section>
-    `;
+    document.body.innerHTML = NAV_FIXTURE;
+    navLinks = document.querySelectorAll('.nav-menu a');
+  });
+
+  test('marks the given link with the active item and aria-current="location"', () => {
+    const [, about] = navLinks;
+
+    markCurrentNavLink(navLinks, about);
+
+    expect(activeItems()).toEqual([about.parentElement]);
+    expect(about.getAttribute('aria-current')).toBe('location');
+  });
+
+  test('clears the active item and aria-current from every other link', () => {
+    const [home, about, portfolio] = navLinks;
+    home.setAttribute('aria-current', 'location');
+    portfolio.setAttribute('aria-current', 'location');
+
+    markCurrentNavLink(navLinks, about);
+
+    expect(currentLinkHrefs()).toEqual(['#about']);
+    expect(home.parentElement.classList.contains('active')).toBe(false);
+  });
+
+  test('clears every link when the active link is null', () => {
+    const [home] = navLinks;
+    home.setAttribute('aria-current', 'location');
+
+    markCurrentNavLink(navLinks, null);
+
+    expect(activeItems()).toEqual([]);
+    expect(currentLinkHrefs()).toEqual([]);
+  });
+
+  test('sets aria-current on a link that has no parent element, without throwing', () => {
+    const detached = document.createElement('a');
+
+    expect(() => markCurrentNavLink([detached], detached)).not.toThrow();
+    expect(detached.getAttribute('aria-current')).toBe('location');
+  });
+});
+
+describe('updateActiveNav', () => {
+  let sections;
+  let navLinks;
+
+  beforeEach(() => {
+    document.body.innerHTML = NAV_FIXTURE;
+    layOutSections(document);
+    sections = document.querySelectorAll('section');
+    navLinks = document.querySelectorAll('.nav-menu a');
   });
 
   test('activates first item when scroll is near top', () => {
-    Object.defineProperty(window, 'scrollY', { value: 0, writable: true });
-    updateActiveNav();
     const firstItem = document.querySelector('.nav-menu ul li:first-child');
-    expect(firstItem.classList.contains('active')).toBe(true);
+    firstItem.classList.remove('active');
+
+    updateActiveNav(sections, navLinks, 0);
+
+    expect(activeItems()).toEqual([firstItem]);
+    expect(currentLinkHrefs()).toEqual(['#hero']);
   });
 
   test('handles empty sections gracefully', () => {
     document.body.innerHTML = '<nav class="nav-menu"><ul></ul></nav>';
-    Object.defineProperty(window, 'scrollY', { value: 0, writable: true });
-    expect(() => updateActiveNav()).not.toThrow();
+    const emptySections = document.querySelectorAll('section');
+    const emptyLinks = document.querySelectorAll('.nav-menu a');
+
+    expect(() => updateActiveNav(emptySections, emptyLinks, 0)).not.toThrow();
+    expect(currentLinkHrefs()).toEqual([]);
   });
 
   test('handles missing nav menu gracefully', () => {
     document.body.innerHTML = '<section id="hero"></section>';
-    Object.defineProperty(window, 'scrollY', { value: 0, writable: true });
-    expect(() => updateActiveNav()).not.toThrow();
+    const heroOnly = document.querySelectorAll('section');
+    const noLinks = document.querySelectorAll('.nav-menu a');
+
+    expect(() => updateActiveNav(heroOnly, noLinks, 0)).not.toThrow();
+    expect(() => updateActiveNav(heroOnly, null, 0)).not.toThrow();
+    expect(() => updateActiveNav(null, navLinks, 0)).not.toThrow();
+  });
+
+  test('activates the link of the section that holds scrollY + 200', () => {
+    const [, about] = navLinks;
+
+    updateActiveNav(sections, navLinks, 400);
+
+    expect(activeItems()).toEqual([about.parentElement]);
+    expect(currentLinkHrefs()).toEqual(['#about']);
+  });
+
+  test('counts a section boundary as inside the section', () => {
+    // scrollY + 200 = 1500 is the bottom of portfolio; about ends at 1000.
+    updateActiveNav(sections, navLinks, 1300);
+
+    expect(currentLinkHrefs()).toEqual(['#portfolio']);
+  });
+
+  test('leaves the highlight as it is when no section holds the scroll position', () => {
+    const [, about] = navLinks;
+    markCurrentNavLink(navLinks, about);
+
+    updateActiveNav(sections, navLinks, 5000);
+
+    expect(activeItems()).toEqual([about.parentElement]);
+    expect(currentLinkHrefs()).toEqual(['#about']);
+  });
+
+  test('leaves the highlight as it is when null references are passed', () => {
+    const [, about] = navLinks;
+    markCurrentNavLink(navLinks, about);
+
+    updateActiveNav(null, null, 0);
+
+    expect(currentLinkHrefs()).toEqual(['#about']);
+  });
+
+  test('clears every link when the section in view has no nav link', () => {
+    document.body.insertAdjacentHTML('beforeend', '<section id="contact"></section>');
+    layOutSections(document);
+    const withContact = document.querySelectorAll('section');
+
+    updateActiveNav(withContact, navLinks, 1600);
+
+    expect(activeItems()).toEqual([]);
+    expect(currentLinkHrefs()).toEqual([]);
+  });
+
+  test('runs no DOM queries of its own', () => {
+    const docQueryAll = jest.spyOn(document, 'querySelectorAll');
+    const docQuery = jest.spyOn(document, 'querySelector');
+
+    updateActiveNav(sections, navLinks, 400);
+
+    expect(docQueryAll).not.toHaveBeenCalled();
+    expect(docQuery).not.toHaveBeenCalled();
+    docQueryAll.mockRestore();
+    docQuery.mockRestore();
   });
 });
 
 describe('handleBackToTop', () => {
+  let btn;
+
   beforeEach(() => {
     document.body.innerHTML = '<a class="back-to-top" href="#"></a>';
+    btn = document.querySelector('.back-to-top');
   });
 
   test('shows button when scrolled past 100px', () => {
-    Object.defineProperty(window, 'scrollY', { value: 200, writable: true });
-    handleBackToTop();
-    const btn = document.querySelector('.back-to-top');
-    expect(btn.style.display).toBe('flex');
+    handleBackToTop(btn, 200);
+
+    expect(btn.classList.contains('is-visible')).toBe(true);
+    expect(btn.hasAttribute('style')).toBe(false);
   });
 
   test('hides button when near top', () => {
-    Object.defineProperty(window, 'scrollY', { value: 50, writable: true });
-    handleBackToTop();
-    const btn = document.querySelector('.back-to-top');
-    expect(btn.style.display).toBe('none');
+    btn.classList.add('is-visible');
+
+    handleBackToTop(btn, 50);
+
+    expect(btn.classList.contains('is-visible')).toBe(false);
+    expect(btn.hasAttribute('style')).toBe(false);
   });
 
   test('hides button when at exactly 0', () => {
-    Object.defineProperty(window, 'scrollY', { value: 0, writable: true });
-    handleBackToTop();
-    const btn = document.querySelector('.back-to-top');
-    expect(btn.style.display).toBe('none');
+    btn.classList.add('is-visible');
+
+    handleBackToTop(btn, 0);
+
+    expect(btn.classList.contains('is-visible')).toBe(false);
+    expect(btn.hasAttribute('style')).toBe(false);
   });
 
   test('does nothing when button is missing', () => {
     document.body.innerHTML = '';
-    Object.defineProperty(window, 'scrollY', { value: 200, writable: true });
-    expect(() => handleBackToTop()).not.toThrow();
+
+    expect(() => handleBackToTop(null, 200)).not.toThrow();
   });
 
   test('shows with correct flex alignment', () => {
-    Object.defineProperty(window, 'scrollY', { value: 200, writable: true });
-    handleBackToTop();
-    const btn = document.querySelector('.back-to-top');
-    expect(btn.style.alignItems).toBe('center');
-    expect(btn.style.justifyContent).toBe('center');
+    handleBackToTop(btn, 200);
+
+    expect(btn.classList.contains('is-visible')).toBe(true);
+    expect(btn.hasAttribute('style')).toBe(false);
+    expect(declarationsFor('.back-to-top.is-visible')).toEqual(
+      expect.objectContaining({
+        display: 'flex',
+        'align-items': 'center',
+        'justify-content': 'center',
+      })
+    );
+  });
+
+  test('keeps the button hidden at exactly 100px', () => {
+    btn.classList.add('is-visible');
+
+    handleBackToTop(btn, 100);
+
+    expect(btn.classList.contains('is-visible')).toBe(false);
+  });
+
+  test('shows the button at 101px', () => {
+    handleBackToTop(btn, 101);
+
+    expect(btn.classList.contains('is-visible')).toBe(true);
+  });
+
+  test('hides the button by default in style.css', () => {
+    expect(declarationsFor('.back-to-top')).toEqual(expect.objectContaining({ display: 'none' }));
   });
 });
 
-describe('observeSkills', () => {
-  let mockObserve;
-  let mockUnobserve;
-  let mockDisconnect;
-  let observerCallback;
+describe('setupScrollHandlers', () => {
+  /**
+   * A window stand-in with a real EventTarget and a mocked requestAnimationFrame
+   * whose frames run only when the test flushes them.
+   * @param {number} scrollY - The initial scroll offset
+   */
+  const createWindow = (scrollY) => {
+    const win = new EventTarget();
+    const frames = new Map();
+    let nextFrameId = 1;
+    win.scrollY = scrollY;
+    win.requestAnimationFrame = jest.fn((callback) => {
+      const id = nextFrameId;
+      nextFrameId += 1;
+      frames.set(id, callback);
+      return id;
+    });
+    win.cancelAnimationFrame = jest.fn((id) => {
+      frames.delete(id);
+    });
+    const runFrames = () => {
+      const pending = Array.from(frames.values());
+      frames.clear();
+      pending.forEach((callback) => callback(0));
+    };
+    const scroll = (times = 1) => {
+      for (let i = 0; i < times; i += 1) {
+        win.dispatchEvent(new Event('scroll'));
+      }
+    };
+    return { win, runFrames, scroll, pendingFrames: () => frames.size };
+  };
+
+  let teardown;
+  let btn;
 
   beforeEach(() => {
-    mockObserve = jest.fn();
-    mockUnobserve = jest.fn();
-    mockDisconnect = jest.fn();
+    document.body.innerHTML = `${NAV_FIXTURE}<a class="back-to-top" href="#"></a>`;
+    layOutSections(document);
+    btn = document.querySelector('.back-to-top');
+    teardown = undefined;
+  });
 
-    global.IntersectionObserver = jest.fn((callback) => {
-      observerCallback = callback;
-      return {
-        observe: mockObserve,
-        unobserve: mockUnobserve,
-        disconnect: mockDisconnect,
-      };
+  afterEach(() => {
+    if (teardown) teardown();
+  });
+
+  test('registers a passive scroll listener', () => {
+    const { win } = createWindow(0);
+    const addEventListener = jest.spyOn(win, 'addEventListener');
+
+    teardown = setupScrollHandlers(document, win);
+
+    expect(addEventListener).toHaveBeenCalledWith('scroll', expect.any(Function), {
+      passive: true,
     });
   });
 
-  test('returns null when no section provided', () => {
-    const result = observeSkills(null);
-    expect(result).toBeNull();
+  test('schedules one initial update that sets the state for the current scroll position', () => {
+    const { win, runFrames } = createWindow(400);
+
+    teardown = setupScrollHandlers(document, win);
+
+    expect(win.requestAnimationFrame).toHaveBeenCalledTimes(1);
+    expect(currentLinkHrefs()).toEqual([]);
+    runFrames();
+    expect(currentLinkHrefs()).toEqual(['#about']);
+    expect(btn.classList.contains('is-visible')).toBe(true);
   });
 
-  test('creates observer and observes the section', () => {
-    const section = document.createElement('div');
-    observeSkills(section);
-    expect(mockObserve).toHaveBeenCalledWith(section);
+  test('marks the Home link current at load when the page is at the top', () => {
+    const { win, runFrames } = createWindow(0);
+
+    teardown = setupScrollHandlers(document, win);
+    runFrames();
+
+    expect(currentLinkHrefs()).toEqual(['#hero']);
+    expect(btn.classList.contains('is-visible')).toBe(false);
   });
 
-  test('sets progress bar widths when intersecting', () => {
-    document.body.innerHTML = `
-      <div class="skills-content">
-        <div class="progress">
-          <div class="progress-bar" aria-valuenow="75" style="width: 0%;"></div>
-        </div>
-        <div class="progress">
-          <div class="progress-bar" aria-valuenow="90" style="width: 0%;"></div>
-        </div>
-      </div>
-    `;
-    const section = document.querySelector('.skills-content');
-    observeSkills(section);
+  test('coalesces many scroll events in one frame into a single update', () => {
+    const { win, runFrames, scroll, pendingFrames } = createWindow(0);
+    teardown = setupScrollHandlers(document, win);
+    runFrames();
+    win.requestAnimationFrame.mockClear();
 
-    observerCallback([{ isIntersecting: true, target: section }]);
+    win.scrollY = 1300;
+    scroll(50);
 
-    const bars = section.querySelectorAll('.progress-bar');
-    expect(bars[0].style.width).toBe('75%');
-    expect(bars[1].style.width).toBe('90%');
-    expect(mockUnobserve).toHaveBeenCalledWith(section);
+    expect(win.requestAnimationFrame).toHaveBeenCalledTimes(1);
+    expect(pendingFrames()).toBe(1);
+    expect(currentLinkHrefs()).toEqual(['#hero']);
+    runFrames();
+    expect(currentLinkHrefs()).toEqual(['#portfolio']);
+    expect(btn.classList.contains('is-visible')).toBe(true);
   });
 
-  test('does not set widths when not intersecting', () => {
-    document.body.innerHTML = `
-      <div class="skills-content">
-        <div class="progress">
-          <div class="progress-bar" aria-valuenow="75" style="width: 0%;"></div>
-        </div>
-      </div>
-    `;
-    const section = document.querySelector('.skills-content');
-    observeSkills(section);
+  test('applies the scroll position read when the frame runs, not when the event fired', () => {
+    const { win, runFrames, scroll } = createWindow(0);
+    teardown = setupScrollHandlers(document, win);
+    runFrames();
 
-    observerCallback([{ isIntersecting: false, target: section }]);
+    win.scrollY = 400;
+    scroll();
+    win.scrollY = 0;
+    runFrames();
 
-    const bar = section.querySelector('.progress-bar');
-    expect(bar.style.width).toBe('0%');
-    expect(mockUnobserve).not.toHaveBeenCalled();
+    expect(currentLinkHrefs()).toEqual(['#hero']);
+    expect(btn.classList.contains('is-visible')).toBe(false);
   });
 
-  test('returns the observer instance', () => {
-    const section = document.createElement('div');
-    const result = observeSkills(section);
-    expect(result).toBeDefined();
-    expect(result.observe).toBeDefined();
+  test('schedules a new frame for a scroll after the previous frame ran', () => {
+    const { win, runFrames, scroll } = createWindow(0);
+    teardown = setupScrollHandlers(document, win);
+    runFrames();
+
+    scroll();
+    runFrames();
+    scroll();
+
+    expect(win.requestAnimationFrame).toHaveBeenCalledTimes(3);
+  });
+
+  test('queries the document once at setup and never per frame', () => {
+    const { win, runFrames, scroll } = createWindow(0);
+    const docQueryAll = jest.spyOn(document, 'querySelectorAll');
+    const docQuery = jest.spyOn(document, 'querySelector');
+    teardown = setupScrollHandlers(document, win);
+    const setupQueries = docQueryAll.mock.calls.length + docQuery.mock.calls.length;
+
+    runFrames();
+    for (let i = 0; i < 5; i += 1) {
+      win.scrollY = i * 300;
+      scroll(10);
+      runFrames();
+    }
+
+    expect(setupQueries).toBe(3);
+    expect(docQueryAll.mock.calls.length + docQuery.mock.calls.length).toBe(setupQueries);
+    docQueryAll.mockRestore();
+    docQuery.mockRestore();
+  });
+
+  test('teardown removes the scroll listener', () => {
+    const { win, runFrames, scroll } = createWindow(0);
+    const stop = setupScrollHandlers(document, win);
+    runFrames();
+    win.requestAnimationFrame.mockClear();
+
+    stop();
+    scroll(5);
+
+    expect(win.requestAnimationFrame).not.toHaveBeenCalled();
+  });
+
+  test('teardown cancels a pending frame', () => {
+    const { win, pendingFrames } = createWindow(400);
+    const stop = setupScrollHandlers(document, win);
+    const frameId = win.requestAnimationFrame.mock.results[0].value;
+
+    stop();
+
+    expect(win.cancelAnimationFrame).toHaveBeenCalledWith(frameId);
+    expect(pendingFrames()).toBe(0);
+    expect(currentLinkHrefs()).toEqual([]);
+  });
+
+  test('teardown cancels nothing when no frame is pending', () => {
+    const { win, runFrames } = createWindow(0);
+    const stop = setupScrollHandlers(document, win);
+    runFrames();
+
+    stop();
+
+    expect(win.cancelAnimationFrame).not.toHaveBeenCalled();
+  });
+
+  test('works when the page has no back-to-top button', () => {
+    document.querySelector('.back-to-top').remove();
+    const { win, runFrames } = createWindow(400);
+    teardown = setupScrollHandlers(document, win);
+
+    expect(() => runFrames()).not.toThrow();
+    expect(currentLinkHrefs()).toEqual(['#about']);
   });
 });
 
@@ -321,6 +630,19 @@ describe('setupNavClickHandlers', () => {
 
     const aboutLi = aboutLink.closest('li');
     expect(aboutLi.classList.contains('active')).toBe(true);
+  });
+
+  test('moves aria-current="location" to the clicked nav link', () => {
+    const homeLink = document.querySelector('a[href="#hero"]');
+    homeLink.setAttribute('aria-current', 'location');
+    setupNavClickHandlers(document, jest.fn(), jest.fn());
+
+    const aboutLink = document.querySelector('a[href="#about"]');
+    aboutLink.click();
+
+    expect(aboutLink.getAttribute('aria-current')).toBe('location');
+    expect(homeLink.hasAttribute('aria-current')).toBe(false);
+    expect(document.querySelectorAll('.nav-menu .active')).toHaveLength(1);
   });
 
   test('does nothing for non-hash links', () => {
