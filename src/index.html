@@ -15,6 +15,7 @@
 </head>
 
 <body>
+    <a class="skip-link visually-hidden-focusable" href="#main">Skip to main content</a>
 
     <!-- ======= Icon sprite: Font Awesome Free 7.3.1 SVGs, one symbol per icon in use ======= -->
     <svg aria-hidden="true" class="svg-sprite" height="0" width="0">
@@ -50,7 +51,7 @@
     </svg>
 
     <!-- ======= Mobile nav toggle button ======= -->
-    <button aria-controls="header" aria-expanded="false" class="d-xl-none mobile-nav-toggle" type="button">
+    <button aria-controls="header" aria-expanded="false" aria-label="Navigation menu" class="d-xl-none mobile-nav-toggle" type="button">
         <svg aria-hidden="true" class="icon nav-toggle-icon nav-toggle-icon--open" focusable="false"><use href="#icon-bars"></use></svg>
         <svg aria-hidden="true" class="icon nav-toggle-icon nav-toggle-icon--close" focusable="false"><use href="#icon-xmark"></use></svg>
     </button>
@@ -66,26 +67,26 @@
                      srcset="./images/profile/profile-240.webp 240w, ./images/profile/profile-480.webp 480w, ./images/profile/profile-720.webp 720w"
                      sizes="104px"
                      width="240" height="240">
-                <h1 class="text-light">
+                <p class="profile-name text-light">
                     <a href="index.html">Fred Smith</a>
-                </h1>
+                </p>
                 <div class="mt-3 social-links text-center">
-                    <a href="https://twitter.com/ValhallaTech_IT" target="_blank" rel="noopener noreferrer">
+                    <a href="https://twitter.com/ValhallaTech_IT" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter), opens in new tab">
                         <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-x-twitter"></use></svg>
                     </a>
-                    <a href="https://www.facebook.com/valhallatechs" target="_blank" rel="noopener noreferrer">
+                    <a href="https://www.facebook.com/valhallatechs" target="_blank" rel="noopener noreferrer" aria-label="Facebook, opens in new tab">
                         <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-facebook"></use></svg>
                     </a>
-                    <a href="https://www.instagram.com/ironslothdesigns" target="_blank" rel="noopener noreferrer">
+                    <a href="https://www.instagram.com/ironslothdesigns" target="_blank" rel="noopener noreferrer" aria-label="Instagram, opens in new tab">
                         <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-instagram"></use></svg>
                     </a>
-                    <a href="https://www.linkedin.com/in/valhallatech" target="_blank" rel="noopener noreferrer">
+                    <a href="https://www.linkedin.com/in/valhallatech" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn, opens in new tab">
                         <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-linkedin"></use></svg>
                     </a>
                 </div>
             </div>
 
-            <nav class="nav-menu">
+            <nav aria-label="Primary" class="nav-menu">
                 <ul>
                     <li class="active">
                         <a href="#hero">
@@ -112,21 +113,21 @@
         </div>
     </header><!-- End Header -->
 
-    <!-- ======= Hero Section ======= -->
-    <section class="align-items-center d-flex flex-column justify-content-center" id="hero">
-        <div class="hero-container" data-sr="fade-in">
-            <h1>Fred Smith</h1>
-            <p>
-                I am
-                <span class="typed"
-                      data-typed-items="a Designer, a Developer, a Photographer, a Coding Ninja">
-                </span>
-            </p>
-        </div>
-    </section>
-    <!-- End Hero -->
+    <main id="main" tabindex="-1">
 
-    <main id="main">
+        <!-- ======= Hero Section ======= -->
+        <section class="align-items-center d-flex flex-column justify-content-center" id="hero">
+            <div class="hero-container" data-sr="fade-in">
+                <h1>Fred Smith</h1>
+                <p>
+                    I am
+                    <span class="typed"
+                          data-typed-items="a Designer, a Developer, a Photographer, a Coding Ninja">
+                    </span>
+                </p>
+            </div>
+        </section>
+        <!-- End Hero -->
 
         <!-- ======= About Section ======= -->
         <section class="about" id="about">
@@ -139,7 +140,7 @@
 
                 <div class="row">
                     <div class="col-lg-4" data-sr="fade-right">
-                        <img alt="Fred Smith profile photo"
+                        <img alt=""
                              class="img-fluid"
                              src="./images/profile/profile-720.webp"
                              srcset="./images/profile/profile-240.webp 240w, ./images/profile/profile-480.webp 480w, ./images/profile/profile-720.webp 720w"
@@ -196,12 +197,12 @@
 
                     <div class="col-lg-4 col-md-6 portfolio-item" data-category="app" data-portfolio-id="1">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 1" class="img-fluid" src="./images/portfolio/portfolio-1.jpg" width="800" height="600" loading="lazy" decoding="async">
+                            <img alt="White mug with an orange 4K logo floating above an orange saucer on a pale teal background" class="img-fluid" src="./images/portfolio/portfolio-1.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
-                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-1.jpg" title="App 1">
+                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-1.jpg" aria-label="Enlarge 4K mug mockup">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-plus"></use></svg>
                                 </a>
-                                <a href="#" title="More Details">
+                                <a href="#" aria-label="4K mug mockup details">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-link"></use></svg>
                                 </a>
                             </div>
@@ -210,12 +211,12 @@
 
                     <div class="col-lg-4 col-md-6 portfolio-item" data-category="web" data-portfolio-id="2">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 2" class="img-fluid" src="./images/portfolio/portfolio-2.jpg" width="800" height="600" loading="lazy" decoding="async">
+                            <img alt="Dark blue serum dropper bottle with a gold collar on a white pedestal among white paper leaves" class="img-fluid" src="./images/portfolio/portfolio-2.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
-                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-2.jpg" title="Web 3">
+                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-2.jpg" aria-label="Enlarge serum bottle mockup">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-plus"></use></svg>
                                 </a>
-                                <a href="#" title="More Details">
+                                <a href="#" aria-label="Serum bottle mockup details">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-link"></use></svg>
                                 </a>
                             </div>
@@ -224,12 +225,12 @@
 
                     <div class="col-lg-4 col-md-6 portfolio-item" data-category="app" data-portfolio-id="3">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 3" class="img-fluid" src="./images/portfolio/portfolio-3.jpg" width="800" height="600" loading="lazy" decoding="async">
+                            <img alt="White cosmetic tube with a blue cap on a white block beside a stack of black stones" class="img-fluid" src="./images/portfolio/portfolio-3.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
-                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-3.jpg" title="App 2">
+                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-3.jpg" aria-label="Enlarge cosmetic tube mockup">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-plus"></use></svg>
                                 </a>
-                                <a href="#" title="More Details">
+                                <a href="#" aria-label="Cosmetic tube mockup details">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-link"></use></svg>
                                 </a>
                             </div>
@@ -238,12 +239,12 @@
 
                     <div class="col-lg-4 col-md-6 portfolio-item" data-category="card" data-portfolio-id="4">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 4" class="img-fluid" src="./images/portfolio/portfolio-4.jpg" width="800" height="600" loading="lazy" decoding="async">
+                            <img alt="Spiky green succulent in a mint green pot against a white background" class="img-fluid" src="./images/portfolio/portfolio-4.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
-                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-4.jpg" title="Card 2">
+                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-4.jpg" aria-label="Enlarge succulent product photo">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-plus"></use></svg>
                                 </a>
-                                <a href="#" title="More Details">
+                                <a href="#" aria-label="Succulent product photo details">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-link"></use></svg>
                                 </a>
                             </div>
@@ -252,12 +253,12 @@
 
                     <div class="col-lg-4 col-md-6 portfolio-item" data-category="web" data-portfolio-id="5">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 5" class="img-fluid" src="./images/portfolio/portfolio-5.jpg" width="800" height="600" loading="lazy" decoding="async">
+                            <img alt="Two glass perfume bottles with gold collars lying on a gray shag rug" class="img-fluid" src="./images/portfolio/portfolio-5.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
-                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-5.jpg" title="Web 2">
+                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-5.jpg" aria-label="Enlarge perfume bottles">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-plus"></use></svg>
                                 </a>
-                                <a href="#" title="More Details">
+                                <a href="#" aria-label="Perfume bottles details">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-link"></use></svg>
                                 </a>
                             </div>
@@ -266,12 +267,12 @@
 
                     <div class="col-lg-4 col-md-6 portfolio-item" data-category="app" data-portfolio-id="6">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 6" class="img-fluid" src="./images/portfolio/portfolio-6.jpg" width="800" height="600" loading="lazy" decoding="async">
+                            <img alt="White body oil bottle between a clear glass bottle and a succulent in a white geometric pot" class="img-fluid" src="./images/portfolio/portfolio-6.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
-                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-6.jpg" title="App 3">
+                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-6.jpg" aria-label="Enlarge body oil packaging">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-plus"></use></svg>
                                 </a>
-                                <a href="#" title="More Details">
+                                <a href="#" aria-label="Body oil packaging details">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-link"></use></svg>
                                 </a>
                             </div>
@@ -280,12 +281,12 @@
 
                     <div class="col-lg-4 col-md-6 portfolio-item" data-category="card" data-portfolio-id="7">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 7" class="img-fluid" src="./images/portfolio/portfolio-7.jpg" width="800" height="600" loading="lazy" decoding="async">
+                            <img alt="Two glass mineral water bottles lying on a white cloth beside mandarin oranges" class="img-fluid" src="./images/portfolio/portfolio-7.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
-                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-7.jpg" title="Card 1">
+                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-7.jpg" aria-label="Enlarge mineral water bottles">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-plus"></use></svg>
                                 </a>
-                                <a href="#" title="More Details">
+                                <a href="#" aria-label="Mineral water bottles details">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-link"></use></svg>
                                 </a>
                             </div>
@@ -294,12 +295,12 @@
 
                     <div class="col-lg-4 col-md-6 portfolio-item" data-category="card" data-portfolio-id="8">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 8" class="img-fluid" src="./images/portfolio/portfolio-8.jpg" width="800" height="600" loading="lazy" decoding="async">
+                            <img alt="Minimal white desk with a gray chair, a candle, a sprig in a vase, a small plant and a framed print" class="img-fluid" src="./images/portfolio/portfolio-8.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
-                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-8.jpg" title="Card 3">
+                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-8.jpg" aria-label="Enlarge minimal workspace">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-plus"></use></svg>
                                 </a>
-                                <a href="#" title="More Details">
+                                <a href="#" aria-label="Minimal workspace details">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-link"></use></svg>
                                 </a>
                             </div>
@@ -308,12 +309,12 @@
 
                     <div class="col-lg-4 col-md-6 portfolio-item" data-category="web" data-portfolio-id="9">
                         <div class="portfolio-wrap">
-                            <img alt="Portfolio item 9" class="img-fluid" src="./images/portfolio/portfolio-9.jpg" width="800" height="600" loading="lazy" decoding="async">
+                            <img alt="Four small pancakes dusted with powdered sugar, with a mint sprig and a dish of cream, on a white plate" class="img-fluid" src="./images/portfolio/portfolio-9.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
-                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-9.jpg" title="Web 3">
+                                <a class="glightbox" data-gallery="portfolioGallery" href="#" data-src="./images/portfolio/portfolio-9.jpg" aria-label="Enlarge pancake plate">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-plus"></use></svg>
                                 </a>
-                                <a href="#" title="More Details">
+                                <a href="#" aria-label="Pancake plate details">
                                     <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-link"></use></svg>
                                 </a>
                             </div>
@@ -336,32 +337,32 @@
                 <div class="row">
                     <div class="col-lg-4 col-md-6 icon-box" data-sr="fade-up">
                         <div class="service-icon"><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-display"></use></svg></div>
-                        <h4 class="title"><a href="">Web Development</a></h4>
+                        <h3 class="title"><a href="">Web Development</a></h3>
                         <p class="description"></p>
                     </div>
                     <div class="col-lg-4 col-md-6 icon-box" data-sr="fade-up" data-sr-delay="100">
                         <div class="service-icon"><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-mobile-screen"></use></svg></div>
-                        <h4 class="title"><a href="">Mobile App Developer</a></h4>
+                        <h3 class="title"><a href="">Mobile App Developer</a></h3>
                         <p class="description"></p>
                     </div>
                     <div class="col-lg-4 col-md-6 icon-box" data-sr="fade-up" data-sr-delay="200">
                         <div class="service-icon"><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-circle-check"></use></svg></div>
-                        <h4 class="title"><a href="">Quality Assurance</a></h4>
+                        <h3 class="title"><a href="">Quality Assurance</a></h3>
                         <p class="description"></p>
                     </div>
                     <div class="col-lg-4 col-md-6 icon-box" data-sr="fade-up" data-sr-delay="300">
                         <div class="service-icon"><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-microsoft"></use></svg></div>
-                        <h4 class="title"><a href="">C# Programming</a></h4>
+                        <h3 class="title"><a href="">C# Programming</a></h3>
                         <p class="description"></p>
                     </div>
                     <div class="col-lg-4 col-md-6 icon-box" data-sr="fade-up" data-sr-delay="400">
                         <div class="service-icon"><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-code"></use></svg></div>
-                        <h4 class="title"><a href="">.NET Core Framework Development</a></h4>
+                        <h3 class="title"><a href="">.NET Core Framework Development</a></h3>
                         <p class="description"></p>
                     </div>
                     <div class="col-lg-4 col-md-6 icon-box" data-sr="fade-up" data-sr-delay="500">
                         <div class="service-icon"><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-pen-ruler"></use></svg></div>
-                        <h4 class="title"><a href="">UI/UX Design</a></h4>
+                        <h3 class="title"><a href="">UI/UX Design</a></h3>
                         <p class="description"></p>
                     </div>
                 </div>
@@ -382,40 +383,40 @@
 
                         <div class="swiper-slide">
                             <div class="testimonial-item" data-sr="fade-up">
-                                <p>
+                                <p class="testimonial-quote">
                                     <svg aria-hidden="true" class="icon quote-icon-left" focusable="false"><use href="#icon-quote-left"></use></svg>
                                     I wish I would have found Fred earlier. If I had of, I believe his excellent problem solving skills would have stopped the Civil War from happening.
                                     <svg aria-hidden="true" class="icon quote-icon-right" focusable="false"><use href="#icon-quote-right"></use></svg>
                                 </p>
-                                <img alt="Abe Lincoln" class="testimonial-img" src="./images/testimonials/AbeLincoln-180.webp" width="180" height="180" loading="lazy" decoding="async">
-                                <h3>Abe Lincoln</h3>
-                                <h4>16th President of the Unites States</h4>
+                                <img alt="" class="testimonial-img" src="./images/testimonials/AbeLincoln-180.webp" width="180" height="180" loading="lazy" decoding="async">
+                                <p class="testimonial-name">Abe Lincoln</p>
+                                <p class="testimonial-role">16th President of the Unites States</p>
                             </div>
                         </div>
 
                         <div class="swiper-slide">
                             <div class="testimonial-item" data-sr="fade-up" data-sr-delay="100">
-                                <p>
+                                <p class="testimonial-quote">
                                     <svg aria-hidden="true" class="icon quote-icon-left" focusable="false"><use href="#icon-quote-left"></use></svg>
                                     I organized a march for salt. Fred marches for efficient, functional and beautiful code.
                                     <svg aria-hidden="true" class="icon quote-icon-right" focusable="false"><use href="#icon-quote-right"></use></svg>
                                 </p>
-                                <img alt="Gandhi" class="testimonial-img" src="./images/testimonials/Gandhi-180.webp" width="180" height="180" loading="lazy" decoding="async">
-                                <h3>Gandhi</h3>
-                                <h4>Pacifist and Activist</h4>
+                                <img alt="" class="testimonial-img" src="./images/testimonials/Gandhi-180.webp" width="180" height="180" loading="lazy" decoding="async">
+                                <p class="testimonial-name">Gandhi</p>
+                                <p class="testimonial-role">Pacifist and Activist</p>
                             </div>
                         </div>
 
                         <div class="swiper-slide">
                             <div class="testimonial-item" data-sr="fade-up" data-sr-delay="200">
-                                <p>
+                                <p class="testimonial-quote">
                                     <svg aria-hidden="true" class="icon quote-icon-left" focusable="false"><use href="#icon-quote-left"></use></svg>
                                     When it comes to coding, who's bad? Fred is, that's who. He's a smooth programmer.
                                     <svg aria-hidden="true" class="icon quote-icon-right" focusable="false"><use href="#icon-quote-right"></use></svg>
                                 </p>
-                                <img alt="Michael Jackson" class="testimonial-img" src="./images/testimonials/MichaelJackson-180.webp" width="180" height="180" loading="lazy" decoding="async">
-                                <h3>Michael Jackson</h3>
-                                <h4>King of Pop</h4>
+                                <img alt="" class="testimonial-img" src="./images/testimonials/MichaelJackson-180.webp" width="180" height="180" loading="lazy" decoding="async">
+                                <p class="testimonial-name">Michael Jackson</p>
+                                <p class="testimonial-role">King of Pop</p>
                             </div>
                         </div>
 
@@ -440,13 +441,13 @@
                         <div class="info">
                             <div class="address">
                                 <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-location-dot"></use></svg>
-                                <h4>Location:</h4>
+                                <h3>Location:</h3>
                                 <p>123 Main Street, Winston-Salem, NC 27106</p>
                             </div>
 
                             <div class="email">
                                 <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-envelope"></use></svg>
-                                <h4>Email:</h4>
+                                <h3>Email:</h3>
                                 <p>
                                     <a href="mailto:junker.bunker69@gmail.com">junker.bunker69@gmail.com</a>
                                 </p>
@@ -454,7 +455,7 @@
 
                             <div class="phone">
                                 <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-phone"></use></svg>
-                                <h4>Call:</h4>
+                                <h3>Call:</h3>
                                 <p>+1 704 555 6969</p>
                             </div>
 
@@ -495,7 +496,7 @@
         </div>
     </footer><!-- End Footer -->
 
-    <a class="back-to-top" href="#">
+    <a aria-label="Back to top" class="back-to-top" href="#hero">
         <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-chevron-up"></use></svg>
     </a>
 

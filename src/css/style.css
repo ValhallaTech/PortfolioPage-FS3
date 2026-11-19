@@ -1,17 +1,66 @@
 /*--------------------------------------------------------------
+# Color tokens
+--------------------------------------------------------------*/
+
+/*
+ * Every color in this stylesheet is declared once here (AC-27, AC-28). The accent
+ * #149ddd is only for decorative fills: it is about 3:1 with white and under 3:1 on
+ * #f5f8fd. Text, filled buttons and control fills such as the nav toggle icon and the
+ * active carousel bullet use --color-accent-strong, about 5.5:1 with white.
+ */
+:root {
+  --color-text: #272829;
+  --color-white: #fff;
+  --color-accent: #149ddd;
+  --color-accent-light: #37b3ed;
+  --color-accent-strong: #0b6f9e;
+  --color-accent-strong-hover: #095a80;
+  --color-sidebar: #040b14;
+  --color-profile-border: #2c2f3f;
+  --color-social-bg: #212431;
+  --color-nav-text: #a8a9b4;
+  --color-nav-icon: #6f7180;
+  --color-hero-overlay: rgba(5, 13, 24, 0.4);
+  --color-section-bg: #f5f8fd;
+  --color-heading: #173b6c;
+  --color-portfolio-veil: rgba(255, 255, 255, 0.5);
+  --color-portfolio-link-bg: rgba(20, 157, 221, 0.75);
+  --color-portfolio-link-bg-hover: rgba(20, 157, 221, 0.95);
+  --color-service-title: #343a40;
+  --color-testimonial-name: #111;
+  --color-testimonial-role: #5f6368;
+  --color-quote-icon: #c3e8fa;
+  --color-bullet: #7a8599;
+  --color-shadow-soft: rgba(0, 0, 0, 0.1);
+  --color-shadow: rgba(0, 0, 0, 0.12);
+  --color-contact-icon-bg: #dff3fc;
+  --color-contact-heading: #050d18;
+  --color-danger: #c0300a;
+  --color-success: #0f7a40;
+  --color-footer-text: #f4f6fd;
+  --color-footer-credits: #eaebf0;
+
+  /* The focus ring: at least 3:1 against both the dark sidebar and the light content. */
+  --color-focus: var(--color-accent-strong);
+
+  /* The fixed footer's height at 1200 px and wider; the docked sidebar ends above it. */
+  --footer-height: 5rem;
+}
+
+/*--------------------------------------------------------------
 # General
 --------------------------------------------------------------*/
 body {
-  color: #272829;
+  color: var(--color-text);
   font-family: 'Open Sans', sans-serif;
 }
 
 a {
-  color: #149ddd;
+  color: var(--color-accent-strong);
 }
 
 a:hover {
-  color: #37b3ed;
+  color: var(--color-accent-strong-hover);
   text-decoration: none;
 }
 
@@ -22,6 +71,26 @@ h4,
 h5,
 h6 {
   font-family: 'Raleway', sans-serif;
+}
+
+/* Every keyboard focus stop draws a ring (AC-40, AC-41). */
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Skip link (AC-49): hidden by .visually-hidden-focusable until focused, then fixed
+   above the sidebar, the nav toggle and the footer. */
+.skip-link:focus {
+  background: var(--color-accent-strong);
+  border-radius: 4px;
+  color: var(--color-white);
+  font-weight: 600;
+  left: 16px;
+  padding: 12px 16px;
+  position: fixed;
+  top: 16px;
+  z-index: 100000;
 }
 
 /*--------------------------------------------------------------
@@ -47,16 +116,17 @@ h6 {
 # Back to top button
 --------------------------------------------------------------*/
 
+/* 44 x 44 px target (AC-60); the flex box centers the icon. */
 .back-to-top {
-  background: #149ddd;
+  background: var(--color-accent-strong);
   border-radius: 50px;
   bottom: 15px;
-  color: #fff;
+  color: var(--color-white);
   display: none;
-  height: 40px;
+  height: 44px;
   position: fixed;
   right: 15px;
-  width: 40px;
+  width: 44px;
   z-index: 99999;
 }
 
@@ -68,14 +138,11 @@ h6 {
 
 .back-to-top .icon {
   font-size: 24px;
-  left: 8px;
-  position: absolute;
-  top: 7px;
 }
 
 .back-to-top:hover {
-  background: #2eafec;
-  color: #fff;
+  background: var(--color-accent-strong-hover);
+  color: var(--color-white);
   transition: background 0.2s ease-in-out;
 }
 
@@ -84,7 +151,7 @@ h6 {
 --------------------------------------------------------------*/
 
 #header {
-  background: #040b14;
+  background: var(--color-sidebar);
   bottom: 0;
   left: 0;
   overflow-y: auto;
@@ -99,14 +166,14 @@ h6 {
 /* The photo is a square crop; aspect-ratio and object-fit keep it a circle regardless (AC-78). */
 #header .profile img {
   aspect-ratio: 1;
-  border: 8px solid #2c2f3f;
+  border: 8px solid var(--color-profile-border);
   display: block;
   margin: 15px auto;
   object-fit: cover;
   width: 120px;
 }
 
-#header .profile h1 {
+#header .profile .profile-name {
   font-family: 'Poppins', sans-serif;
   font-size: 24px;
   font-weight: 600;
@@ -115,30 +182,31 @@ h6 {
   text-align-last: center;
 }
 
-#header .profile h1 a,
-#header .profile h1 a:hover {
-  color: #fff;
+#header .profile .profile-name a,
+#header .profile .profile-name a:hover {
+  color: var(--color-white);
   text-decoration: none;
 }
 
+/* 44 x 44 px targets (AC-60), with the icon centered. */
 #header .profile .social-links a {
-  background: #212431;
+  align-items: center;
+  background: var(--color-social-bg);
   border-radius: 50%;
-  color: #fff;
-  display: inline-block;
+  color: var(--color-white);
+  display: inline-flex;
   font-size: 18px;
-  height: 36px;
+  height: 44px;
+  justify-content: center;
   line-height: 1;
   margin-right: 4px;
-  padding: 8px 0;
-  text-align: center;
   transition: 0.3s;
-  width: 36px;
+  width: 44px;
 }
 
 #header .profile .social-links a:hover {
-  background: #149ddd;
-  color: #fff;
+  background: var(--color-accent);
+  color: var(--color-white);
   text-decoration: none;
 }
 
@@ -146,9 +214,36 @@ h6 {
   margin-left: 300px;
 }
 
+/* The skip link focuses #main (tabindex="-1"); it is a target, not a control. */
+#main:focus {
+  outline: none;
+}
+
+/* Docked: the sidebar ends where the fixed footer begins, so the footer never covers
+   a nav link in the sidebar's scroll area (AC-61). */
+@media (min-width: 1200px) {
+  #header {
+    bottom: var(--footer-height);
+  }
+}
+
+/*
+ * Closed below 1200 px: the sidebar is hidden as well as moved off screen, so its links
+ * leave the tab order (D-15, AC-51). The visibility change waits for the slide-out to
+ * finish; opening shows it at once.
+ */
 @media (max-width: 1199px) {
   #header {
     left: -300px;
+    transition:
+      left 0.5s,
+      visibility 0s 0.5s;
+    visibility: hidden;
+  }
+
+  .mobile-nav-active #header {
+    transition: left 0.5s;
+    visibility: visible;
   }
 
   #main {
@@ -179,7 +274,7 @@ h6 {
 
 .nav-menu a {
   align-items: center;
-  color: #a8a9b4;
+  color: var(--color-nav-text);
   display: flex;
   font-size: 15px;
   margin-bottom: 8px;
@@ -190,7 +285,7 @@ h6 {
 /* 1em wide plus a 6px margin keeps the webfont's 30px slot, so the label does not move,
    while the glyph keeps its full 24px size. */
 .nav-menu a .icon {
-  color: #6f7180;
+  color: var(--color-nav-icon);
   font-size: 24px;
   margin-right: 6px;
   width: 1em;
@@ -199,35 +294,36 @@ h6 {
 .nav-menu a:hover,
 .nav-menu .active > a,
 .nav-menu li:hover > a {
-  color: #fff;
+  color: var(--color-white);
   text-decoration: none;
 }
 
 .nav-menu a:hover .icon,
 .nav-menu .active > a .icon,
 .nav-menu li:hover > a .icon {
-  color: #149ddd;
+  color: var(--color-accent);
 }
 
 /* Mobile Navigation */
 
+/* The padding makes a 44 x 44 px target; top and right keep the icon where it was. */
 .mobile-nav-toggle {
   background: none;
   border: 0;
   cursor: pointer;
   font-size: 24px;
   line-height: 1;
-  outline: none !important;
+  padding: 10px 7px;
   position: fixed;
-  right: 15px;
+  right: 14px;
   text-align: right;
-  top: 15px;
+  top: 6px;
   transition: all 0.4s;
   z-index: 9998;
 }
 
 .mobile-nav-toggle .icon {
-  color: #149ddd;
+  color: var(--color-accent-strong);
 }
 
 /* The toggle carries both glyphs; its open state picks the one shown. */
@@ -245,7 +341,7 @@ h6 {
 }
 
 .mobile-nav-active .mobile-nav-toggle .icon {
-  color: #fff;
+  color: var(--color-white);
 }
 
 /*--------------------------------------------------------------
@@ -317,7 +413,7 @@ h6 {
 }
 
 #hero:before {
-  background: rgba(5, 13, 24, 0.3);
+  background: var(--color-hero-overlay);
   bottom: 0;
   content: '';
   left: 0;
@@ -334,7 +430,7 @@ h6 {
 }
 
 #hero h1 {
-  color: #fff;
+  color: var(--color-white);
   font-size: 64px;
   font-weight: 700;
   line-height: 56px;
@@ -342,15 +438,15 @@ h6 {
 }
 
 #hero p {
-  color: #fff;
+  color: var(--color-white);
   font-family: 'Poppins', sans-serif;
   font-size: 26px;
   margin-bottom: 50px;
 }
 
 #hero p span {
-  border-bottom: 3px solid #149ddd;
-  color: #fff;
+  border-bottom: 3px solid var(--color-accent);
+  color: var(--color-white);
   letter-spacing: 1px;
   padding-bottom: 4px;
 }
@@ -358,6 +454,14 @@ h6 {
 @media (min-width: 1024px) {
   #hero {
     background-attachment: fixed;
+  }
+}
+
+/* #hero sits in #main but stays full-bleed under the docked 300 px sidebar. */
+@media (min-width: 1200px) {
+  #hero {
+    margin-left: -300px;
+    width: calc(100% + 300px);
   }
 }
 
@@ -378,7 +482,7 @@ section {
 }
 
 .section-bg {
-  background: #f5f8fd;
+  background: var(--color-section-bg);
 }
 
 .section-title {
@@ -386,7 +490,7 @@ section {
 }
 
 .section-title h2 {
-  color: #173b6c;
+  color: var(--color-heading);
   font-size: 32px;
   font-weight: bold;
   margin-bottom: 20px;
@@ -395,7 +499,7 @@ section {
 }
 
 .section-title h2::after {
-  background: #149ddd;
+  background: var(--color-accent);
   bottom: 0;
   content: '';
   display: block;
@@ -414,7 +518,7 @@ section {
 --------------------------------------------------------------*/
 
 .about .content h3 {
-  color: #173b6c;
+  color: var(--color-heading);
   font-size: 26px;
   font-weight: 700;
 }
@@ -429,7 +533,7 @@ section {
 }
 
 .about .content ul .icon {
-  color: #149ddd;
+  color: var(--color-accent);
   font-size: 20px;
   padding-right: 2px;
 }
@@ -457,7 +561,7 @@ section {
 }
 
 .portfolio #portfolio-filters {
-  background: #fff;
+  background: var(--color-white);
   border-radius: 50px;
   list-style: none;
   margin: 0 auto 35px auto;
@@ -475,7 +579,7 @@ section {
   background: none;
   border: 0;
   border-radius: 50px;
-  color: #272829;
+  color: var(--color-text);
   cursor: pointer;
   font: inherit;
   font-size: 14px;
@@ -490,18 +594,13 @@ section {
 
 .portfolio #portfolio-filters button:hover,
 .portfolio #portfolio-filters button[aria-pressed='true'] {
-  color: #149ddd;
+  color: var(--color-accent-strong);
 }
 
 .portfolio #portfolio-filters button[aria-pressed='true'] {
   text-decoration: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
-}
-
-.portfolio #portfolio-filters button:focus-visible {
-  outline: 2px solid #149ddd;
-  outline-offset: 2px;
 }
 
 /* No transition here: Muuri animates this element's opacity and transform. */
@@ -512,7 +611,7 @@ section {
 }
 
 .portfolio .portfolio-wrap::before {
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--color-portfolio-veil);
   bottom: 0;
   content: '';
   left: 0;
@@ -537,8 +636,8 @@ section {
 }
 
 .portfolio .portfolio-wrap .portfolio-links a {
-  background: rgba(20, 157, 221, 0.75);
-  color: #fff;
+  background: var(--color-portfolio-link-bg);
+  color: var(--color-white);
   font-size: 28px;
   text-align: center;
   transition: background 0.3s;
@@ -547,11 +646,17 @@ section {
 
 .portfolio .portfolio-wrap .portfolio-links a:hover,
 .portfolio .portfolio-wrap .portfolio-links a:focus-visible {
-  background: rgba(20, 157, 221, 0.95);
+  background: var(--color-portfolio-link-bg-hover);
+}
+
+/* The wrap clips its overflow, so the ring sits inside the link, dark on the accent. */
+.portfolio .portfolio-wrap .portfolio-links a:focus-visible {
+  outline-color: var(--color-sidebar);
+  outline-offset: -6px;
 }
 
 .portfolio .portfolio-wrap .portfolio-links a + a {
-  border-left: 1px solid #37b3ed;
+  border-left: 1px solid var(--color-accent-light);
 }
 
 .portfolio .portfolio-wrap:hover::before,
@@ -587,8 +692,8 @@ section {
 
 .services .service-icon {
   align-items: center;
-  background: #149ddd;
-  border: 1px solid #149ddd;
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
   border-radius: 50%;
   display: flex;
   float: left;
@@ -599,16 +704,16 @@ section {
 }
 
 .services .service-icon .icon {
-  color: #fff;
+  color: var(--color-white);
   font-size: 24px;
 }
 
 .services .icon-box:hover .service-icon {
-  background: #fff;
+  background: var(--color-white);
 }
 
 .services .icon-box:hover .service-icon .icon {
-  color: #149ddd;
+  color: var(--color-accent);
 }
 
 .services .title {
@@ -619,11 +724,11 @@ section {
 }
 
 .services .title a {
-  color: #343a40;
+  color: var(--color-service-title);
 }
 
 .services .title a:hover {
-  color: #149ddd;
+  color: var(--color-accent-strong);
 }
 
 .services .description {
@@ -652,22 +757,26 @@ section {
   width: 90px;
 }
 
-.testimonials .testimonial-item h3 {
-  color: #111;
+/* The name and role are paragraphs (AC-48); they keep the heading typeface. */
+.testimonials .testimonial-item .testimonial-name {
+  color: var(--color-testimonial-name);
+  font-family: 'Raleway', sans-serif;
   font-size: 18px;
   font-weight: bold;
   margin: 10px 0 5px 0;
 }
 
-.testimonials .testimonial-item h4 {
-  color: #999;
+.testimonials .testimonial-item .testimonial-role {
+  color: var(--color-testimonial-role);
+  font-family: 'Raleway', sans-serif;
   font-size: 14px;
+  font-weight: 500;
   margin: 0;
 }
 
 .testimonials .testimonial-item .quote-icon-left,
 .testimonials .testimonial-item .quote-icon-right {
-  color: #c3e8fa;
+  color: var(--color-quote-icon);
   font-size: 26px;
 }
 
@@ -684,10 +793,10 @@ section {
   top: 10px;
 }
 
-.testimonials .testimonial-item p {
-  background: #fff;
+.testimonials .testimonial-item .testimonial-quote {
+  background: var(--color-white);
   border-radius: 6px;
-  box-shadow: 0px 2px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 15px var(--color-shadow-soft);
   flex-grow: 1;
   font-style: italic;
   margin: 0 15px 35px 15px;
@@ -695,10 +804,10 @@ section {
   position: relative;
 }
 
-.testimonials .testimonial-item p::after {
+.testimonials .testimonial-item .testimonial-quote::after {
   border-left: 20px solid transparent;
   border-right: 20px solid transparent;
-  border-top: 20px solid #fff;
+  border-top: 20px solid var(--color-white);
   bottom: -20px;
   content: '';
   height: 0;
@@ -714,7 +823,7 @@ section {
 }
 
 .testimonials .swiper-pagination-bullet {
-  background-color: #ddd;
+  background-color: var(--color-bullet);
   border-radius: 50%;
   display: inline-block;
   height: 12px;
@@ -724,7 +833,7 @@ section {
 }
 
 .testimonials .swiper-pagination-bullet-active {
-  background-color: #149ddd;
+  background-color: var(--color-accent-strong);
 }
 
 @media (max-width: 767px) {
@@ -742,17 +851,17 @@ section {
 }
 
 .contact .info {
-  background: #fff;
-  box-shadow: 0 0 24px 0 rgba(0, 0, 0, 0.12);
+  background: var(--color-white);
+  box-shadow: 0 0 24px 0 var(--color-shadow);
   padding: 30px;
   width: 100%;
 }
 
 /* The 12px padding leaves a 20px (1em) glyph centered in the 44px circle. */
 .contact .info .icon {
-  background: #dff3fc;
+  background: var(--color-contact-icon-bg);
   border-radius: 50px;
-  color: #149ddd;
+  color: var(--color-accent);
   float: left;
   font-size: 20px;
   height: 44px;
@@ -761,8 +870,8 @@ section {
   width: 44px;
 }
 
-.contact .info h4 {
-  color: #050d18;
+.contact .info h3 {
+  color: var(--color-contact-heading);
   font-size: 22px;
   font-weight: 600;
   margin-bottom: 5px;
@@ -770,7 +879,7 @@ section {
 }
 
 .contact .info p {
-  color: #173b6c;
+  color: var(--color-heading);
   font-size: 14px;
   margin-bottom: 20px;
   padding: 0 0 10px 60px;
@@ -783,8 +892,8 @@ section {
 .contact .info .email:hover .icon,
 .contact .info .address:hover .icon,
 .contact .info .phone:hover .icon {
-  background: #149ddd;
-  color: #fff;
+  background: var(--color-accent);
+  color: var(--color-white);
 }
 
 #contactModal .php-email-form {
@@ -799,7 +908,7 @@ section {
 }
 
 .php-email-form .validate {
-  color: red;
+  color: var(--color-danger);
   display: none;
   font-size: 13px;
   font-weight: 400;
@@ -807,8 +916,8 @@ section {
 }
 
 .php-email-form .error-message {
-  background: #ed3c0d;
-  color: #fff;
+  background: var(--color-danger);
+  color: var(--color-white);
   display: none;
   font-weight: 600;
   padding: 15px;
@@ -816,8 +925,8 @@ section {
 }
 
 .php-email-form .sent-message {
-  background: #18d26e;
-  color: #fff;
+  background: var(--color-success);
+  color: var(--color-white);
   display: none;
   font-weight: 600;
   padding: 15px;
@@ -825,10 +934,10 @@ section {
 }
 
 .php-email-form button[type='submit'] {
-  background: #149ddd;
+  background: var(--color-accent-strong);
   border: 0;
   border-radius: 4px;
-  color: #fff;
+  color: var(--color-white);
   cursor: pointer;
   font-size: 15px;
   font-weight: 600;
@@ -837,7 +946,7 @@ section {
 }
 
 .php-email-form button[type='submit']:hover {
-  background: #37b3ed;
+  background: var(--color-accent-strong-hover);
 }
 
 .php-email-form input,
@@ -856,16 +965,16 @@ section {
 }
 
 .contact-cta p {
-  color: #173b6c;
+  color: var(--color-heading);
   font-size: 16px;
   margin-bottom: 20px;
 }
 
 .contact-modal-btn {
-  background: #149ddd;
+  background: var(--color-accent-strong);
   border: 0;
   border-radius: 4px;
-  color: #fff;
+  color: var(--color-white);
   cursor: pointer;
   font-size: 16px;
   font-weight: 600;
@@ -874,7 +983,7 @@ section {
 }
 
 .contact-modal-btn:hover {
-  background: #37b3ed;
+  background: var(--color-accent-strong-hover);
 }
 
 .contact-modal-btn .icon {
@@ -886,10 +995,11 @@ section {
 --------------------------------------------------------------*/
 
 #footer {
-  background: #040b14;
+  background: var(--color-sidebar);
   bottom: 0;
-  color: #f4f6fd;
+  color: var(--color-footer-text);
   font-size: 14px;
+  height: var(--footer-height);
   left: 0;
   padding: 15px;
   position: fixed;
@@ -902,7 +1012,7 @@ section {
 }
 
 #footer .credits {
-  color: #eaebf0;
+  color: var(--color-footer-credits);
   font-size: 13px;
   padding-top: 5px;
   text-align: center;
@@ -910,6 +1020,7 @@ section {
 
 @media (max-width: 1199px) {
   #footer {
+    height: auto;
     padding: 20px 15px;
     position: static;
     width: auto;
