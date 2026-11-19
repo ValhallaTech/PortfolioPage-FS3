@@ -4,8 +4,9 @@
 
 /*
  * Every color in this stylesheet is declared once here (AC-27, AC-28). The accent
- * #149ddd is only for decorative fills: white on it, or it on white, is about 3:1.
- * Text and filled buttons use --color-accent-strong, about 5.5:1 with white.
+ * #149ddd is only for decorative fills: it is about 3:1 with white and under 3:1 on
+ * #f5f8fd. Text, filled buttons and control fills such as the nav toggle icon and the
+ * active carousel bullet use --color-accent-strong, about 5.5:1 with white.
  */
 :root {
   --color-text: #272829;
@@ -322,7 +323,7 @@ h6 {
 }
 
 .mobile-nav-toggle .icon {
-  color: var(--color-accent);
+  color: var(--color-accent-strong);
 }
 
 /* The toggle carries both glyphs; its open state picks the one shown. */
@@ -832,7 +833,7 @@ section {
 }
 
 .testimonials .swiper-pagination-bullet-active {
-  background-color: var(--color-accent);
+  background-color: var(--color-accent-strong);
 }
 
 @media (max-width: 767px) {
