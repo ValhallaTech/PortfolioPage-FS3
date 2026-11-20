@@ -128,6 +128,16 @@ const BUTTONS = Object.freeze([
 /** A point where the pointer hovers nothing the tests measure: the sidebar, or the backdrop. */
 const POINTER_PARKING = Object.freeze({ x: 5, y: 5 });
 
+/** The viewports `Page end` checks: small, below the sidebar dock, and desktop. */
+const PAGE_END_VIEWPORTS = Object.freeze([
+  small.viewport,
+  { width: 1200, height: LAYOUT_HEIGHT },
+  desktop.viewport,
+]);
+
+/** How far the scroll height may run past the last content, for subpixel rounding. */
+const PAGE_END_TOLERANCE_PX = 2;
+
 /** The most Tab presses from `body` to the contact button, and from inside the dialog. */
 const MAX_TABS_TO_BUTTON = 120;
 
@@ -911,5 +921,47 @@ test('Button hover: both buttons change color on hover', async ({ page }) => {
     expect(hover, `${button.name}: background, color or border color changes on hover`).not.toEqual(
       rest
     );
+  }
+});
+
+/**
+ * How far the document scrolls past its last real content: the later of the `#main` and
+ * `#footer` bottoms, in document coordinates. Read at the top of the page, where a fixed
+ * `#footer` ends at the viewport's bottom.
+ *
+ * @param {import('@playwright/test').Page} page
+ */
+function overscrollPastContent(page) {
+  return page.evaluate(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    const bottom = (selector) =>
+      document.querySelector(selector).getBoundingClientRect().bottom + window.scrollY;
+    const contentEnd = Math.max(bottom('#main'), bottom('#footer'));
+    return document.documentElement.scrollHeight - contentEnd;
+  });
+}
+
+test('Page end: the page ends at its content, with the dialog closed and after closing it', async ({
+  page,
+}) => {
+  // PR-4 U-1a: a closed <dialog> that takes layout space adds blank page below the content.
+  for (const viewport of PAGE_END_VIEWPORTS) {
+    await test.step(`at ${viewport.width} × ${viewport.height}`, async () => {
+      await page.setViewportSize(viewport);
+      await page.goto('/');
+      expect(
+        await overscrollPastContent(page),
+        `px of page past the content at ${viewport.width} px, dialog never opened`
+      ).toBeLessThanOrEqual(PAGE_END_TOLERANCE_PX);
+
+      await openContactModal(page);
+      const hidden = await armModalEvent(page, 'hidden.bs.dialog');
+      await page.keyboard.press('Escape');
+      await hidden();
+      expect(
+        await overscrollPastContent(page),
+        `px of page past the content at ${viewport.width} px, after the dialog closed`
+      ).toBeLessThanOrEqual(PAGE_END_TOLERANCE_PX);
+    });
   }
 });
