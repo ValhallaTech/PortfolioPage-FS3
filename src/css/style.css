@@ -1,3 +1,10 @@
+/*
+ * Bootstrap 6 is imported here, not from main.js: its package.json "sideEffects" lists only
+ * JS, so Parcel drops a bare CSS import of it from JS. Its rules sit in cascade layers, so
+ * every unlayered rule below wins over them whatever the order.
+ */
+@import 'npm:bootstrap/dist/css/bootstrap.min.css';
+
 /*--------------------------------------------------------------
 # Color tokens
 --------------------------------------------------------------*/
@@ -43,7 +50,7 @@
   /* The focus ring: at least 3:1 against both the dark sidebar and the light content. */
   --color-focus: var(--color-accent-strong);
 
-  /* The fixed footer's height at 1200 px and wider; the docked sidebar ends above it. */
+  /* The fixed footer's height at 1280 px and wider; the docked sidebar ends above it. */
   --footer-height: 5rem;
 }
 
@@ -221,18 +228,18 @@ h6 {
 
 /* Docked: the sidebar ends where the fixed footer begins, so the footer never covers
    a nav link in the sidebar's scroll area (AC-61). */
-@media (min-width: 1200px) {
+@media (width >= 1280px) {
   #header {
     bottom: var(--footer-height);
   }
 }
 
 /*
- * Closed below 1200 px: the sidebar is hidden as well as moved off screen, so its links
+ * Closed below 1280 px: the sidebar is hidden as well as moved off screen, so its links
  * leave the tab order (D-15, AC-51). The visibility change waits for the slide-out to
  * finish; opening shows it at once.
  */
-@media (max-width: 1199px) {
+@media (width < 1280px) {
   #header {
     left: -300px;
     transition:
@@ -478,7 +485,7 @@ h6 {
 }
 
 /* #hero sits in #main but stays full-bleed under the docked 300 px sidebar. */
-@media (min-width: 1200px) {
+@media (width >= 1280px) {
   #hero {
     margin-left: -300px;
     width: calc(100% + 300px);
@@ -946,10 +953,17 @@ section {
   color: var(--color-white);
 }
 
+/* Bootstrap 6 reboot gives iframes `color-scheme: light dark`; the page is light only (C3). */
 .contact-map {
   border: 0;
+  color-scheme: light;
   height: 290px;
   width: 100%;
+}
+
+/* Bootstrap 6's .dialog-title is 1rem; keep 4.0.0's 20 px title (C5). */
+#contactModal .dialog-title {
+  font-size: 20px;
 }
 
 #contactModal .php-email-form {
@@ -1074,7 +1088,7 @@ section {
   text-align: center;
 }
 
-@media (max-width: 1199px) {
+@media (width < 1280px) {
   #footer {
     height: auto;
     padding: 20px 15px;

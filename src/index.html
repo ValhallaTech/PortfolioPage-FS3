@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html data-bs-theme="light" lang="en">
 
 <head>
     <meta charset="utf-8">
@@ -51,7 +51,7 @@
     </svg>
 
     <!-- ======= Mobile nav toggle button ======= -->
-    <button aria-controls="header" aria-expanded="false" aria-label="Navigation menu" class="d-xl-none mobile-nav-toggle" type="button">
+    <button aria-controls="header" aria-expanded="false" aria-label="Navigation menu" class="mobile-nav-toggle xl:d-none" type="button">
         <svg aria-hidden="true" class="icon nav-toggle-icon nav-toggle-icon--open" focusable="false"><use href="#icon-bars"></use></svg>
         <svg aria-hidden="true" class="icon nav-toggle-icon nav-toggle-icon--close" focusable="false"><use href="#icon-xmark"></use></svg>
     </button>
@@ -67,10 +67,10 @@
                      srcset="./images/profile/profile-240.webp 240w, ./images/profile/profile-480.webp 480w, ./images/profile/profile-720.webp 720w"
                      sizes="104px"
                      width="240" height="240">
-                <p class="profile-name text-light">
+                <p class="profile-name">
                     <a href="index.html">Fred Smith</a>
                 </p>
-                <div class="mt-3 social-links text-center">
+                <div class="mt-5 social-links text-center">
                     <a href="https://twitter.com/ValhallaTech_IT" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter), opens in new tab">
                         <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-x-twitter"></use></svg>
                     </a>
@@ -139,7 +139,7 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-lg-4" data-sr="fade-right">
+                    <div class="lg:col-4" data-sr="fade-right">
                         <img alt=""
                              class="img-fluid"
                              src="./images/profile/profile-720.webp"
@@ -148,17 +148,17 @@
                              width="720" height="720"
                              loading="lazy" decoding="async">
                     </div>
-                    <div class="col-lg-8 content pt-4 pt-lg-0" data-sr="fade-left">
+                    <div class="content lg:col-8 lg:pt-0 pt-7" data-sr="fade-left">
                         <h3>Coding Ninja</h3>
                         <div class="row">
-                            <div class="col-lg-6">
+                            <div class="lg:col-6">
                                 <ul>
                                     <li><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-chevron-right"></use></svg> <strong>Website:</strong> www.example.com</li>
                                     <li><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-chevron-right"></use></svg> <strong>Phone:</strong> +1 704 555 6969</li>
                                     <li><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-chevron-right"></use></svg> <strong>City:</strong> Winston-Salem, NC, USA</li>
                                 </ul>
                             </div>
-                            <div class="col-lg-6">
+                            <div class="lg:col-6">
                                 <ul>
                                     <li><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-chevron-right"></use></svg> <strong>Degree:</strong> Associate: Computer Networking Systems</li>
                                     <li>
@@ -183,7 +183,7 @@
                 </div>
 
                 <div class="row" data-sr="fade-up">
-                    <div class="col-lg-12 d-flex justify-content-center">
+                    <div class="d-flex justify-content-center lg:col-12">
                         <ul id="portfolio-filters">
                             <li><button type="button" data-filter="all" aria-pressed="true">All</button></li>
                             <li><button type="button" data-filter="app" aria-pressed="false">App</button></li>
@@ -195,7 +195,7 @@
 
                 <div class="portfolio-container row" data-sr="fade-up" data-sr-delay="100">
 
-                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="app" data-portfolio-id="1">
+                    <div class="lg:col-4 md:col-6 portfolio-item" data-category="app" data-portfolio-id="1">
                         <div class="portfolio-wrap">
                             <img alt="White mug with an orange 4K logo floating above an orange saucer on a pale teal background" class="img-fluid" src="./images/portfolio/portfolio-1.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
@@ -209,7 +209,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="web" data-portfolio-id="2">
+                    <div class="lg:col-4 md:col-6 portfolio-item" data-category="web" data-portfolio-id="2">
                         <div class="portfolio-wrap">
                             <img alt="Dark blue serum dropper bottle with a gold collar on a white pedestal among white paper leaves" class="img-fluid" src="./images/portfolio/portfolio-2.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
@@ -223,7 +223,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="app" data-portfolio-id="3">
+                    <div class="lg:col-4 md:col-6 portfolio-item" data-category="app" data-portfolio-id="3">
                         <div class="portfolio-wrap">
                             <img alt="White cosmetic tube with a blue cap on a white block beside a stack of black stones" class="img-fluid" src="./images/portfolio/portfolio-3.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
@@ -237,7 +237,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="card" data-portfolio-id="4">
+                    <div class="lg:col-4 md:col-6 portfolio-item" data-category="card" data-portfolio-id="4">
                         <div class="portfolio-wrap">
                             <img alt="Spiky green succulent in a mint green pot against a white background" class="img-fluid" src="./images/portfolio/portfolio-4.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
@@ -251,7 +251,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="web" data-portfolio-id="5">
+                    <div class="lg:col-4 md:col-6 portfolio-item" data-category="web" data-portfolio-id="5">
                         <div class="portfolio-wrap">
                             <img alt="Two glass perfume bottles with gold collars lying on a gray shag rug" class="img-fluid" src="./images/portfolio/portfolio-5.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
@@ -265,7 +265,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="app" data-portfolio-id="6">
+                    <div class="lg:col-4 md:col-6 portfolio-item" data-category="app" data-portfolio-id="6">
                         <div class="portfolio-wrap">
                             <img alt="White body oil bottle between a clear glass bottle and a succulent in a white geometric pot" class="img-fluid" src="./images/portfolio/portfolio-6.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
@@ -279,7 +279,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="card" data-portfolio-id="7">
+                    <div class="lg:col-4 md:col-6 portfolio-item" data-category="card" data-portfolio-id="7">
                         <div class="portfolio-wrap">
                             <img alt="Two glass mineral water bottles lying on a white cloth beside mandarin oranges" class="img-fluid" src="./images/portfolio/portfolio-7.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
@@ -293,7 +293,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="card" data-portfolio-id="8">
+                    <div class="lg:col-4 md:col-6 portfolio-item" data-category="card" data-portfolio-id="8">
                         <div class="portfolio-wrap">
                             <img alt="Minimal white desk with a gray chair, a candle, a sprig in a vase, a small plant and a framed print" class="img-fluid" src="./images/portfolio/portfolio-8.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
@@ -307,7 +307,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6 portfolio-item" data-category="web" data-portfolio-id="9">
+                    <div class="lg:col-4 md:col-6 portfolio-item" data-category="web" data-portfolio-id="9">
                         <div class="portfolio-wrap">
                             <img alt="Four small pancakes dusted with powdered sugar, with a mint sprig and a dish of cream, on a white plate" class="img-fluid" src="./images/portfolio/portfolio-9.jpg" width="800" height="600" loading="lazy" decoding="async">
                             <div class="portfolio-links">
@@ -335,32 +335,32 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-lg-4 col-md-6 icon-box" data-sr="fade-up">
+                    <div class="icon-box lg:col-4 md:col-6" data-sr="fade-up">
                         <div class="service-icon"><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-display"></use></svg></div>
                         <h3 class="title"><a href="">Web Development</a></h3>
                         <p class="description"></p>
                     </div>
-                    <div class="col-lg-4 col-md-6 icon-box" data-sr="fade-up" data-sr-delay="100">
+                    <div class="icon-box lg:col-4 md:col-6" data-sr="fade-up" data-sr-delay="100">
                         <div class="service-icon"><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-mobile-screen"></use></svg></div>
                         <h3 class="title"><a href="">Mobile App Developer</a></h3>
                         <p class="description"></p>
                     </div>
-                    <div class="col-lg-4 col-md-6 icon-box" data-sr="fade-up" data-sr-delay="200">
+                    <div class="icon-box lg:col-4 md:col-6" data-sr="fade-up" data-sr-delay="200">
                         <div class="service-icon"><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-circle-check"></use></svg></div>
                         <h3 class="title"><a href="">Quality Assurance</a></h3>
                         <p class="description"></p>
                     </div>
-                    <div class="col-lg-4 col-md-6 icon-box" data-sr="fade-up" data-sr-delay="300">
+                    <div class="icon-box lg:col-4 md:col-6" data-sr="fade-up" data-sr-delay="300">
                         <div class="service-icon"><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-microsoft"></use></svg></div>
                         <h3 class="title"><a href="">C# Programming</a></h3>
                         <p class="description"></p>
                     </div>
-                    <div class="col-lg-4 col-md-6 icon-box" data-sr="fade-up" data-sr-delay="400">
+                    <div class="icon-box lg:col-4 md:col-6" data-sr="fade-up" data-sr-delay="400">
                         <div class="service-icon"><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-code"></use></svg></div>
                         <h3 class="title"><a href="">.NET Core Framework Development</a></h3>
                         <p class="description"></p>
                     </div>
-                    <div class="col-lg-4 col-md-6 icon-box" data-sr="fade-up" data-sr-delay="500">
+                    <div class="icon-box lg:col-4 md:col-6" data-sr="fade-up" data-sr-delay="500">
                         <div class="service-icon"><svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-pen-ruler"></use></svg></div>
                         <h3 class="title"><a href="">UI/UX Design</a></h3>
                         <p class="description"></p>
@@ -441,7 +441,7 @@
 
                 <div class="row" data-sr="fade-in">
 
-                    <div class="align-items-stretch col-lg-5 d-flex">
+                    <div class="align-items-stretch d-flex lg:col-5">
                         <div class="info">
                             <div class="address">
                                 <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-location-dot"></use></svg>
@@ -471,10 +471,10 @@
                         </div>
                     </div>
 
-                    <div class="align-items-center col-lg-7 d-flex justify-content-center mt-5 mt-lg-0">
+                    <div class="align-items-center d-flex justify-content-center lg:col-7 lg:mt-0 mt-12">
                         <div class="contact-cta text-center">
                             <p>Have a question or want to work together?</p>
-                            <button class="contact-modal-btn" data-bs-target="#contactModal" data-bs-toggle="modal" type="button">
+                            <button class="contact-modal-btn" data-bs-target="#contactModal" data-bs-toggle="dialog" type="button">
                                 <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-envelope"></use></svg> Send Me a Message
                             </button>
                         </div>
@@ -503,51 +503,47 @@
         <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-chevron-up"></use></svg>
     </a>
 
-    <!-- ======= Contact Modal ======= -->
-    <div aria-hidden="true" aria-labelledby="contactModalLabel" class="modal fade" id="contactModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="contactModalLabel">Send Me a Message</h5>
-                    <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
-                </div>
-                <div class="modal-body">
-                    <form action="https://api.web3forms.com/submit" class="php-email-form" id="contact-form" method="POST">
-                        <input type="hidden" name="access_key" value="9837ba21-4ccf-4710-9e29-0551dc6e1a76">
-                        <input type="hidden" name="redirect" value="false">
-                        <input type="checkbox" name="botcheck" hidden tabindex="-1" autocomplete="off">
-
-                        <div class="form-group">
-                            <label class="visually-hidden" for="name">Your Name</label>
-                            <input type="text" name="name" class="form-control" id="name" placeholder="Your Name" required>
-                            <div class="validate"></div>
-                        </div>
-                        <div class="form-group">
-                            <label class="visually-hidden" for="email">Your Email</label>
-                            <input type="email" name="email" class="form-control" id="email" placeholder="Your Email" required>
-                            <div class="validate"></div>
-                        </div>
-                        <div class="form-group">
-                            <label class="visually-hidden" for="subject">Subject</label>
-                            <input type="text" name="subject" class="form-control" id="subject" placeholder="Subject" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="visually-hidden" for="message">Message</label>
-                            <textarea class="form-control" name="message" id="message" rows="5" placeholder="Message" required></textarea>
-                            <div class="validate"></div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="error-message" id="error-message"></div>
-                            <div class="sent-message" id="sent-message">Your message has been sent. Thank you!</div>
-                        </div>
-                        <div class="text-center">
-                            <button type="submit" id="submit-btn">Send Message</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+    <!-- ======= Contact Dialog ======= -->
+    <dialog aria-labelledby="contactModalLabel" class="dialog dialog-lg" id="contactModal">
+        <div class="dialog-header">
+            <h2 class="dialog-title" id="contactModalLabel">Send Me a Message</h2>
+            <button aria-label="Close" class="btn-close" data-bs-dismiss="dialog" type="button"></button>
         </div>
-    </div><!-- End Contact Modal -->
+        <div class="dialog-body">
+            <form action="https://api.web3forms.com/submit" class="php-email-form" id="contact-form" method="POST">
+                <input type="hidden" name="access_key" value="9837ba21-4ccf-4710-9e29-0551dc6e1a76">
+                <input type="hidden" name="redirect" value="false">
+                <input type="checkbox" name="botcheck" hidden tabindex="-1" autocomplete="off">
+
+                <div class="form-group">
+                    <label class="visually-hidden" for="name">Your Name</label>
+                    <input type="text" name="name" class="form-control" id="name" placeholder="Your Name" required>
+                    <div class="validate"></div>
+                </div>
+                <div class="form-group">
+                    <label class="visually-hidden" for="email">Your Email</label>
+                    <input type="email" name="email" class="form-control" id="email" placeholder="Your Email" required>
+                    <div class="validate"></div>
+                </div>
+                <div class="form-group">
+                    <label class="visually-hidden" for="subject">Subject</label>
+                    <input type="text" name="subject" class="form-control" id="subject" placeholder="Subject" required>
+                </div>
+                <div class="form-group">
+                    <label class="visually-hidden" for="message">Message</label>
+                    <textarea class="form-control" name="message" id="message" rows="5" placeholder="Message" required></textarea>
+                    <div class="validate"></div>
+                </div>
+                <div class="mb-5">
+                    <div class="error-message" id="error-message"></div>
+                    <div class="sent-message" id="sent-message">Your message has been sent. Thank you!</div>
+                </div>
+                <div class="text-center">
+                    <button type="submit" id="submit-btn">Send Message</button>
+                </div>
+            </form>
+        </div>
+    </dialog><!-- End Contact Dialog -->
 
     <!-- Main JS (Parcel entry point - imports all dependencies) -->
     <script type="module" src="./js/main.js"></script>
