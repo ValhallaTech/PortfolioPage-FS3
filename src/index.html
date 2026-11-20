@@ -464,10 +464,9 @@
                             </div>
 
                             <iframe allowfullscreen
-                                    frameborder="0"
+                                    class="contact-map"
                                     title="Google Maps location"
-                                    src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d12097.433213460943!2d-74.0062269!3d40.7101282!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0xb89d1fe6bc499443!2sDowntown+Conference+Center!5e0!3m2!1smk!2sbg!4v1539943755621"
-                                    style="border: 0; height: 290px; width: 100%;">
+                                    src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d12097.433213460943!2d-74.0062269!3d40.7101282!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0xb89d1fe6bc499443!2sDowntown+Conference+Center!5e0!3m2!1smk!2sbg!4v1539943755621">
                             </iframe>
                         </div>
                     </div>
@@ -516,7 +515,7 @@
                     <form action="https://api.web3forms.com/submit" class="php-email-form" id="contact-form" method="POST">
                         <input type="hidden" name="access_key" value="9837ba21-4ccf-4710-9e29-0551dc6e1a76">
                         <input type="hidden" name="redirect" value="false">
-                        <input type="checkbox" name="botcheck" style="display: none;">
+                        <input type="checkbox" name="botcheck" hidden tabindex="-1" autocomplete="off">
 
                         <div class="form-group">
                             <label class="visually-hidden" for="name">Your Name</label>
