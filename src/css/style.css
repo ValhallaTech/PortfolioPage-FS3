@@ -47,6 +47,12 @@
   --color-footer-text: #f4f6fd;
   --color-footer-credits: #eaebf0;
 
+  /* The overlay colors the scrollbar gutter takes while an overlay is open (U-1b):
+     Bootstrap 6's light dialog backdrop, and GLightbox's overlay. */
+  --color-dialog-backdrop: rgba(0, 0, 0, 0.5);
+  --color-lightbox-overlay: rgba(0, 0, 0, 0.92);
+  --color-lightbox-overlay-solid: #000;
+
   /* The focus ring: at least 3:1 against both the dark sidebar and the light content. */
   --color-focus: var(--color-accent-strong);
 
@@ -959,6 +965,43 @@ section {
   color-scheme: light;
   height: 290px;
   width: 100%;
+}
+
+/*
+ * U-1a: Bootstrap 6 keeps a closed .dialog at display: flex (visibility: hidden) for its
+ * transitions, and the UA's position: absolute leaves it in the page's scroll height.
+ * Fixed, it adds no scroll height; open, the UA's :modal rule fixes it anyway.
+ */
+.dialog:not([open]) {
+  position: fixed;
+}
+
+/*
+ * U-1b: Bootstrap 6 sets scrollbar-gutter: stable on the root, so hiding the scrollbar
+ * under an overlay shifts nothing. The empty gutter is painted with the canvas background,
+ * though, and no fixed or top-layer box reaches it (100vw excludes a stable gutter). So
+ * while an overlay is open the root background takes the overlay's color: over the
+ * browser's white base it composites as the overlay does over the white page. GLightbox's
+ * body margin makes up for a scrollbar the stable gutter already replaces, which would
+ * shift the page, so it is dropped.
+ */
+:root.dialog-open {
+  background-color: var(--color-dialog-backdrop);
+}
+
+:root.glightbox-open {
+  background-color: var(--color-lightbox-overlay-solid);
+}
+
+/* GLightbox's overlay is translucent only from 769 px wide and 421 px tall. */
+@media (min-width: 769px) and (min-height: 421px) {
+  :root.glightbox-open {
+    background-color: var(--color-lightbox-overlay);
+  }
+}
+
+body.gscrollbar-fixer {
+  margin-right: 0;
 }
 
 /* Bootstrap 6's .dialog-title is 1rem; keep 4.0.0's 20 px title (C5). */
