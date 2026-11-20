@@ -1,7 +1,8 @@
 {
   "name": "portfoliopage-fs3",
-  "version": "2.0.0",
+  "version": "4.0.0",
   "description": "Fred Smith III Portfolio Page",
+  "license": "GPL-3.0-only",
   "private": true,
   "source": "src/index.html",
   "browserslist": "defaults, iOS >= 15",
