@@ -263,11 +263,13 @@ These are the only sprint 1 assertions that sprint 2 may change (C-8). AC-27 che
   4. The result message stays until the dialog is closed.
   5. The field labels are visible, and field errors show on their fields.
   6. The contact and submit buttons have Bootstrap button styling in the site accent.
+  7. The contact dialog takes Bootstrap 6's dialog width. It is narrower than 4.0.0's below 576 px (302 vs 357 px at 375) and wider between 576 and 991 px (694 vs 498 px at 768).
+  8. With classic scrollbars, an open dialog or lightbox centers in the page area beside the scrollbar gutter, about 7–8 px left of the viewport center. Bootstrap 6 keeps `scrollbar-gutter: stable`, so the page does not shift when an overlay opens.
 
   Nothing is broken, overlapping or unstyled, including the menu button and back-to-top next to the classic scrollbar (bootstrap6-analysis R13).
 - **Assertion:** the reviewer posts a PR comment listing each §6 width as pass or fail, and each difference found with its intended-change number. Failing widths: 0. Differences with no intended-change number: 0.
 - **Executable as:** `manual`
-- **Manual because:** whether a page "renders properly" is a visual judgment. A pixel diff against 4.0.0 fails by design on changes 1–6. Also, the classic-scrollbar placement (R13) does not appear in the headless Linux runner the suites use.
+- **Manual because:** whether a page "renders properly" is a visual judgment. A pixel diff against 4.0.0 fails by design on changes 1–8. Also, the classic-scrollbar placement (R13) does not appear in the headless Linux runner the suites use.
 
 #### AC-4 — The sidebar layout switches at 1280 px
 
