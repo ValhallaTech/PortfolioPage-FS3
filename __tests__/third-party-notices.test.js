@@ -24,6 +24,9 @@ const NOTICES_PATH = path.join('dist', 'THIRD-PARTY-NOTICES.txt');
 /** One section header: a rule, `name version`, `License: x`, a rule. */
 const SECTION_HEADER = /^={80}\n(.+)\nLicense: (.+)\n={80}$/gm;
 
+/** The rule line that opens and closes every section header. */
+const SECTION_RULE = /^={80}$/;
+
 /** Jest's own variables; they are kept out of every child process. */
 const JEST_VARIABLE_PREFIX = 'JEST_';
 
@@ -97,6 +100,40 @@ function installPackage(root, { name, version, license, text }) {
   if (text !== undefined) {
     fs.writeFileSync(path.join(packageDir, 'LICENSE'), `${text}\n`, 'utf8');
   }
+}
+
+/**
+ * Writes a repository-held license file, `<root>/third-party-licenses/<name>/<file>`, where a
+ * scoped name becomes nested folders (AD-13).
+ *
+ * @param {string} root The fixture root.
+ * @param {string} name The package name.
+ * @param {string} file The file name inside the package's folder.
+ * @param {string} text The file content, without its final newline.
+ */
+function writeRepoHeldFile(root, name, file, text) {
+  const folder = path.join(root, 'third-party-licenses', ...name.split('/'));
+  fs.mkdirSync(folder, { recursive: true });
+  fs.writeFileSync(path.join(folder, file), `${text}\n`, 'utf8');
+}
+
+/**
+ * The text of one package's section: from the line after its header up to the next section's
+ * rule, or the end of the file. The fixture's license texts hold no rule line.
+ *
+ * @param {string} notices The notices file content.
+ * @param {string} heading The section's `name version` line.
+ * @returns {string | null} The section's text after its heading, or null when it is missing.
+ */
+function sectionBody(notices, heading) {
+  const lines = notices.split('\n');
+  const start = lines.indexOf(heading);
+  if (start === -1) {
+    return null;
+  }
+  const rest = lines.slice(start + 3);
+  const end = rest.findIndex((line) => SECTION_RULE.test(line));
+  return (end === -1 ? rest : rest.slice(0, end)).join('\n');
 }
 
 /**
@@ -317,6 +354,163 @@ describe('third-party-notices script', () => {
             'alpha 1.2.3',
             'zeta-lib 3.0.1',
           ])
+        );
+      },
+      TEST_TIMEOUT_MS
+    );
+  });
+
+  describe('when a runtime dependency ships no license file but the repository holds one', () => {
+    const REPO_HELD = { name: 'held-terms', version: '5.6.7', license: 'Custom' };
+    const REPO_HELD_TEXT = 'Held terms text.';
+
+    beforeEach(() => {
+      createFixture(root, [...LICENSED_PACKAGES.map((pkg) => pkg.name), REPO_HELD.name]);
+      installPackage(root, REPO_HELD);
+      writeRepoHeldFile(root, REPO_HELD.name, 'LICENSE.md', REPO_HELD_TEXT);
+    });
+
+    test(
+      'exits 0 and does not warn about the dependency',
+      () => {
+        // Act
+        const run = runNotices(root, spawnDir);
+
+        // Assert
+        expectWithRunDetail(run, () =>
+          expect({
+            status: run.status,
+            warned: run.stderr.includes(`warning: ${REPO_HELD.name} `),
+          }).toEqual({ status: 0, warned: false })
+        );
+      },
+      TEST_TIMEOUT_MS
+    );
+
+    test(
+      'lists the dependency with its installed version among the others',
+      () => {
+        // Act
+        const run = runNotices(root, spawnDir);
+        const notices = fs.readFileSync(path.join(root, NOTICES_PATH), 'utf8');
+
+        // Assert
+        expectWithRunDetail(run, () =>
+          expect(sectionHeaders(notices)).toEqual([
+            { heading: '@scope/beta 2.1.0', license: 'ISC' },
+            { heading: 'alpha 1.2.3', license: 'Apache-2.0' },
+            { heading: 'held-terms 5.6.7', license: 'Custom' },
+            { heading: 'zeta-lib 3.0.1', license: 'MIT' },
+          ])
+        );
+      },
+      TEST_TIMEOUT_MS
+    );
+
+    test(
+      'gives the section the repository-held text under its repository path',
+      () => {
+        // Act
+        const run = runNotices(root, spawnDir);
+        const notices = fs.readFileSync(path.join(root, NOTICES_PATH), 'utf8');
+
+        // Assert
+        expectWithRunDetail(run, () =>
+          expect(sectionBody(notices, 'held-terms 5.6.7')?.trim()).toBe(
+            `--- third-party-licenses/held-terms/LICENSE.md ---\n\n${REPO_HELD_TEXT}`
+          )
+        );
+      },
+      TEST_TIMEOUT_MS
+    );
+  });
+
+  describe('when a dependency has its own license file and a repository-held one', () => {
+    beforeEach(() => {
+      createFixture(
+        root,
+        LICENSED_PACKAGES.map((pkg) => pkg.name)
+      );
+      writeRepoHeldFile(root, 'alpha', 'LICENSE.md', 'Repository-held alpha text.');
+    });
+
+    test(
+      "uses the package's own license file and ignores the repository-held one",
+      () => {
+        // Act
+        const run = runNotices(root, spawnDir);
+        const notices = fs.readFileSync(path.join(root, NOTICES_PATH), 'utf8');
+
+        // Assert
+        expectWithRunDetail(run, () =>
+          expect(sectionBody(notices, 'alpha 1.2.3')?.trim()).toBe(
+            '--- LICENSE ---\n\nAlpha license text.'
+          )
+        );
+      },
+      TEST_TIMEOUT_MS
+    );
+  });
+
+  describe('when neither the package nor its repository folder has a license file', () => {
+    const UNLICENSED = { name: 'no-license', version: '0.4.0', license: 'MIT' };
+
+    beforeEach(() => {
+      createFixture(root, [...LICENSED_PACKAGES.map((pkg) => pkg.name), UNLICENSED.name]);
+      installPackage(root, UNLICENSED);
+      writeRepoHeldFile(root, UNLICENSED.name, 'README.md', 'Not a license file.');
+    });
+
+    test(
+      'exits 0, warns that the dependency was skipped and leaves it out of the notices',
+      () => {
+        // Act
+        const run = runNotices(root, spawnDir);
+        const notices = fs.readFileSync(path.join(root, NOTICES_PATH), 'utf8');
+
+        // Assert
+        expectWithRunDetail(run, () =>
+          expect({
+            status: run.status,
+            warned: run.stderr.includes(`warning: ${UNLICENSED.name} `),
+            headings: sectionHeaders(notices).map((header) => header.heading),
+          }).toEqual({
+            status: 0,
+            warned: true,
+            headings: ['@scope/beta 2.1.0', 'alpha 1.2.3', 'zeta-lib 3.0.1'],
+          })
+        );
+      },
+      TEST_TIMEOUT_MS
+    );
+  });
+
+  describe('when a scoped dependency ships no license file but the repository holds one', () => {
+    const SCOPED = { name: '@scope/held', version: '0.9.0', license: 'Custom' };
+    const SCOPED_TEXT = 'Scoped held terms text.';
+
+    beforeEach(() => {
+      createFixture(root, [...LICENSED_PACKAGES.map((pkg) => pkg.name), SCOPED.name]);
+      installPackage(root, SCOPED);
+      writeRepoHeldFile(root, SCOPED.name, 'LICENSE.md', SCOPED_TEXT);
+    });
+
+    test(
+      'reads the terms from nested scope and package folders and labels them with that path',
+      () => {
+        // Act
+        const run = runNotices(root, spawnDir);
+        const notices = fs.readFileSync(path.join(root, NOTICES_PATH), 'utf8');
+
+        // Assert
+        expectWithRunDetail(run, () =>
+          expect({
+            warned: run.stderr.includes(`warning: ${SCOPED.name} `),
+            body: sectionBody(notices, '@scope/held 0.9.0')?.trim(),
+          }).toEqual({
+            warned: false,
+            body: `--- third-party-licenses/@scope/held/LICENSE.md ---\n\n${SCOPED_TEXT}`,
+          })
         );
       },
       TEST_TIMEOUT_MS
