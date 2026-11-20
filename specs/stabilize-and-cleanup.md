@@ -1028,7 +1028,7 @@ _Ground truth for evaluating execution agents. Every AC is written to be asserta
 #### AC-45 — The listed text and UI pairs meet contrast
 
 - **Verifies:** R-30
-- **Given** the local target at `desktop`, with each state below set up. Web3Forms is mocked as in AC-89.
+- **Given** the local target at `desktop` for rows 1 to 10 and at `small` for row 11, with each state below set up. Web3Forms is mocked as in AC-89.
 - **When** each element's computed `color` is compared with its effective background
 - **Then** every pair meets its threshold
 
@@ -1044,10 +1044,11 @@ _Ground truth for evaluating execution agents. Every AC is written to be asserta
   | 8 | `#sent-message` after a mocked `{ "success": true }` | 4.5 |
   | 9 | `#error-message` after a mocked `{ "success": false, "message": "x" }` | 4.5 |
   | 10 | testimonial role line (today `.testimonial-item h4`) | 4.5 |
-  | 11 | inactive `.swiper-pagination-bullet` fill vs effective background (UI component) | 3.0 |
+  | 11 | inactive `.swiper-pagination-bullet` fill vs effective background (UI component), at `small` | 3.0 |
 
 - **Assertion:** `contrast(color, effectiveBackground) >= threshold` for all 11 rows
 - **Executable as:** `e2e`
+- **Note:** row 11 is measured at `small` (Fred, 2026-11-19). With loop off (WI-52 / D-14), all three testimonials fit one view at 900 px and wider, so Swiper renders a single, always-active bullet there and the pagination is hidden. At `small` the three bullets show, and two of them are inactive.
 
 #### AC-46 — Hero text meets contrast over the background image
 
@@ -1964,7 +1965,7 @@ Two CDN caching facts the plan relies on:
 | Mobile nav toggle | `.mobile-nav-toggle` (exactly one), with `aria-expanded` and `aria-controls="header"` | Duplicate removed |
 | Profile name | `#header .profile-name` (a `<p>`) | Was `#header .profile h1` |
 | Testimonial role line | `.testimonial-item .testimonial-role` | Was `.testimonial-item h4` |
-| Carousel pause control | `#testimonials .testimonials-autoplay-toggle`, role `button`, named `Pause testimonials` or `Play testimonials` | New |
+| Carousel pause control | `#testimonials .testimonials-autoplay-toggle`, role `button`, named `Pause testimonials` or `Play testimonials`. Carries `hidden` while the carousel is locked (900 px and wider) and with JavaScript off | New |
 | Back-to-top | `.back-to-top`, shown by the class `is-visible` | Inline `style` writes removed |
 | Skip link | `a.skip-link`, first child of `<body>`, `href="#main"` | New |
 | Typing element | `.typed` | Unchanged |
@@ -2148,7 +2149,7 @@ The `build` script gains `--no-source-maps` (resolves D-5; WI-59). Local `yarn s
 **D-13 — Scroll listener** (resolves D-13; WI-33). A `{ passive: true }` scroll listener coalesces events through `requestAnimationFrame`. Section, nav-link and back-to-top references are queried once at init and cached, so no per-frame `querySelectorAll` runs (AC-32). The active-section rule (`scrollY + 200` inside a section) and the 100 px back-to-top threshold stay as they are (AC-33, AC-34). *Lost:* `IntersectionObserver` changes the active-section semantics, and jsdom does not implement it, which costs unit-testability. Sprint 3 may move this to ScrollTrigger anyway.
 
 **D-14 — Carousel pause control** (resolves D-14; WI-52).
-- *Control:* a visible `<button type="button" class="testimonials-autoplay-toggle">` inside `#testimonials` but outside `.testimonials-carousel`, placed directly after that element so it sits below the pagination. Its name and icon read `Pause testimonials` while rotating and `Play testimonials` while stopped. Activating it (Enter, Space or click) calls `swiper.autoplay.stop()` or `swiper.autoplay.start()`. Because the button is outside the focus-pause area, focusing it does not pause rotation, so only activating it stops rotation (AC-44).
+- *Control:* a `<button type="button" class="testimonials-autoplay-toggle" hidden>` inside `#testimonials` but outside `.testimonials-carousel`, placed directly after that element so it sits below the pagination. It is visible only where the carousel can move (Fred, 2026-11-19: "Hide it there"). Right after construction, and on Swiper's `lock` and `unlock` events, the setup sets `button.hidden = swiper.isLocked`. With `watchOverflow` on, which is Swiper's default, Swiper locks when every slide fits, which for 3 slides is 900 px and wider, and the same lock hides the pagination (`.swiper-pagination-lock { display: none }`). So the button shows below 900 px and is hidden from 900 px up. The `hidden` attribute in the markup keeps it hidden with JavaScript off, through Bootstrap's `[hidden] { display: none !important; }`. *(Read 2026-11-19 in the installed Swiper 14.3.0: `checkOverflow` sets `isLocked` and emits `lock` or `unlock`, `swiper-core.mjs:269-295`; `watchOverflow: true` is a default, `:400`; `modules/pagination.css:183-185`.)* *Lost:* a `@media (min-width: 900px)` rule would repeat Swiper's breakpoint in CSS and drift from it if the breakpoints change. Its name and icon read `Pause testimonials` while rotating and `Play testimonials` while stopped. Activating it (Enter, Space or click) calls `swiper.autoplay.stop()` or `swiper.autoplay.start()`. Because the button is outside the focus-pause area, focusing it does not pause rotation, so only activating it stops rotation (AC-44).
 - *Pausing:* `autoplay.pauseOnMouseEnter: true`. Autoplay also pauses on `focusin` inside `.testimonials-carousel`, and only there, and resumes on `focusout` when focus leaves that element. Hover and focus use `pause()` and `resume()`, which do nothing while `swiper.autoplay.running` is false: `stop()` sets it false, `pause()` returns early and `resume()` returns early (`autoplay.mjs:163-174`, `:202-206`). So a mouse-out or focus-out never starts autoplay that the visitor stopped or that reduced motion never started (AC-109).
 - *Reduced motion:* under `prefers-reduced-motion: reduce`, `swiper.autoplay.stop()` runs right after construction, before the first 5 s delay ends, so no slide changes on its own, and the button reads `Play testimonials`. Stopping instead of passing `autoplay.enabled: false` keeps Swiper's hover listeners, which it attaches only when autoplay is enabled at init (`autoplay.mjs:264-268`), for a later Play. A `matchMedia` `change` listener applies a live change.
 - *Loop:* `loop: true` becomes `loop: false, rewind: true`. That removes the loop warning at every width (AC-114) and keeps rotation where slides are off-screen.
@@ -2999,7 +3000,7 @@ S1 tests implement the Conventions' tracked-file search in Node (`git ls-files` 
   - Import `A11y` from `swiper/modules`.
   - Set `loop: false, rewind: true`.
   - Move `data-sr="fade-up"` from the three `.testimonial-item` elements to `.testimonials-carousel`, and remove the items' `data-sr-delay` attributes (D-14 *Reveal*), so every slide is visible when it becomes active (AC-125).
-  - Add the toggle button with the sprite's pause and play icons, inside `#testimonials` and directly after `.testimonials-carousel`, never inside it.
+  - Add the toggle button with the sprite's pause and play icons, inside `#testimonials` and directly after `.testimonials-carousel`, never inside it. It carries `hidden` in the markup. The setup sets `hidden` from `swiper.isLocked` after construction and on `lock` and `unlock`, so the button shows only below 900 px and never with JavaScript off (D-14 *Control*).
   - The button calls `swiper.autoplay.stop()` and `start()`. Hover and focus inside `.testimonials-carousel` use `pause()` and `resume()`, so neither one restarts autoplay that the button or reduced motion stopped.
   - Give each pagination bullet a hit area of at least 24 × 24 px, with the visible dot inside it.
 - **done when:** WI-55's carousel tests pass.
