@@ -20,8 +20,14 @@ const MOTION_CONDITIONS = Object.freeze({
 /** The duration in seconds of a reveal and of the hero fade, as in 5.0.0. */
 const ENTRANCE_DURATION = 1;
 
-/** The easing of a reveal and of the hero fade. */
-const ENTRANCE_EASE = 'power1.inOut';
+/** The easing of the hero fade (AD-5). */
+const HERO_EASE = 'power1.inOut';
+
+/**
+ * The easing of a reveal. sine.inOut leaves 0.01 opacity about 7 ms sooner than
+ * power1.inOut, which keeps a row's first reveal inside AC-28's 150 ms under load (RK-1).
+ */
+const REVEAL_EASE = 'sine.inOut';
 
 /** The wait in seconds before the hero starts to fade in, as in 5.0.0. */
 const HERO_DELAY = 0.2;
@@ -98,7 +104,7 @@ function playHeroIntro(hero) {
       opacity: 1,
       delay: HERO_DELAY,
       duration: ENTRANCE_DURATION,
-      ease: ENTRANCE_EASE,
+      ease: HERO_EASE,
       onComplete: () => {
         showHero(hero);
         hero.style.removeProperty('opacity');
@@ -149,7 +155,7 @@ function playReveals(batch, running) {
         y: 0,
         delay: delays[index] / 1000,
         duration: ENTRANCE_DURATION,
-        ease: ENTRANCE_EASE,
+        ease: REVEAL_EASE,
         clearProps: REVEAL_PROPS,
         onComplete: () => running.delete(target),
       }
@@ -159,8 +165,24 @@ function playReveals(batch, running) {
 }
 
 /**
- * Hides the targets not yet revealed and reveals each once it enters the view. Focus
- * inside a target finishes its reveal at once (AD-4).
+ * Whether focus reached an element in a way the browser shows a focus ring for: from the
+ * keyboard, or from a script after keyboard use. A pointer press does not count, except
+ * on text fields. Where `:focus-visible` is not supported, every focus counts.
+ * @param {Element} el - The element that received focus
+ * @returns {boolean}
+ */
+function isKeyboardFocus(el) {
+  try {
+    return el.matches(':focus-visible');
+  } catch {
+    // SyntaxError: the selector is unknown to this browser.
+    return true;
+  }
+}
+
+/**
+ * Hides the targets not yet revealed and reveals each once it enters the view. Keyboard
+ * focus inside a target finishes its reveal at once (AD-4); pointer focus lets it run.
  * @param {HTMLElement[]} targets - Every reveal target
  * @param {gsap.Context} context - The matchMedia branch's context
  * @returns {(() => void)|undefined} Cleanup for the matchMedia branch
@@ -201,6 +223,9 @@ function watchReveals(targets, context) {
     clearEntranceStyles(target);
   };
   const onFocusIn = (event) => {
+    // A pointer focuses what it is already pressing on, so that reveal runs on: finishing
+    // it would move the element away between press and release, and lose the click.
+    if (!isKeyboardFocus(event.target)) return;
     pending.forEach((target) => {
       if (target.contains(event.target)) finishReveal(target);
     });
