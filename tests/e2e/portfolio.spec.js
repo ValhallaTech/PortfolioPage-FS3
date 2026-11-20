@@ -145,7 +145,7 @@ function actionLinkVisibility(link, wrapSelector) {
 }
 
 /**
- * Polls until an action link is inside its card and fully opaque. ScrollReveal fades
+ * Polls until an action link is inside its card and fully opaque. The scroll reveal fades
  * the grid in once it scrolls into view, so the state is polled, not read once.
  *
  * @param {import('@playwright/test').Locator} link

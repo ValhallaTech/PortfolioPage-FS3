@@ -1,6 +1,7 @@
 /**
  * Build-output checks for the performance assets (spec stabilize-and-cleanup, WI-41:
- * AC-69, AC-70, AC-74, AC-75).
+ * AC-69, AC-70, AC-74, AC-75), and for GSAP's terms in the third-party notices (spec
+ * gsap-animations, WI-5: AC-5's notices-file checks; its stderr check runs in WI-16).
  *
  * Each test reads `dist/` from `yarn build` on the Node side and never opens a page.
  * The fixtures.js guards are auto fixtures and still create a browser context; no test
@@ -14,6 +15,13 @@ import { test, expect } from './fixtures.js';
 
 const DIST_DIR = path.resolve(__dirname, '..', '..', 'dist');
 const DIST_INDEX = path.join(DIST_DIR, 'index.html');
+const DIST_NOTICES = path.join(DIST_DIR, 'THIRD-PARTY-NOTICES.txt');
+const PACKAGE_JSON = path.resolve(__dirname, '..', '..', 'package.json');
+
+/** AC-5: an exact version, a notices rule line, and a section label line. */
+const EXACT_VERSION = /^\d+\.\d+\.\d+$/;
+const RULE_LINE = /^====+$/;
+const SECTION_LABEL = /^--- .+ ---$/;
 
 /** AC-69: the two Google font hosts. */
 const GOOGLE_FONT_HOST = /fonts\.(googleapis|gstatic)\.com/;
@@ -134,5 +142,31 @@ test.describe('build output', { tag: '@build' }, () => {
       );
 
     expect(failing, '<img> elements without positive integer width and height').toEqual([]);
+  });
+
+  test('AC-5: the notices file has a GSAP section with its pinned version and license text', async () => {
+    const pinned = JSON.parse(await readFile(PACKAGE_JSON, 'utf8')).dependencies?.gsap;
+    expect(pinned, 'package.json dependencies.gsap').toMatch(EXACT_VERSION);
+    const lines = (await readFile(DIST_NOTICES, 'utf8')).split(/\r?\n/);
+
+    const header = lines.indexOf(`gsap ${pinned}`);
+    expect(header, `the line "gsap ${pinned}" in dist/THIRD-PARTY-NOTICES.txt`).toBeGreaterThan(-1);
+    const licenseLine = lines[header + 1] ?? '';
+    expect(licenseLine, 'the line after the GSAP header').toMatch(/^License: /);
+    expect(licenseLine, 'the GSAP License: line').toMatch(/no charge/i);
+
+    // Each section opens with a header block, the name and License: lines between two rule
+    // lines, so the rule right after the License: line closes that block. The section's
+    // text runs from there to the next rule line, which opens the next section.
+    let textStart = header + 2;
+    if (RULE_LINE.test(lines[textStart] ?? '')) textStart += 1;
+    const nextRule = lines.findIndex((line, i) => i >= textStart && RULE_LINE.test(line));
+    const text = lines.slice(textStart, nextRule === -1 ? lines.length : nextRule);
+    const label = text.findIndex((line) => SECTION_LABEL.test(line));
+    expect(label, 'a "--- <file> ---" line in the GSAP section').toBeGreaterThan(-1);
+    expect(
+      text.slice(label + 1).some((line) => line.trim() !== ''),
+      'non-blank license text after the label'
+    ).toBe(true);
   });
 });

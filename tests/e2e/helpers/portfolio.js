@@ -82,7 +82,7 @@ export async function waitForPortfolioImages(page) {
 
 /**
  * Scrolls `#portfolio` to the top of the viewport, as a nav-link visit does, and waits
- * until ScrollReveal has finished revealing the grid: fully opaque, with no transition
+ * until the scroll reveal has finished revealing the grid: fully opaque, with no transition
  * left on it.
  *
  * @param {import('@playwright/test').Page} page
@@ -99,7 +99,7 @@ export async function revealPortfolio(page) {
           (element) =>
             getComputedStyle(element).opacity === '1' && element.getAnimations().length === 0
         ),
-      { message: 'ScrollReveal has finished revealing the portfolio grid' }
+      { message: 'the scroll reveal has finished revealing the portfolio grid' }
     )
     .toBe(true);
 }

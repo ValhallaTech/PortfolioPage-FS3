@@ -1,7 +1,9 @@
 /**
  * The report-only CSP raises nothing on a full visit (spec stabilize-and-cleanup, WI-60:
  * AC-83), nor on a mocked contact submission after it (spec bootstrap-6-upgrade, WI-2:
- * AC-31, which also asserts that no enforcing policy is served).
+ * AC-31, which also asserts that no enforcing policy is served), nor in either motion mode
+ * with a nav click, a back-to-top click and the dialog added (spec gsap-animations, WI-5:
+ * AC-41).
  *
  * The test carries `@live`, so `yarn test:e2e:live` runs it against the deployed site too.
  * On the local target, scripts/serve-dist.mjs applies the `[[headers]]` blocks of
@@ -50,6 +52,18 @@ const VIOLATION_BINDING = '__wi60CspViolation';
 
 /** The full visit walks many steps with fixed settles; the smoke spec allows it 60 s. */
 const FULL_VISIT_TIMEOUT_MS = 60_000;
+
+/**
+ * AC-41 (spec gsap-animations): the GSAP reveals and hero entrance write styles in both
+ * motion modes, so the visit runs once with motion allowed and once under reduced motion.
+ */
+const MOTION_MODES = Object.freeze([
+  { mode: 'no-preference', label: 'motion allowed' },
+  { mode: 'reduce', label: 'reduced motion' },
+]);
+
+/** AC-41: how near the viewport top `#about` must come for the nav click to count. */
+const ABOUT_ARRIVAL_PX = 2;
 
 /**
  * The zoom case's viewport (RK-7). GLightbox caps the image at 97vh, so at 560 px the
@@ -285,6 +299,55 @@ test.describe('at desktop', () => {
       expect(consoleMessages, 'console messages matching /Content.Security.Policy/i').toEqual([]);
     }
   );
+
+  for (const { mode, label } of MOTION_MODES) {
+    test(
+      `AC-41: under ${label}, a full visit, the nav and back-to-top clicks, the contact dialog and a mocked submission raise no CSP violation`,
+      { tag: '@live' },
+      async ({ page }) => {
+        test.setTimeout(FULL_VISIT_TIMEOUT_MS);
+        await page.emulateMedia({ reducedMotion: mode });
+        await mockWeb3Forms(page, { success: true });
+        const violations = await recordViolations(page);
+        const consoleMessages = recordCspConsoleMessages(page);
+        const documentResponse = mainDocumentResponse(page);
+
+        await fullVisit(page);
+        await page.locator('#header').getByRole('link', { name: 'About', exact: true }).click();
+        await expect
+          .poll(
+            () => page.locator('#about').evaluate((about) => about.getBoundingClientRect().top),
+            {
+              message: 'the About nav link brought #about to the top of the viewport',
+            }
+          )
+          .toBeLessThan(ABOUT_ARRIVAL_PX);
+        await page.getByRole('link', { name: 'Back to top' }).click();
+        await expect
+          .poll(() => page.evaluate(() => window.scrollY), {
+            message: 'back-to-top reached the top',
+          })
+          .toBe(0);
+        await openContactModal(page);
+        await fillContactForm(page);
+        await page.locator('#submit-btn').click();
+        await expect(
+          page.locator('#sent-message'),
+          'the mocked submission succeeded'
+        ).toBeVisible();
+        await settleViolationEvents(page);
+
+        const response = await documentResponse;
+        await expectShippedPolicyServed(response);
+        expect(
+          (await response.allHeaders())[CSP_ENFORCED],
+          `the document response carries no ${CSP_ENFORCED}`
+        ).toBeUndefined();
+        expect(violations, 'securitypolicyviolation events').toEqual([]);
+        expect(consoleMessages, 'console messages matching /Content.Security.Policy/i').toEqual([]);
+      }
+    );
+  }
 });
 
 test.describe('at 1024×560, where the lightbox shows its image below natural size', () => {
