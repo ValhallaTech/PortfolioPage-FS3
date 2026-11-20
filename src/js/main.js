@@ -272,7 +272,7 @@ function initLightbox() {
       el.setAttribute('href', href);
     }
   });
-  return GLightbox({ selector: '.glightbox' });
+  return GLightbox({ selector: '.glightbox', zoomable: false });
 }
 
 /**
