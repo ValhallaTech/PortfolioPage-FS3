@@ -127,6 +127,8 @@ yarn format
 yarn format:check
 ```
 
+The `build` script in `package.json` starts with `PARCEL_WORKER_BACKEND=process`, which makes Parcel run its workers as child processes instead of worker threads. Keep it. With worker threads, about 6% of cold-cache builds on Windows crashed on exit (0xC0000005), because Node unloads Lightning CSS while worker threads still use it ([parcel-bundler/parcel#7603](https://github.com/parcel-bundler/parcel/issues/7603)). With workers as processes, 0 of 50 cold builds crashed.
+
 ### Deployment
 
 The site is deployed on **Netlify** at <https://fs3-portfolio.netlify.app>.
