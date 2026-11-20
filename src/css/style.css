@@ -451,6 +451,26 @@ h6 {
   padding-bottom: 4px;
 }
 
+/* The typing cursor. Typed.js runs with autoInsertCss: false (D-6), so its cursor rules
+   live here. It blinks between phrases and stops once the last phrase is typed (C-31). */
+.typed-cursor {
+  opacity: 1;
+}
+
+.typed-cursor.typed-cursor--blink {
+  animation: typed-cursor-blink 0.7s infinite;
+}
+
+.typed-cursor.typed-cursor--done {
+  animation: none;
+}
+
+@keyframes typed-cursor-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 @media (min-width: 1024px) {
   #hero {
     background-attachment: fixed;
@@ -822,18 +842,48 @@ section {
   position: relative;
 }
 
+/* Each bullet is a 24 x 24 px target (AC-59) that paints a 12 px dot in its center: the
+   padding is the rest of the hit area, and the background stops at the content box. */
+.testimonials {
+  --swiper-pagination-bullet-horizontal-gap: 0;
+}
+
 .testimonials .swiper-pagination-bullet {
+  background-clip: content-box;
   background-color: var(--color-bullet);
   border-radius: 50%;
   display: inline-block;
-  height: 12px;
-  margin: 0 5px;
+  height: 24px;
   opacity: 1;
-  width: 12px;
+  padding: 6px;
+  width: 24px;
 }
 
 .testimonials .swiper-pagination-bullet-active {
   background-color: var(--color-accent-strong);
+}
+
+/* Pause/Play for the autoplay (D-14): a 44 x 44 px icon button centered below the bullets. */
+.testimonials-autoplay-toggle {
+  align-items: center;
+  background: transparent;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  color: var(--color-accent-strong);
+  display: flex;
+  height: 44px;
+  justify-content: center;
+  margin: 10px auto 0;
+  padding: 0;
+  width: 44px;
+}
+
+.testimonials-autoplay-toggle:hover {
+  color: var(--color-accent-strong-hover);
+}
+
+.testimonials-autoplay-toggle .icon {
+  font-size: 16px;
 }
 
 @media (max-width: 767px) {

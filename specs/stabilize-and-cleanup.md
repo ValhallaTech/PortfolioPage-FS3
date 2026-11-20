@@ -533,6 +533,7 @@ Gate 1 resolved every earlier question, Q-13 included. Requirements that rest on
 | R-79 | The portfolio grid fits the page at every width. It causes no horizontal scrolling, stays inside its own section, and leaves every other section's layout and behavior unchanged. | MUST | G-22 |
 | R-80 | Fred reviews the portfolio layout that ships and accepts it as fitting the page (C-36; guards against the A-17 risk). | SHOULD | G-22 |
 | R-81 | Under `prefers-reduced-motion: reduce`, a portfolio filter change shows the final item set at once, with no animation (C-37). | MUST | G-22 |
+| R-82 | Every testimonial is fully visible whenever its slide is active. | MUST | G-20 |
 
 ### 2.3 Acceptance criteria
 
@@ -1017,16 +1018,17 @@ _Ground truth for evaluating execution agents. Every AC is written to be asserta
   - the local target at `small`, where one slide shows per view, so rotation is observable
   - no reduced-motion preference (`emulateMedia({ reducedMotion: 'no-preference' })`)
   - `#testimonials` scrolled into view
-  - a sanity precondition: the `data-swiper-slide-index` of `.testimonials .swiper-slide-active` changes within 6 s with no interaction
+  - a sanity precondition: the text of `.testimonial-name` inside `.testimonials .swiper-slide-active` (one of the three testimonial names) changes within 6 s with no interaction
 - **When** focus moves by keyboard to the control inside `#testimonials` with role `button` and a name matching `/pause/i`, and Enter is pressed
 - **Then** the active slide stops changing
-- **Assertion:** the active slide's `data-swiper-slide-index` read at the moment of Enter equals the value read 11 s later, which spans two autoplay periods
+- **Assertion:** the text of `.testimonial-name` inside `.testimonials .swiper-slide-active` read at the moment of Enter equals the text read 11 s later, which spans two autoplay periods
 - **Executable as:** `e2e`
+- **Note:** the active slide is identified by the visible testimonial name because that works with or without loop mode; Swiper sets `data-swiper-slide-index` only in loop mode, and WI-52 / D-14 turn loop off.
 
 #### AC-45 — The listed text and UI pairs meet contrast
 
 - **Verifies:** R-30
-- **Given** the local target at `desktop`, with each state below set up. Web3Forms is mocked as in AC-89.
+- **Given** the local target at `desktop` for rows 1 to 10 and at `small` for row 11, with each state below set up. Web3Forms is mocked as in AC-89.
 - **When** each element's computed `color` is compared with its effective background
 - **Then** every pair meets its threshold
 
@@ -1042,10 +1044,11 @@ _Ground truth for evaluating execution agents. Every AC is written to be asserta
   | 8 | `#sent-message` after a mocked `{ "success": true }` | 4.5 |
   | 9 | `#error-message` after a mocked `{ "success": false, "message": "x" }` | 4.5 |
   | 10 | testimonial role line (today `.testimonial-item h4`) | 4.5 |
-  | 11 | inactive `.swiper-pagination-bullet` fill vs effective background (UI component) | 3.0 |
+  | 11 | inactive `.swiper-pagination-bullet` fill vs effective background (UI component), at `small` | 3.0 |
 
 - **Assertion:** `contrast(color, effectiveBackground) >= threshold` for all 11 rows
 - **Executable as:** `e2e`
+- **Note:** row 11 is measured at `small` (Fred, 2026-11-19). With loop off (WI-52 / D-14), all three testimonials fit one view at 900 px and wider, so Swiper renders a single, always-active bullet there and the pagination is hidden. At `small` the three bullets show, and two of them are inactive.
 
 #### AC-46 — Hero text meets contrast over the background image
 
@@ -1688,8 +1691,9 @@ _Ground truth for evaluating execution agents. Every AC is written to be asserta
 - **Given** the local target at `small`, with `emulateMedia({ reducedMotion: 'reduce' })` set before navigation and `#testimonials` scrolled into view
 - **When** 11 s pass with no interaction, which spans two of today's 5 s autoplay periods
 - **Then** the active slide never changes
-- **Assertion:** the `data-swiper-slide-index` of `.testimonials .swiper-slide-active` read at the start equals the value read 11 s later
+- **Assertion:** the text of `.testimonial-name` inside `.testimonials .swiper-slide-active` (one of the three testimonial names) read at the start equals the text read 11 s later
 - **Executable as:** `e2e`
+- **Note:** the active slide is identified by the visible testimonial name because that works with or without loop mode; Swiper sets `data-swiper-slide-index` only in loop mode, and WI-52 / D-14 turn loop off.
 
 #### AC-110 — The typing effect shows each phrase once, in order
 
@@ -1820,6 +1824,19 @@ _Ground truth for evaluating execution agents. Every AC is written to be asserta
   - **No animation is running.** At the first frame after the click, `document.getAnimations()` returns no animation in `running` state with a duration above 0 whose `effect.target` is a portfolio item, an element inside one, or the grid container. This covers CSS transitions, CSS animations and Web Animations alike. Animations on the filter buttons themselves, such as a color transition, are not counted.
 - **Executable as:** `e2e`
 
+#### AC-125 — Every testimonial is visible when it becomes active
+
+- **Verifies:** R-82
+- **Given**:
+  - the local target at `small`, where one slide shows per view, so slides 2 and 3 start outside the window
+  - no reduced-motion preference (`emulateMedia({ reducedMotion: 'no-preference' })`), so autoplay runs
+  - `#testimonials` scrolled into view, with no other interaction
+- **When** autoplay advances through all three slides, so that each of the three testimonial names becomes the text of `.testimonial-name` inside `.testimonials .swiper-slide-active` at least once within 16 s
+- **Then** each slide's testimonial is fully visible within 2 s of its slide becoming active
+- **Assertion:** for each of the three testimonial names, polled from the moment its slide gains `swiper-slide-active`, the computed `opacity` of `.testimonial-item` inside `.testimonials .swiper-slide-active`, and of each of its ancestors up to and including `#testimonials`, is `"1"` within 2 s; and all three names are seen within 16 s
+- **Executable as:** `e2e`
+- **Note:** the check reads computed `opacity` on the item and every ancestor because Playwright's visibility check counts an element at `opacity: 0` as visible, and a reveal applied to any wrapper hides the item without changing the item's own `opacity`. AC-44 and AC-109, which read only the name text, pass even when the slide is blank. The 2 s bound covers the page's longest scroll-reveal today (1 s duration plus up to 0.5 s delay). The AC runs only at `small`: at `tablet` and `desktop` all three slides show at once, so none is ever outside the window.
+
 ### 2.4 Success metrics
 
 _How we know it worked after it ships. Metric, current baseline, target, measurement source._
@@ -1948,7 +1965,7 @@ Two CDN caching facts the plan relies on:
 | Mobile nav toggle | `.mobile-nav-toggle` (exactly one), with `aria-expanded` and `aria-controls="header"` | Duplicate removed |
 | Profile name | `#header .profile-name` (a `<p>`) | Was `#header .profile h1` |
 | Testimonial role line | `.testimonial-item .testimonial-role` | Was `.testimonial-item h4` |
-| Carousel pause control | `#testimonials .testimonials-autoplay-toggle`, role `button`, named `Pause testimonials` or `Play testimonials` | New |
+| Carousel pause control | `#testimonials .testimonials-autoplay-toggle`, role `button`, named `Pause testimonials` or `Play testimonials`. Carries `hidden` while the carousel is locked (900 px and wider) and with JavaScript off | New |
 | Back-to-top | `.back-to-top`, shown by the class `is-visible` | Inline `style` writes removed |
 | Skip link | `a.skip-link`, first child of `<body>`, `href="#main"` | New |
 | Typing element | `.typed` | Unchanged |
@@ -2112,7 +2129,7 @@ The `build` script gains `--no-source-maps` (resolves D-5; WI-59). Local `yarn s
   - `webServer` starts the server only when `BASE_URL` is unset.
   - `BASE_URL=https://fs3portfolio.netlify.app` runs the live target.
 - *Tags:*
-  - `@slow`: kept out of the smoke command, per Q-12(g). Covers AC-44, AC-109 to AC-112 and AC-114.
+  - `@slow`: kept out of the smoke command, per Q-12(g). Covers AC-44, AC-109 to AC-112, AC-114 and AC-125.
   - `@live`: also run against the live target.
   - `@build`: reads `dist/` and needs no browser.
 - *Scripts:*
@@ -2132,10 +2149,11 @@ The `build` script gains `--no-source-maps` (resolves D-5; WI-59). Local `yarn s
 **D-13 — Scroll listener** (resolves D-13; WI-33). A `{ passive: true }` scroll listener coalesces events through `requestAnimationFrame`. Section, nav-link and back-to-top references are queried once at init and cached, so no per-frame `querySelectorAll` runs (AC-32). The active-section rule (`scrollY + 200` inside a section) and the 100 px back-to-top threshold stay as they are (AC-33, AC-34). *Lost:* `IntersectionObserver` changes the active-section semantics, and jsdom does not implement it, which costs unit-testability. Sprint 3 may move this to ScrollTrigger anyway.
 
 **D-14 — Carousel pause control** (resolves D-14; WI-52).
-- *Control:* a visible `<button type="button" class="testimonials-autoplay-toggle">` inside `#testimonials`, next to the pagination. Its name and icon read `Pause testimonials` while rotating and `Play testimonials` while paused.
-- *Pausing:* `autoplay.pauseOnMouseEnter: true`. Autoplay also pauses while focus is inside the carousel and resumes on focus-out, unless the visitor paused it.
-- *Reduced motion:* under `prefers-reduced-motion: reduce`, autoplay never starts and the button reads `Play testimonials`. A `matchMedia` `change` listener applies a live change.
+- *Control:* a `<button type="button" class="testimonials-autoplay-toggle" hidden>` inside `#testimonials` but outside `.testimonials-carousel`, placed directly after that element so it sits below the pagination. It is visible only where the carousel can move (Fred, 2026-11-19: "Hide it there"). Right after construction, and on Swiper's `lock` and `unlock` events, the setup sets `button.hidden = swiper.isLocked`. With `watchOverflow` on, which is Swiper's default, Swiper locks when every slide fits, which for 3 slides is 900 px and wider, and the same lock hides the pagination (`.swiper-pagination-lock { display: none }`). So the button shows below 900 px and is hidden from 900 px up. The `hidden` attribute in the markup keeps it hidden with JavaScript off, through Bootstrap's `[hidden] { display: none !important; }`. *(Read 2026-11-19 in the installed Swiper 14.3.0: `checkOverflow` sets `isLocked` and emits `lock` or `unlock`, `swiper-core.mjs:269-295`; `watchOverflow: true` is a default, `:400`; `modules/pagination.css:183-185`.)* *Lost:* a `@media (min-width: 900px)` rule would repeat Swiper's breakpoint in CSS and drift from it if the breakpoints change. Its name and icon read `Pause testimonials` while rotating and `Play testimonials` while stopped. Activating it (Enter, Space or click) calls `swiper.autoplay.stop()` or `swiper.autoplay.start()`. Because the button is outside the focus-pause area, focusing it does not pause rotation, so only activating it stops rotation (AC-44).
+- *Pausing:* `autoplay.pauseOnMouseEnter: true`. Autoplay also pauses on `focusin` inside `.testimonials-carousel`, and only there, and resumes on `focusout` when focus leaves that element. Hover and focus use `pause()` and `resume()`, which do nothing while `swiper.autoplay.running` is false: `stop()` sets it false, `pause()` returns early and `resume()` returns early (`autoplay.mjs:163-174`, `:202-206`). So a mouse-out or focus-out never starts autoplay that the visitor stopped or that reduced motion never started (AC-109).
+- *Reduced motion:* under `prefers-reduced-motion: reduce`, `swiper.autoplay.stop()` runs right after construction, before the first 5 s delay ends, so no slide changes on its own, and the button reads `Play testimonials`. Stopping instead of passing `autoplay.enabled: false` keeps Swiper's hover listeners, which it attaches only when autoplay is enabled at init (`autoplay.mjs:264-268`), for a later Play. A `matchMedia` `change` listener applies a live change.
 - *Loop:* `loop: true` becomes `loop: false, rewind: true`. That removes the loop warning at every width (AC-114) and keeps rotation where slides are off-screen.
+- *Reveal (AC-125):* `data-sr="fade-up"` moves from the three `.testimonial-item` elements to `.testimonials-carousel`, and the items' `data-sr-delay` attributes go. ScrollReveal places an element by its `offsetLeft` chain, which ignores Swiper's transform, and reveals it only once it lies inside the window horizontally as well as vertically (`scrollreveal.es.js:949-976`, `:995-1026`). It recomputes that position only on init and resize (`:1036-1041`). With `loop: false`, slides 2 and 3 start to the right of the window at `small`, so their items would never be revealed and would stay at `opacity: 0` when active. The carousel element lies inside the window once `#testimonials` is in view, so it fades up as one, slides included. *(Read 2026-11-19 in the installed ScrollReveal 4.0.9 `dist/scrollreveal.es.js`. The effect on the page is inferred from that source; AC-125 is the control.)* *Lost:* (1) the 100 ms and 200 ms stagger between items at 900 px and wider, where all three show at once. (2) Re-syncing ScrollReveal on `slideChange` still reads the untransformed `offsetLeft`, so slides 2 and 3 would still count as outside the window. (3) Dropping the reveal from the testimonials altogether changes the look more than needed, and sprint 3 replaces ScrollReveal anyway.
 
 **D-15 — Closed nav out of the tab order** (resolves D-15; WI-50). CSS `visibility: hidden` on the closed `#header` below 1200 px, using `transition: left .5s, visibility 0s .5s` so the slide-out animation stays. `.mobile-nav-active #header` sets `visibility: visible` at once. It is pure CSS, with no resize listener to keep a JS `inert` flag in sync across the 1200 px boundary. *Lost:* `inert` needs JS to track the breakpoint and the open state.
 
@@ -2977,11 +2995,13 @@ S1 tests implement the Conventions' tracked-file search in Node (`git ls-files` 
 
 - **domain:** `frontend`
 - **depends-on:** WI-51
-- **satisfies:** AC-44, AC-58, AC-59, AC-109, AC-114
+- **satisfies:** AC-44, AC-58, AC-59, AC-109, AC-114, AC-125
 - **change:** The D-14 design in `main.js`, `index.html` and `style.css`:
   - Import `A11y` from `swiper/modules`.
   - Set `loop: false, rewind: true`.
-  - Add the toggle button with the sprite's pause and play icons.
+  - Move `data-sr="fade-up"` from the three `.testimonial-item` elements to `.testimonials-carousel`, and remove the items' `data-sr-delay` attributes (D-14 *Reveal*), so every slide is visible when it becomes active (AC-125).
+  - Add the toggle button with the sprite's pause and play icons, inside `#testimonials` and directly after `.testimonials-carousel`, never inside it. It carries `hidden` in the markup. The setup sets `hidden` from `swiper.isLocked` after construction and on `lock` and `unlock`, so the button shows only below 900 px and never with JavaScript off (D-14 *Control*).
+  - The button calls `swiper.autoplay.stop()` and `start()`. Hover and focus inside `.testimonials-carousel` use `pause()` and `resume()`, so neither one restarts autoplay that the button or reduced motion stopped.
   - Give each pagination bullet a hit area of at least 24 × 24 px, with the visible dot inside it.
 - **done when:** WI-55's carousel tests pass.
 
@@ -3002,15 +3022,15 @@ S1 tests implement the Conventions' tracked-file search in Node (`git ls-files` 
 - **domain:** `frontend`
 - **depends-on:** WI-51, WI-53. `initContactForm` sits in `src/js/main.js` with `initTyped` and the carousel setup, so this item starts after WI-53 commits (§3.5 rule 7).
 - **satisfies:** AC-66
-- **change:** `initContactForm` sets `aria-busy="true"` on `#contact-form` when a request starts. It removes the attribute in `finally` and in the `hidden.bs.modal` reset.
+- **change:** `initContactForm` sets `aria-busy="true"` on `#contact-form` when a request starts. It removes the attribute in the `hidden.bs.modal` reset, and in `finally` only inside the existing `if (!signal.aborted)` branch. An aborted request's `finally` runs after the next request has set the attribute, so removing it there would clear a busy state that is still in flight.
 - **done when:** WI-55's AC-66 test passes.
 
 #### WI-55 — E2E: motion and form
 
 - **domain:** `tests`
 - **depends-on:** WI-52, WI-53, WI-54
-- **satisfies:** AC-44, AC-58, AC-59, AC-66, AC-109, AC-110, AC-111, AC-112, AC-114
-- **change:** `tests/e2e/motion.spec.js`. AC-44, AC-109, AC-110 to AC-112 and AC-114 are tagged `@slow`. AC-114 runs each width in parallel workers.
+- **satisfies:** AC-44, AC-58, AC-59, AC-66, AC-109, AC-110, AC-111, AC-112, AC-114, AC-125
+- **change:** `tests/e2e/motion.spec.js`. AC-44, AC-109, AC-110 to AC-112, AC-114 and AC-125 are tagged `@slow`. AC-114 runs each width in parallel workers.
 - **done when:** `yarn test:smoke` and `yarn test:e2e:slow` pass. PR-9 posts the `test:e2e:slow` result next to its gate evidence.
 
 #### Phase 7 — security headers, CSP and source maps (PR-10)
@@ -3188,7 +3208,7 @@ The report sprint-1 order is kept, minus phase (a):
 | RK-1 | #69 merges at a commit older than `1988128`, or a later edit adds a `dependencyDashboard` value that is not a boolean, so AC-5 fails. The original object-form value was fixed upstream at `1988128`, which removed the key | low | med | Phase 0 confirms the merged #69 is `1988128` or later. WI-19 adds no `dependencyDashboard` key. WI-18's AC-5 guard catches any regression | WI-18, WI-19 |
 | RK-2 | Netlify on Node 26, with `YARN_VERSION` removed, fails to provision Yarn 4.18.1, because Node 26 bundles no Corepack. Production deploys would fail | med | high | WI-12's done-when requires a green PR-2 deploy preview showing Node 26 and Yarn 4.18.1. Fallback: keep `YARN_VERSION = "4.18.1"` (deprecated but supported); WI-16 keeps it aligned when present | WI-12, WI-16 |
 | RK-3 | Live ACs rest on A-2, and production deploys may have been failing since 2026-09-28 | med | high | Phase 0 verifies the post-#69 production deploy before any sprint-1 work. WI-65 verifies the release deploy before tagging | WI-1, WI-65 |
-| RK-4 | Timing-based tests make the gate flaky: scroll waits, the 11 s carousel checks, the 60 s typing checks | med | med | Slow tests sit outside the smoke command (`@slow`). Web-first assertions and `expect.poll` replace fixed sleeps where an AC allows. `retries: 0` in the gate, because a flaky test is a defect that goes back to its author | WI-8, WI-35, WI-40, WI-46, WI-51, WI-55 |
+| RK-4 | Timing-based tests make the gate flaky: scroll waits, the 11 s and 16 s carousel checks, the 60 s typing checks | med | med | Slow tests sit outside the smoke command (`@slow`). Web-first assertions and `expect.poll` replace fixed sleeps where an AC allows. `retries: 0` in the gate, because a flaky test is a defect that goes back to its author | WI-8, WI-35, WI-40, WI-46, WI-51, WI-55 |
 | RK-5 | The Chromium-only baseline misses WebKit regressions in sprint 2, such as the Bootstrap 6 dialog on Safari 18 | med | med | The `phone` viewport uses iPhone 13 metrics. Sprint 2 can add a WebKit project with one config entry and `playwright install webkit`. Accepted for sprint 1 | WI-6, WI-8 |
 | RK-6 | WI-10's whole-file Prettier pass over `style.css` conflicts with any branch already editing CSS | low | low | It lands in PR-1, in a formatting-only commit, and no CSS work starts before PR-1 merges | WI-10 |
 | RK-7 | CSP report-only violations from libraries. Verified sources: Typed.js `<style>` injection, and GLightbox `setAttribute('style')` when a slide has a title or description. Muuri 0.9.5 was checked and writes only through the CSSOM and the Web Animations API. *(Corrected 2026-11-19:* unpatched, it also creates two `blob:` workers when the module loads, which `script-src 'self'` does not allow) | med | med | WI-53 turns off `autoInsertCss`. WI-49 adds no `data-title` or `data-description`. WI-37's Muuri patch builds the packer with 0 workers, so no worker is created. AC-83 catches the rest. The Security Reviewer decides any inline-style allowance in writing, never silently | WI-49, WI-53, WI-58, WI-60 |
@@ -3371,6 +3391,7 @@ The report sprint-1 order is kept, minus phase (a):
 | AC-122 | `portfolio.spec.js`: items inside `#portfolio`, which ends above `#services` | e2e | S2 |
 | AC-123 | Fred views the layout at `small`, `tablet` and `desktop` × 4 filters | manual | PR-6, Fred |
 | AC-124 | `portfolio.spec.js`: under reduced motion, every frame after the `App` click equals the final state, and no animation runs on the items or the grid, at `desktop` and `small` | e2e | S2 |
+| AC-125 | `motion.spec.js` (`@slow`): at `small`, the computed `opacity` of each active slide's `.testimonial-item` and of every ancestor up to and including `#testimonials` reaches `"1"` within 2 s, and all three names are seen within 16 s | e2e | S3 |
 
 AC-21, AC-115, AC-116 and AC-117 are withdrawn in §2.3 and have no check.
 
