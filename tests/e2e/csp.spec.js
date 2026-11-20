@@ -1,6 +1,7 @@
 /**
  * The report-only CSP raises nothing on a full visit (spec stabilize-and-cleanup, WI-60:
- * AC-83).
+ * AC-83), nor on a mocked contact submission after it (spec bootstrap-6-upgrade, WI-2:
+ * AC-31, which also asserts that no enforcing policy is served).
  *
  * The test carries `@live`, so `yarn test:e2e:live` runs it against the deployed site too.
  * On the local target, scripts/serve-dist.mjs applies the `[[headers]]` blocks of
@@ -23,6 +24,7 @@ import { parse as parseToml } from 'smol-toml';
 import { test, expect } from './fixtures.js';
 import { desktop, phone } from './viewports.js';
 import { fullVisit } from './helpers/full-visit.js';
+import { fillContactForm, mockWeb3Forms, openContactModal } from './helpers/contact-modal.js';
 import {
   LIGHTBOX,
   LIGHTBOX_IMAGE,
@@ -36,6 +38,9 @@ const NETLIFY_TOML = path.resolve(__dirname, '..', '..', 'netlify.toml');
 
 /** The response header WI-58 adds, lowercased as Playwright reports header names. */
 const CSP_REPORT_ONLY = 'content-security-policy-report-only';
+
+/** The enforcing header, which the policy must not be served as (bootstrap-6-upgrade C-10). */
+const CSP_ENFORCED = 'content-security-policy';
 
 /** AC-83: the console messages that count as CSP messages. */
 const CSP_CONSOLE_MESSAGE = /Content.Security.Policy/i;
@@ -248,6 +253,34 @@ test.describe('at desktop', () => {
         [normalizePolicy(served)],
         `the served ${CSP_REPORT_ONLY} is the one value netlify.toml ships`
       ).toEqual(shippedPolicies());
+      expect(violations, 'securitypolicyviolation events').toEqual([]);
+      expect(consoleMessages, 'console messages matching /Content.Security.Policy/i').toEqual([]);
+    }
+  );
+
+  test(
+    'AC-31: a full visit and a mocked submission raise no CSP violation under the report-only policy',
+    { tag: '@live' },
+    async ({ page }) => {
+      test.setTimeout(FULL_VISIT_TIMEOUT_MS);
+      await mockWeb3Forms(page, { success: true });
+      const violations = await recordViolations(page);
+      const consoleMessages = recordCspConsoleMessages(page);
+      const documentResponse = mainDocumentResponse(page);
+
+      await fullVisit(page);
+      await openContactModal(page);
+      await fillContactForm(page);
+      await page.locator('#submit-btn').click();
+      await expect(page.locator('#sent-message'), 'the mocked submission succeeded').toBeVisible();
+      await settleViolationEvents(page);
+
+      const response = await documentResponse;
+      await expectShippedPolicyServed(response);
+      expect(
+        (await response.allHeaders())[CSP_ENFORCED],
+        `the document response carries no ${CSP_ENFORCED}`
+      ).toBeUndefined();
       expect(violations, 'securitypolicyviolation events').toEqual([]);
       expect(consoleMessages, 'console messages matching /Content.Security.Policy/i').toEqual([]);
     }

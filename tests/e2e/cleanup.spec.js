@@ -85,7 +85,7 @@ async function scrollWindowTo(page, y) {
 test.describe('small viewport', () => {
   test.use(small);
 
-  test('AC-24: the corrected footer padding applies below 1200 px', async ({ page }) => {
+  test('AC-24: the corrected footer padding applies below 1280 px', async ({ page }) => {
     await page.goto('/');
 
     const footer = page.locator('#footer');
