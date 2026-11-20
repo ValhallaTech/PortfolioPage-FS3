@@ -7,13 +7,117 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-11-20
+
+### Added
+
+- A local gate: `yarn gate` runs `yarn install --immutable`, `yarn lint`, `yarn format:check`,
+  `yarn test:ci`, `yarn build` and `yarn test:smoke` in order, stops at the first failure and
+  prints an evidence block, and `yarn gate:linux` runs it in a Linux Docker container on a fresh
+  clone of the pushed commit ([#70]).
+- Playwright end-to-end tests against the built site, served locally with the `netlify.toml`
+  headers: the smoke baseline (`yarn test:smoke`), the slow timing tests (`yarn test:e2e:slow`)
+  and the live-site tests (`yarn test:e2e:live`). CI runs the smoke baseline after the build
+  ([#70], [#73]).
+- A release suite, `yarn verify:release`, for the network, `gh`, Docker and live-site checks that
+  the gate does not run ([#70]).
+- Bug report and feature request issue forms, and this changelog, backfilled for 1.0.0 through
+  3.0.0 ([#72]).
+- A Renovate rule that gives Bootstrap its own group and never automerges it, so a Bootstrap
+  prerelease cannot ride along with other updates ([#73]).
+- A `main: require Test & Build` ruleset, created disabled. Its enforcement waits until GitHub
+  Actions billing is restored.
+- The build writes `dist/THIRD-PARTY-NOTICES.txt` with the license notices of the direct runtime
+  dependencies, because the production bundles drop their license comments ([#79]).
+- Responsive images: AVIF, WebP and JPEG variants with explicit dimensions, and lazy loading
+  below the fold ([#80]).
+- A skip link to the main content, a visible focus outline, and names for the nav toggle, social
+  links, back-to-top button and portfolio links ([#82]).
+- A pause/play button for the testimonials carousel. Keyboard focus or a mouse over the carousel
+  holds rotation, and it never autoplays when the visitor asks for reduced motion ([#83]).
+
+### Changed
+
+- **BREAKING:** The runtime is Node.js 26. Node.js 25 and later no longer bundle Corepack, so CI
+  and the README install steps now install it with `npm install -g corepack` before
+  `corepack enable` ([#73]).
+- The portfolio filter and layout use Muuri 0.9.5 instead of Isotope. Muuri carries a one-line
+  Yarn patch so layout runs synchronously, without web workers. The filters are buttons with
+  `aria-pressed`, and with reduced motion the grid jumps straight to its filtered layout ([#79]).
+- Fonts are self-hosted through Fontsource instead of loaded from Google Fonts, and the
+  Font Awesome webfonts are replaced by an inline SVG sprite of the Font Awesome Free 7.3.1 icons
+  the page uses ([#80]).
+- The hero headline types each phrase once and stops on the last one, and its cursor stops
+  blinking ([#83]).
+- The testimonials carousel uses Swiper's A11y module and rewinds instead of looping. Its bullets
+  are named 24 × 24 px buttons, and slide changes are announced unless it is rotating ([#83]).
+- Accessibility: one `h1` and corrected heading levels, a labeled primary nav, descriptive
+  portfolio image text, contrast-safe colors from `:root` color tokens, 44 × 44 px touch targets,
+  and the closed mobile nav kept out of the tab order ([#82]).
+- The active nav link carries `aria-current="location"`, and scroll handling is throttled with
+  `requestAnimationFrame` ([#77]).
+- The contact form sets `aria-busy` while it sends ([#83]).
+- `src/js/main.js` and `src/js/utils.js` are ES modules, and Jest transforms them with Babel
+  ([#77]).
+- ESLint now checks `src/js`, `__tests__`, `tests` and `scripts`, and Prettier checks the same
+  folders plus `src/css`. `.gitattributes` gives every platform the same line endings ([#70]).
+- Every dependency range is pinned to an exact version instead of a caret range, and `yarn.lock`
+  uses the exact specifiers ([#34]).
+- The six devDependencies that used `latest` are pinned to exact versions, including ESLint 10
+  and Prettier 3 ([#71]).
+- The runtime-version sync moved into `scripts/sync-runtime-versions.mjs`. It updates every
+  `NODE_VERSION` in `netlify.toml`, updates `YARN_VERSION` only where that key exists, and its
+  workflow opens a draft pull request ([#73]).
+- Renovate automerge is paused ([#69]).
+- Dependency updates from Renovate since 3.0.0, including Swiper 14 ([#53], [#67]) and Yarn 4.18.1
+  ([#66]).
+- `package.json` declares the license as `GPL-3.0-only`, and the README names Valhalla Tech as the
+  copyright holder.
+
+### Removed
+
+- Isotope (`isotope-layout`), replaced by Muuri ([#79]).
+- The unused `boxicons` and `just-validate` packages, the unreferenced IcoFont CSS and font files,
+  and eight unreferenced images ([#77]).
+- The dead skills-section code (`observeSkills`) and CSS, other unused CSS blocks, the template
+  header comments, and the duplicate mobile nav toggle ([#77]).
+- The `@fortawesome/fontawesome-free` package and the Google Fonts link ([#80]).
+- The Markdown issue template, replaced by the two issue forms ([#72]).
+- The `X-XSS-Protection` header ([#84]).
+
 ### Fixed
 
 - Every responsive breakpoint was ignored by iOS Safari before 16.4, which cannot parse the
   range-syntax media queries (`@media (width>=1200px)`) that the build emitted with no browser
   targets set. `package.json` now sets `"browserslist": "defaults, iOS >= 15"`, so the CSS uses
   `min-width` and `max-width` queries, and Swiper's nested CSS rules are flattened for browsers
-  that ignored them (Chrome before 120, iOS Safari before 17.2).
+  that ignored them (Chrome before 120, iOS Safari before 17.2) ([#81]).
+- `yarn install --immutable` failed on `main`, so CI and Netlify could not install, because a
+  Swiper update changed `package.json` without `yarn.lock` ([#69]).
+- All nine portfolio lightbox images returned 404, and those 404s were cached as immutable for a
+  year. Lightbox links now use the bundled image URLs, and the cache rules match the
+  content-hashed image files ([#69]).
+- A malformed URL hash such as `#1x` threw an error that stopped every feature initialized after
+  it ([#69]).
+- The runtime-version sync workflow failed whenever `netlify.toml` needed no change ([#73]).
+- Invalid and duplicate CSS declarations ([#77]).
+- About 6% of cold-cache builds on Windows crashed on exit. The `build` script now runs Parcel's
+  workers as child processes ([#85]).
+- Production kept serving the old response headers after [#84]. A `/*.woff` cache rule was added
+  and the site rebuilt without the stale build cache ([#86]).
+- `package.json` carried version 2.0.0 through the 3.0.0 release. It now carries 4.0.0.
+
+### Security
+
+- `netlify.toml` adds a report-only Content Security Policy, `Permissions-Policy` and
+  `Cross-Origin-Opener-Policy: same-origin`, and the remaining inline styles moved to CSS
+  ([#84]).
+- The production build no longer publishes source maps ([#84]).
+- The page no longer loads fonts or icons from third-party hosts ([#80]).
+- Lockfile updates cleared all 20 high and critical advisories in the dependency tree ([#71]).
+- Workflow actions are pinned to commit SHAs, checkouts do not persist the token, and each job
+  gets only the permissions it needs ([#75]).
+- Lightbox links accept only same-origin `http(s)` URLs ([#69]).
 
 ## [3.0.0] - 2026-04-20
 
@@ -88,7 +192,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[Unreleased]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/3.0.0...HEAD
+[Unreleased]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/4.0.0...HEAD
+[4.0.0]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/3.0.0...4.0.0
 [3.0.0]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/2.5.0...3.0.0
 [2.5.0]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/2.0.2...2.5.0
 [2.0.2]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/2.0.1...2.0.2
@@ -112,3 +217,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#30]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/30
 [#31]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/31
 [#32]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/32
+[#34]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/34
+[#53]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/53
+[#66]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/66
+[#67]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/67
+[#69]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/69
+[#70]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/70
+[#71]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/71
+[#72]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/72
+[#73]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/73
+[#75]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/75
+[#77]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/77
+[#79]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/79
+[#80]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/80
+[#81]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/81
+[#82]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/82
+[#83]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/83
+[#84]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/84
+[#85]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/85
+[#86]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/86
