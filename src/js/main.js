@@ -122,39 +122,65 @@ const AUTOPLAY_TOGGLE_STATES = Object.freeze({
 });
 
 /**
- * Shows whether the carousel rotates: the toggle's name and icon, and whether slide
- * changes are announced (off while rotating, as the WAI-ARIA carousel pattern says).
+ * Shows whether the carousel rotates on the autoplay toggle: its name and icon.
  * @param {Swiper} swiper
  * @param {Element} toggle - The autoplay toggle button
  */
 function showAutoplayState(swiper, toggle) {
-  const running = swiper.autoplay.running;
-  const { label, icon } = running ? AUTOPLAY_TOGGLE_STATES.running : AUTOPLAY_TOGGLE_STATES.stopped;
+  const { label, icon } = swiper.autoplay.running
+    ? AUTOPLAY_TOGGLE_STATES.running
+    : AUTOPLAY_TOGGLE_STATES.stopped;
   toggle.querySelector('.visually-hidden').textContent = label;
   toggle.querySelector('use').setAttribute('href', icon);
-  swiper.wrapperEl.setAttribute('aria-live', running ? 'off' : 'polite');
 }
 
 /**
- * Pauses autoplay while keyboard focus is inside the carousel, and only there (D-14).
- * pause() and resume() do nothing while autoplay is stopped, so leaving the carousel never
- * restarts rotation that the toggle or reduced motion stopped.
+ * Holds rotation while the visitor attends to the carousel: keyboard focus inside it, or a
+ * mouse over it (D-14). Focus pauses autoplay here, and only inside the carousel; Swiper
+ * pauses it on hover itself (pauseOnMouseEnter). pause() and resume() do nothing while
+ * autoplay is stopped, so leaving the carousel never restarts rotation that the toggle or
+ * reduced motion stopped.
+ * Slide changes are announced unless the carousel is actually rotating, as the WAI-ARIA
+ * carousel pattern says: aria-live is off only while autoplay runs and neither focus nor
+ * the mouse holds it. Swiper emits autoplayPause on every transition, so the live region
+ * follows focus, hover, start and stop instead of that event.
  * @param {Swiper} swiper
  * @param {Element} container - The swiper container element
+ * @returns {() => boolean} Whether focus or the mouse is holding rotation
  */
-function pauseWhileFocused(swiper, container) {
+function holdWhileAttended(swiper, container) {
+  let hovered = false;
+  const focused = () => container.contains(document.activeElement);
+  const held = () => focused() || hovered;
+  const announce = () => {
+    const rotating = swiper.autoplay.running && !held();
+    swiper.wrapperEl.setAttribute('aria-live', rotating ? 'off' : 'polite');
+  };
   const leaves = (event) => !container.contains(event.relatedTarget);
   container.addEventListener('focusin', (event) => {
     if (leaves(event)) swiper.autoplay.pause();
+    announce();
   });
   container.addEventListener('focusout', (event) => {
     if (leaves(event)) swiper.autoplay.resume();
+    announce();
   });
+  // Swiper pauses on hover for mouse pointers only (autoplay.mjs:229-245); follow the same.
+  const trackHover = (isOver) => (event) => {
+    if (event.pointerType !== 'mouse') return;
+    hovered = isOver;
+    announce();
+  };
+  container.addEventListener('pointerenter', trackHover(true));
+  container.addEventListener('pointerleave', trackHover(false));
   // Swiper resumes a paused autoplay when a slide transition ends, as after a bullet is
   // pressed; keep it paused while focus is still inside.
   swiper.on('autoplayResume', () => {
-    if (container.contains(document.activeElement)) swiper.autoplay.pause();
+    if (focused()) swiper.autoplay.pause();
   });
+  swiper.on('autoplayStart autoplayStop', announce);
+  announce();
+  return held;
 }
 
 /**
@@ -165,9 +191,20 @@ function pauseWhileFocused(swiper, container) {
  * (every slide in view), when there is nothing to rotate.
  * @param {Swiper} swiper
  * @param {Element|null} toggle - The autoplay toggle button
+ * @param {() => boolean} held - Whether focus or the mouse is holding rotation
  */
-function bindAutoplayControls(swiper, toggle) {
+function bindAutoplayControls(swiper, toggle, held) {
   let stoppedByVisitor = false;
+
+  // start() emits autoplayStart, not autoplayResume, and leaves autoplay.paused as stop()
+  // found it (autoplay.mjs:156-171). So pause again while focus or the mouse holds the
+  // carousel, and otherwise clear a stale paused flag, which would make Swiper skip its
+  // hover pause (autoplay.mjs:234).
+  const startRotation = () => {
+    swiper.autoplay.start();
+    if (held()) swiper.autoplay.pause();
+    else if (swiper.autoplay.paused) swiper.autoplay.resume();
+  };
 
   if (toggle) {
     const showLock = () => {
@@ -178,7 +215,7 @@ function bindAutoplayControls(swiper, toggle) {
     toggle.addEventListener('click', () => {
       stoppedByVisitor = swiper.autoplay.running;
       if (stoppedByVisitor) swiper.autoplay.stop();
-      else swiper.autoplay.start();
+      else startRotation();
     });
     showAutoplayState(swiper, toggle);
     showLock();
@@ -187,7 +224,7 @@ function bindAutoplayControls(swiper, toggle) {
   const reducedMotion = window.matchMedia(REDUCED_MOTION_QUERY);
   const followMotionPreference = () => {
     if (reducedMotion.matches) swiper.autoplay.stop();
-    else if (!stoppedByVisitor && !swiper.autoplay.running) swiper.autoplay.start();
+    else if (!stoppedByVisitor && !swiper.autoplay.running) startRotation();
   };
   if (reducedMotion.matches) swiper.autoplay.stop();
   reducedMotion.addEventListener('change', followMotionPreference);
@@ -213,8 +250,8 @@ function initTestimonialsCarousel(container, toggle) {
       900: { slidesPerView: 3, spaceBetween: 20 },
     },
   });
-  pauseWhileFocused(swiper, container);
-  bindAutoplayControls(swiper, toggle);
+  const held = holdWhileAttended(swiper, container);
+  bindAutoplayControls(swiper, toggle, held);
   return swiper;
 }
 
