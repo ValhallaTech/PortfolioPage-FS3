@@ -221,6 +221,7 @@ These are the only sprint 1 assertions that sprint 2 may change (C-8). AC-27 che
 | `__tests__/release/baseline-sensitivity.test.js` | `AC-91`, `AC-92` | The mutations are re-aimed (AC-28, AC-29) | G-10 |
 | `__tests__/acceptance/cleanup.test.js` | `AC-25: @popperjs/core remains` | Retired, because Bootstrap 6 drops Popper and the dependency is removed. It may be inverted to assert that `@popperjs/core` is absent. | G-1 (C-1) |
 | `__tests__/acceptance/css-hygiene.test.js` | `AC-22` | `FORM_BOX_PATTERN`'s `.php-email-form` (and `#contactModal`, if renamed) follows the NG-10 rename. The one-rule limit is unchanged. | G-9 |
+| `tests/e2e/css-targets.spec.js` | `no @media or @container query in dist CSS uses range syntax` | The range check is re-aimed to `@media` params only, and its `@media` assertions are unchanged. Bootstrap 6 ships `@container (width>=…)` queries, which Lightning CSS never rewrites. Range syntax is native to container queries: every browser with `@container` support parses it, and a browser without that support drops the rule either way. | G-1 |
 | `tests/e2e/css-targets.spec.js` | `no @media or @container query in dist CSS uses range syntax` | **Conditional.** Unchanged while `browserslist` stays `defaults, iOS >= 15`. If PR-1's build shows that target breaks Bootstrap 6's CSS (§3 RK-1), the build target moves to the C-2 floor, and this test is re-aimed to that floor. Every C-2 browser parses range media queries, so this does not weaken it. | G-1 (C-2) |
 
 #### AC-1 — Bootstrap 6.0.0-alpha.1 is installed, and no Sass transformer is
@@ -231,7 +232,7 @@ These are the only sprint 1 assertions that sprint 2 may change (C-8). AC-27 che
 - **Then** Bootstrap is `6.0.0-alpha.1`, and `@parcel/transformer-sass` is not declared
 - **Assertion:**
   - `yq -p=json '.dependencies.bootstrap' package.json` prints `6.0.0-alpha.1`.
-  - `node -p "require('bootstrap/package.json').version"` prints `6.0.0-alpha.1`.
+  - `yq -p=json '.version' node_modules/bootstrap/package.json` prints `6.0.0-alpha.1`. The manifest is read by path, because Bootstrap 6's `exports` map does not export `./package.json`.
   - `yq -p=json '[.dependencies, .devDependencies, .optionalDependencies] | .[] | keys | .[]' package.json` prints no `@parcel/transformer-sass` line.
 - **Executable as:** `lint`
 
@@ -532,7 +533,7 @@ These are the only sprint 1 assertions that sprint 2 may change (C-8). AC-27 che
 - **Given** `git diff 4.0.0 <release commit> -- tests/e2e __tests__`
 - **When** each removed line (`-`) containing `expect(` or `expect.poll(` is matched to the title of its enclosing `test(`, or to its helper file
 - **Then** every match is a row of "Sprint 1 assertions changed on purpose". A changed pattern constant counts against the test that uses it.
-- **Assertion:** removed `expect` lines, or changed pattern constants, outside a listed test: 0. The conditional `css-targets.spec.js` row counts only if §3 RK-1 fired.
+- **Assertion:** removed `expect` lines, or changed pattern constants, outside a listed test: 0. The `@container` re-aim row always counts. The conditional `css-targets.spec.js` row counts only if §3 RK-1 fired.
 - **Executable as:** `lint`
 
 #### AC-28 — An unintended breakpoint change fails the Layout test
@@ -716,7 +717,8 @@ No item needs a TDD chain. §3.7 gives the reasons.
   - **Packages (resolves D-1).**
     - `bootstrap` goes to `6.0.0-alpha.1` and `@popperjs/core` is removed. `.yarnrc.yml` gains `packageExtensions: { "bootstrap@*": { peerDependenciesMeta: { "@floating-ui/dom": { optional: true }, "vanilla-calendar-pro": { optional: true } } } }`, so the install prints no missing-peer warning (B4). `yarn.lock` is regenerated.
     - `main.js`: `import Dialog from 'bootstrap/js/dist/dialog.js';`, with a one-line comment saying why the bare import is avoided (R9). No `packageExports`, so `swiper/modules/pagination.css` keeps resolving (B3). `Modal.getOrCreateInstance` becomes `Dialog.getOrCreateInstance`, and `hidden.bs.modal` becomes `hidden.bs.dialog`.
-    - Add a Tab and Shift+Tab wrap on the open dialog: from the last focusable control to the first, and the reverse. Native `showModal()` lets focus leave the document (V-2), and Bootstrap 5's FocusTrap used to keep it inside (AC-10).
+    - Add a Tab and Shift+Tab wrap on the open dialog: from the last focusable control to the first, and the reverse. Native `showModal()` lets focus leave the document (V-2), and Bootstrap 5's FocusTrap used to keep it inside (AC-10). As implemented in `4b24f15`, `main.js` also moves focus into the dialog on `shown.bs.dialog`.
+    - **Bootstrap CSS import (as implemented in `4b24f15`).** The CSS is imported at the top of `style.css` with `@import 'npm:bootstrap/dist/css/bootstrap.min.css';`, and the JS-side `import 'bootstrap/dist/css/bootstrap.min.css'` is removed. Bootstrap 6's `sideEffects` field made Parcel drop the CSS import from `main.js`.
   - **Markup.** Change the dialog to the §3.3 shell (`<dialog>`, `.dialog-*`, `h2.dialog-title`, `data-bs-dismiss="dialog"`) and set `data-bs-toggle="dialog"` on the opener. Add `data-bs-theme="light"` to `<html>` (C2). The fields, status regions and buttons stay as they are until WI-3.
   - **Classes (resolves D-6).**
     - Rename by prefix: `d-xl-none` → `xl:d-none`; `col-lg-N` → `lg:col-N`; `col-md-6` → `md:col-6`; `pt-lg-0` → `lg:pt-0`; `mt-lg-0` → `lg:mt-0`.
@@ -744,16 +746,25 @@ No item needs a TDD chain. §3.7 gives the reasons.
     - `Abort on close:` waits on "dialog closed" (AC-13).
     - `helpers/contact-modal.js` and `helpers/full-visit.js` move to `*.bs.dialog`.
     - `portfolio.spec.js` `AC_121_WIDTHS` gains 1023, 1024, 1279 and 1280. `cleanup.spec.js` AC-24's title says "below 1280 px".
+    - `css-targets.spec.js` `no @media or @container query in dist CSS uses range syntax`: the range check is re-aimed to `@media` params only, per §2.3's unconditional row. Its `@media` assertions are unchanged. Bootstrap 6's `@container (width>=…)` queries are never rewritten by Lightning CSS.
   - **`baseline-sensitivity.test.js`** (resolves Q-3):
     - The AC-91 case becomes AC-28. In `src/css/style.css` it replaces the exact strings `(width < 1280px)` and `(width >= 1280px)` with the `1200px` forms, and first asserts that there are 4 occurrences in total.
     - The AC-92 case becomes AC-29. On the `.contact-modal-btn` tag it replaces `data-bs-toggle="dialog"` with `"modal"`, and first asserts 1 occurrence.
     - `CONTROL_TEST` stays `'Grid:'`.
   - **New smoke tests.** AC-2, AC-5, AC-6 rows 2–4, AC-8 and AC-12. AC-10 adds the 10× Shift+Tab sequence to the existing `Dialog keyboard:` test, which is allowed (an addition). AC-31 goes in `csp.spec.js`, tagged `@live` too.
-  - **New lint tests.** `__tests__/acceptance/bootstrap6.test.js` runs AC-1's three reads and AC-7's two searches.
+  - **New lint tests.** `__tests__/acceptance/bootstrap6.test.js` runs AC-1's three reads and AC-7's two searches. The installed version is read from `node_modules/bootstrap/package.json` by path (`yq -p=json '.version' node_modules/bootstrap/package.json`, or the same file read with `fs`), not with `require('bootstrap/package.json')`, because v6's `exports` map does not export `./package.json`.
   - **Retire sprint 1 `cleanup.test.js` `AC-25: @popperjs/core remains`.** Its premise (sprint 1 C-17, Bootstrap 5 imports Popper) is gone, and §2.3 lists the retirement. It may be inverted to assert that `@popperjs/core` is absent.
-  - **AC-27 scope:** AC-27 walks all of `tests/e2e` and `__tests__`, and a changed pattern constant counts against the test that uses it. New constants and tests are added alongside the existing ones. No existing constant is edited unless its test is a §2.3 row (here: `smoke.spec.js` rows, `AC_121_WIDTHS`, `baseline-sensitivity.test.js` AC-91/AC-92, `cleanup.test.js` AC-25, `css-hygiene.test.js` `FORM_BOX_PATTERN`).
+  - **AC-27 scope:** AC-27 walks all of `tests/e2e` and `__tests__`, and a changed pattern constant counts against the test that uses it. New constants and tests are added alongside the existing ones. No existing constant is edited unless its test is a §2.3 row (here: `smoke.spec.js` rows, `AC_121_WIDTHS`, the `css-targets.spec.js` `@media` re-aim, `baseline-sensitivity.test.js` AC-91/AC-92, `cleanup.test.js` AC-25, `css-hygiene.test.js` `FORM_BOX_PATTERN`).
   - **Title rule:** no new test title may contain `Layout`, `Dialog open` or `Grid:`, because `expectOnlyTargetBroken` needs exactly one match for each.
 - **done when:** the gate shows six zeros on PR-1's head. `yarn verify:release -t 'AC-28|AC-29|AC-90'` passes, and its output goes in the PR as a comment.
+
+#### WI-10 — Fix the README minimally for Bootstrap 6 (PR-1)
+
+- **domain:** `docs`
+- **depends-on:** WI-1
+- **satisfies:** AC-35 in part. It keeps sprint 1's `readme.test.js` AC-95 green once Bootstrap 6 lands.
+- **change:** in `README.md`, only the Tech Stack row (Bootstrap 6, "dialog", no `@popperjs/core` mention) and the project-tree comment for `main.js` ("Bootstrap dialog"). The rest of the 5.0.0 docs stay with WI-8 in PR-4.
+- **done when:** `readme.test.js` passes in PR-1's gate.
 
 #### WI-3 — Rebuild the contact form, status regions and buttons
 
@@ -842,7 +853,7 @@ PRs follow D-9 (resolves D-9). There are four PRs, merged one at a time. Each is
 
 | Phase / PR | Work items | Order inside | Extra gate | Why this cut |
 | --- | --- | --- | --- | --- |
-| 1 — PR-1 Bootstrap 6 core | WI-1, WI-2 | WI-1 → WI-2 | the WI-2 release cases (AC-28, AC-29, AC-90) | The package swap, dialog markup and JS must be atomic (B8). The class renames and the 1280 px queries must land with them: on v6, `col-lg-*` and `d-xl-none` do not exist, so the grid and the menu button break, and `Layout:`/`Grid:` fail. |
+| 1 — PR-1 Bootstrap 6 core | WI-1, WI-2, WI-10 | WI-1 → WI-2 ∥ WI-10 (the minimal README fix keeps sprint 1's `readme.test.js` AC-95 green) | the WI-2 release cases (AC-28, AC-29, AC-90) | The package swap, dialog markup and JS must be atomic (B8). The class renames and the 1280 px queries must land with them: on v6, `col-lg-*` and `d-xl-none` do not exist, so the grid and the menu button break, and `Layout:`/`Grid:` fail. |
 | 2 — PR-2 Form and buttons | WI-3, WI-4 | WI-3 → WI-4 | none | Same element as PR-1, but needs no package change. |
 | 3 — PR-3 No-JS path | WI-5 ∥ WI-6, then WI-7 | WI-5 and WI-6 in parallel | Security Reviewer (form redirect, `form-action`) | Kept apart so the security-triggered change is reviewed on its own. |
 | 4 — PR-4 Release 5.0.0 | WI-8 ∥ WI-9, U-1 | parallel | AC-32 numbers in the body, U-1 comment | Release text and version. The post-merge checks (WI-9) close the sprint. |
@@ -910,7 +921,7 @@ Both are records of the release, not code behavior. There is no surface to stub,
 | `security` | WI-6 | Security Reviewer |
 | `tests` | WI-2, WI-4, WI-7 | Playwright E2E Test Engineer (e2e and release harness); JavaScript/TypeScript Unit Test Engineer (`__tests__/acceptance`) |
 | `ci` | WI-9 | CI/CD Pipeline Engineer (release preparation) |
-| `docs` | WI-8 | Documentation Agent |
+| `docs` | WI-10, WI-8 | Documentation Agent |
 
 Unmapped: U-1.
 
