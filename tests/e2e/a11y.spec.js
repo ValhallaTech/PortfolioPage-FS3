@@ -224,12 +224,6 @@ test.describe('at desktop', () => {
       page.locator('.testimonials .swiper-slide-active p.testimonial-role'),
       TEXT_CONTRAST
     );
-    await checkRow(
-      11,
-      page.locator('.testimonials .swiper-pagination-bullet:not(.swiper-pagination-bullet-active)'),
-      LARGE_OR_GRAPHIC_CONTRAST,
-      { foreground: 'background-color', backgroundFrom: 'parent' }
-    );
 
     await scrollPastBackToTopThreshold(page);
     await checkRow(3, page.locator(`${BACK_TO_TOP} .icon`), LARGE_OR_GRAPHIC_CONTRAST);
@@ -255,6 +249,17 @@ test.describe('at desktop', () => {
     await page.locator('#submit-btn').click();
     await expect(page.locator('#error-message')).toBeVisible();
     await checkRow(9, page.locator('#error-message'), TEXT_CONTRAST);
+
+    // Row 11 is measured at small: from 900 px up all three slides fit one view, so Swiper
+    // renders a single, always-active bullet and there is no inactive one to measure.
+    await page.setViewportSize(small.viewport);
+    await page.reload();
+    await checkRow(
+      11,
+      page.locator('.testimonials .swiper-pagination-bullet:not(.swiper-pagination-bullet-active)'),
+      LARGE_OR_GRAPHIC_CONTRAST,
+      { foreground: 'background-color', backgroundFrom: 'parent' }
+    );
 
     expect(failures, 'AC-45 rows below their contrast threshold').toEqual([]);
   });
