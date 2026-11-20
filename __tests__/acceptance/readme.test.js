@@ -9,9 +9,13 @@
  * element with `DOMParser`; every other check reads files as text.
  *
  * AC-95 skips every README line that mentions Corepack, for all three of its checks.
- * A line mentions Node when it matches `\bNode(\.js)?\b`; a stated Node major is a
- * number right after "Node" or "Node.js" (Markdown link syntax removed first) that is
- * not the start of an `x.y.z`. For the Tech Stack check, every table row in the
+ * A line mentions Node when it matches `\bNode(\.js)?\b`; a stated Node major is the
+ * number right after "Node" or "Node.js" (Markdown link syntax removed first), with or
+ * without a `v`, whatever follows it (`26`, `26.13`, `26.13.1`). A stated version is a
+ * whole `x.y.z`, with or without a `v` in front, that is not part of a longer dotted
+ * number. The regression cases at the end drive the same check with synthetic lines,
+ * so a pattern that misses `v24.15.0` or `Node 24.15` fails there. For the Tech Stack
+ * check, every table row in the
  * `### Tech Stack` section is matched against `package.json` `dependencies` with this
  * mapping, on the row's first cell:
  *
@@ -50,8 +54,11 @@ const SMOKE_SCRIPT = 'test:smoke';
 /** The SPDX identifier the README and `package.json` declare (C-29). */
 const LICENSE_ID = 'GPL-3.0-only';
 
-/** A three-part version. */
-const SEMVER = /\b\d+\.\d+\.\d+\b/g;
+/**
+ * A three-part version, `v`-prefixed or not, that is not part of a longer dotted
+ * number. `\b` is not used, because there is no word boundary between `v` and a digit.
+ */
+const SEMVER = /(?<![\d.])\d+\.\d+\.\d+(?!\.?\d)/g;
 
 /** AC-95: a line that mentions Corepack is skipped. */
 const COREPACK = /corepack/i;
@@ -59,8 +66,11 @@ const COREPACK = /corepack/i;
 /** AC-95: a line that mentions Node. */
 const NODE_MENTION = /\bNode(?:\.js)?\b/i;
 
-/** AC-95: a Node major stated on its own, not as the start of `x.y.z`. */
-const NODE_MAJOR = /\bNode(?:\.js)?\s+v?(\d+)\b(?!\.\d)/gi;
+/**
+ * AC-95: the Node major in every stated form (`26`, `v26`, `26.13`, `26.13.1`). A
+ * mismatch in the rest of an `x.y.z` is caught by SEMVER.
+ */
+const NODE_MAJOR = /\bNode(?:\.js)?\s+v?(\d+)/gi;
 
 /** AC-95: a line that mentions Yarn. */
 const YARN_MENTION = /\byarn\b/i;
@@ -314,6 +324,56 @@ test('AC-95: the README version statements match .nvmrc and package.json', () =>
     problems: [...problems, ...techStack.problems],
     mismatches: [...runtime, ...techStack.mismatches],
   }).toEqual({ problems: [], mismatches: [] });
+});
+
+describe('AC-95 regression: the runtime check on synthetic README lines', () => {
+  const NODE_VERSION = '26.13.1';
+  const YARN_VERSION = '4.18.1';
+  const check = (text) => runtimeMismatches([{ number: 1, text }], NODE_VERSION, YARN_VERSION);
+
+  test.each([
+    [
+      '| Node v24.15.0 | Runtime |',
+      [
+        'README.md:1: Node line states 24.15.0, .nvmrc is 26.13.1',
+        'README.md:1: Node major 24, .nvmrc major is 26',
+      ],
+    ],
+    ['Requires Node 24.15', ['README.md:1: Node major 24, .nvmrc major is 26']],
+    ['Requires Node.js v24', ['README.md:1: Node major 24, .nvmrc major is 26']],
+    ['- [Node.js](https://nodejs.org/) 24', ['README.md:1: Node major 24, .nvmrc major is 26']],
+    ['Node 26.12.0', ['README.md:1: Node line states 26.12.0, .nvmrc is 26.13.1']],
+    ['Yarn v4.14.1', ['README.md:1: Yarn line states 4.14.1, packageManager is 4.18.1']],
+    ['Install yarn@4.14.1', ['README.md:1: Yarn line states 4.14.1, packageManager is 4.18.1']],
+  ])('"%s" is reported', (text, expected) => {
+    // Arrange: the line and the pins above.
+
+    // Act
+    const mismatches = check(text);
+
+    // Assert
+    expect(mismatches).toEqual(expected);
+  });
+
+  test.each([
+    '| Node 26 | Runtime, at the exact version pinned in `.nvmrc` |',
+    '- [Node.js](https://nodejs.org/) 26, at the exact version pinned in `.nvmrc`',
+    '| Node v26.13.1 | Runtime |',
+    'Requires Node 26.13',
+    'Requires Node.js v26',
+    'Yarn v4.18.1',
+    'Install yarn@4.18.1',
+    'Corepack is bundled only with Node.js 14.19 through 24.x, so Node 26 does not include it',
+    'Corepack ships Yarn v4.14.1 for Node v24.15.0',
+  ])('"%s" is not reported', (text) => {
+    // Arrange: the line and the pins above.
+
+    // Act
+    const mismatches = check(text);
+
+    // Assert
+    expect(mismatches).toEqual([]);
+  });
 });
 
 test('AC-96: the README makes none of the known false claims', () => {
