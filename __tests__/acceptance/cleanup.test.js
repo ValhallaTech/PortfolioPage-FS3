@@ -7,6 +7,10 @@
  * AC-25 (`@popperjs/core` remains) is retired by sprint 2 (spec
  * bootstrap-6-upgrade, section 2.3), because Bootstrap 6 drops Popper.
  *
+ * Sprint 2 adds its own AC-25 (spec bootstrap-6-upgrade, sections 2.3 and 3.4
+ * WI-4): the template form's class names are gone. Its pattern is built from
+ * fragments too.
+ *
  * The Conventions' tracked-file search runs in Node, because `rg` is absent from
  * the Linux gate container: the paths `git ls-files` lists (with the three
  * excluded paths), each read as UTF-8 and skipped when it holds a NUL byte, the
@@ -67,6 +71,19 @@ const SKILLS_PATTERN = new RegExp(
     ['progress', '-bar'].join(''),
   ].join('|'),
   'i'
+);
+
+/**
+ * Sprint 2 AC-25: the template form class, and the template's validation class
+ * as a class token or as a class selector, matched case-sensitively as the AC's
+ * `rg` does.
+ */
+const TEMPLATE_FORM_PATTERN = new RegExp(
+  [
+    ['php-email', '-form'].join(''),
+    ['class="([^"]* )?vali', 'date( [^"]*)?"'].join(''),
+    ['\\.vali', 'date\\b'].join(''),
+  ].join('|')
 );
 
 /** AC-26: template credits and history comments, searched in `src` only. */
@@ -220,6 +237,14 @@ test('AC-19: there is exactly one mobile-nav toggle', () => {
 
   // Assert
   expect(toggles).toHaveLength(1);
+});
+
+test('AC-25: the template form leftovers are gone', () => {
+  // Arrange and act
+  const search = trackedFileSearch(TEMPLATE_FORM_PATTERN);
+
+  // Assert
+  expect(search).toEqual({ matches: [], problems: [] });
 });
 
 test('AC-26: template and history comments are gone', () => {
