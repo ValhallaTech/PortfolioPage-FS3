@@ -946,6 +946,12 @@ section {
   color: var(--color-white);
 }
 
+.contact-map {
+  border: 0;
+  height: 290px;
+  width: 100%;
+}
+
 #contactModal .php-email-form {
   background: transparent;
   box-shadow: none;
