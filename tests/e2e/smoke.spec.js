@@ -30,7 +30,7 @@ import {
   openContactModal,
   submitButton,
 } from './helpers/contact-modal.js';
-import { measureContrast } from './helpers/contrast.js';
+import { measureContrast, parseCssColor } from './helpers/contrast.js';
 import { focusBody, hasFocusIndicator, readFocusStyle, tabUntil } from './helpers/tab-walk.js';
 import { fullVisit, scrollToBottomInSteps } from './helpers/full-visit.js';
 import {
@@ -965,3 +965,95 @@ test('Page end: the page ends at its content, with the dialog closed and after c
     });
   }
 });
+
+/**
+ * What paints the scrollbar gutter while an overlay is open (PR-4 U-1b). Headless Chromium
+ * hides scrollbars, so the gutter itself never shows here; this reads the styles that
+ * decide its color instead.
+ *
+ * - `gutter`: the canvas background, and so the stable gutter's: the root's, or the body's
+ *   when the root's is transparent.
+ * - `scrollbarGutter`: the root keeps `stable`, so opening an overlay shifts nothing.
+ * - `bodyRight`: the body's right margin and padding, which must not make up for a
+ *   scrollbar the stable gutter already replaces.
+ *
+ * @param {import('@playwright/test').Page} page
+ */
+function readGutterPaint(page) {
+  return page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement);
+    const body = getComputedStyle(document.body);
+    return {
+      // CSS propagates the body's background to the canvas when the root's is transparent.
+      gutter:
+        root.backgroundColor === 'rgba(0, 0, 0, 0)' ? body.backgroundColor : root.backgroundColor,
+      scrollbarGutter: root.scrollbarGutter,
+      bodyRight: { margin: body.marginRight, padding: body.paddingRight },
+    };
+  });
+}
+
+/**
+ * Asserts the gutter paint while an overlay of color `overlayColor` is open.
+ *
+ * @param {Awaited<ReturnType<typeof readGutterPaint>>} paint
+ * @param {string} overlayColor The overlay's computed `background-color`.
+ * @param {string} label
+ */
+function expectGutterFilled(paint, overlayColor, label) {
+  const gutter = parseCssColor(paint.gutter);
+  const overlay = parseCssColor(overlayColor);
+  expect(
+    {
+      r: Math.round(gutter.r),
+      g: Math.round(gutter.g),
+      b: Math.round(gutter.b),
+      a: Number(gutter.a.toFixed(2)),
+    },
+    `${label}: the gutter's paint (${paint.gutter}) is the overlay's color (${overlayColor})`
+  ).toEqual({
+    r: Math.round(overlay.r),
+    g: Math.round(overlay.g),
+    b: Math.round(overlay.b),
+    a: Number(overlay.a.toFixed(2)),
+  });
+  expect(paint.scrollbarGutter, `${label}: the root's scrollbar-gutter`).toBe('stable');
+  expect(paint.bodyRight, `${label}: the body's right margin and padding`).toEqual({
+    margin: '0px',
+    padding: '0px',
+  });
+}
+
+test('Overlay gutter: the open dialog fills the scrollbar gutter with its backdrop color', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await openContactModal(page);
+  const backdrop = await page
+    .locator(CONTACT_MODAL)
+    .evaluate((element) => getComputedStyle(element, '::backdrop').backgroundColor);
+
+  expectGutterFilled(await readGutterPaint(page), backdrop, 'dialog open');
+});
+
+for (const [viewportName, viewport] of Object.entries({ desktop, small })) {
+  test.describe(`at ${viewportName}`, () => {
+    test.use(viewport);
+
+    test(`Overlay gutter at ${viewportName}: the open lightbox fills the scrollbar gutter with its overlay color`, async ({
+      page,
+    }) => {
+      await page.goto('/');
+      await waitForPortfolioGrid(page);
+      await openLightboxFrom(portfolioItem(page, 1));
+      const overlay = page.locator(`${LIGHTBOX} .goverlay`);
+      await expect(overlay).toBeVisible();
+
+      expectGutterFilled(
+        await readGutterPaint(page),
+        await overlay.evaluate((element) => getComputedStyle(element).backgroundColor),
+        `lightbox open at ${viewportName}`
+      );
+    });
+  });
+}
