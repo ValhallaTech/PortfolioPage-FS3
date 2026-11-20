@@ -11,6 +11,11 @@
  * inside quoted strings and `url(...)` is ignored, so a font name or a URL is not
  * a hit. AC-29 applies the AC's own regex line by line, as `rg` does, and is a
  * guard: it passes before any work, by design.
+ *
+ * Sprint 2 (spec bootstrap-6-upgrade, section 2.3) narrows the AC-29 guard: a
+ * `--bs-theme-*` declaration directly inside the `.theme-site` rule, the
+ * button-only accent theme, is exempt. Each other `--bs-*` match on any line
+ * still fails, including a non-theme token inside `.theme-site`.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -194,8 +199,14 @@ const HEX_VALUE = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 /** A whole value that is one color function with numeric arguments. */
 const FUNCTION_VALUE = /^(rgba?|hsla?)\(\s*([-+]?[\d.][^)]*)\)$/i;
 
-/** AC-29: the AC's regex. */
-const BS_TOKEN = /--bs-[A-Za-z0-9-]+\s*:/;
+/** AC-29: the AC's regex, global so every match on a line is checked. */
+const BS_TOKEN = /--bs-[A-Za-z0-9-]+\s*:/g;
+
+/** AC-29: the one rule whose `--bs-theme-*` declarations are exempt (C-5). */
+const THEME_RULE_SELECTOR = '.theme-site';
+
+/** AC-29: the exempt token prefix. */
+const THEME_TOKEN_PREFIX = '--bs-theme-';
 
 /**
  * Reads and parses the stylesheet.
@@ -341,6 +352,30 @@ function normalizedColor(value) {
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
+/**
+ * Lists where the exempt AC-29 declarations start: each `--bs-theme-*`
+ * declaration whose parent is the `.theme-site` rule.
+ *
+ * @param {import('postcss').Root} root The parsed stylesheet.
+ * @returns {Set<string>} Each start as `line:column`, both one-based.
+ */
+function themeTokenStarts(root) {
+  const starts = new Set();
+  root.walkDecls((declaration) => {
+    const parent = declaration.parent;
+    const start = declaration.source?.start;
+    if (
+      parent?.type === 'rule' &&
+      parent.selector.trim() === THEME_RULE_SELECTOR &&
+      declaration.prop.startsWith(THEME_TOKEN_PREFIX) &&
+      start
+    ) {
+      starts.add(`${start.line}:${start.column}`);
+    }
+  });
+  return starts;
+}
+
 test('AC-27: color literals appear only in the :root custom-property block', () => {
   // Arrange
   const { root } = readStyle();
@@ -396,12 +431,16 @@ test('AC-28: each color value is declared only once in :root', () => {
 
 test('AC-29 (guard): no Bootstrap token is declared in style.css', () => {
   // Arrange
-  const { text } = readStyle();
+  const { text, root } = readStyle();
+  const exempt = themeTokenStarts(root);
 
   // Act
   const matches = [];
   text.split('\n').forEach((line, index) => {
-    if (BS_TOKEN.test(line)) {
+    const hits = Array.from(line.matchAll(BS_TOKEN)).filter(
+      (match) => !exempt.has(`${index + 1}:${match.index + 1}`)
+    );
+    if (hits.length > 0) {
       matches.push(`${STYLE_CSS_NAME}:${index + 1}: ${line.trim()}`);
     }
   });

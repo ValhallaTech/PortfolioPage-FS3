@@ -55,7 +55,7 @@ The portfolio page (release 4.0.0) is built on Bootstrap 5, and the owner's plan
 
 ### 1.4 Non-goals
 
-- **NG-1** — The Sass-partials route (report §2b step 7) and mapping site colors onto Bootstrap tokens. Placed after sprint 2 (R1-Q3; sprint 1 NG-3).
+- **NG-1** — The Sass-partials route (report §2b step 7) and the site-wide mapping of site colors onto Bootstrap's global tokens. Placed after sprint 2 (R1-Q3; sprint 1 NG-3). The one exception is the theme for the two buttons that C-5 brings in, which takes the site's accent color only on those buttons, so they do not switch to Bootstrap's own primary color (coordinator decision during PR-2, under Fred's standing instruction).
 - **NG-2** — A dark theme. A separate design task (R1-Q4).
 - **NG-3** — Replacing the mobile navigation with Bootstrap 6's Drawer. Optional, and its own decision (R1-Q9; bootstrap6-analysis §5a O1).
 - **NG-4** — Any content change: placeholder text, map, links, testimonials (R1-Q13).
@@ -168,7 +168,7 @@ The portfolio page moves from Bootstrap 5 to Bootstrap `6.0.0-alpha.1` and is re
 | R-11 | A submission's success or failure is put in a live region and stays until the visitor closes the dialog. | MUST | G-5 |
 | R-12 | Each invalid field is marked invalid and described by its error to assistive technology. | MUST | G-5 |
 | R-13 | Every contact-form field has a visible label and an `autocomplete` value. | MUST | G-6 |
-| R-14 | The contact and submit buttons meet 4.5:1 text contrast in every state, show a 3:1 keyboard focus indicator, and change on hover. | MUST | G-7 |
+| R-14 | The contact and submit buttons meet 4.5:1 text contrast in every state, show a 3:1 keyboard focus indicator, change on hover, and are at least 44 px tall (the sprint 1 C-33 target size). | MUST | G-7 |
 | R-15 | The two buttons are styled by Bootstrap button classes, not by site-specific color, border or spacing rules (C-5). | MUST | G-7 |
 | R-16 | Without JavaScript, a visitor can reach the contact form, and a submission ends on a readable page on the site. | MUST | G-8 |
 | R-17 | The `php-email-form` name, its selectors, the `.validate` elements and their CSS rule are gone. | MUST | G-9 |
@@ -222,6 +222,7 @@ These are the only sprint 1 assertions that sprint 2 may change (C-8). AC-27 che
 | `__tests__/acceptance/cleanup.test.js` | `AC-25: @popperjs/core remains` | Retired, because Bootstrap 6 drops Popper and the dependency is removed. It may be inverted to assert that `@popperjs/core` is absent. | G-1 (C-1) |
 | `__tests__/acceptance/css-hygiene.test.js` | `AC-22` | `FORM_BOX_PATTERN`'s `.php-email-form` (and `#contactModal`, if renamed) follows the NG-10 rename. The one-rule limit is unchanged. | G-9 |
 | `tests/e2e/css-targets.spec.js` | `no @media or @container query in dist CSS uses range syntax` | The range check is re-aimed to `@media` params only, and its `@media` assertions are unchanged. Bootstrap 6 ships `@container (width>=…)` queries, which Lightning CSS never rewrites. Range syntax is native to container queries: every browser with `@container` support parses it, and a browser without that support drops the rule either way. | G-1 |
+| `__tests__/acceptance/css-tokens.test.js` | `AC-29 (guard): no Bootstrap token is declared in style.css` | The guard still fails on any `--bs-*` declaration in `style.css`, except `--bs-theme-*` declarations inside the `.theme-site` rule. That rule is the button-only accent theme, the C-5 exception to NG-1. Everything else in the test is unchanged. | G-7 (C-5) |
 | `tests/e2e/css-targets.spec.js` | `no @media or @container query in dist CSS uses range syntax` | **Conditional.** Unchanged while `browserslist` stays `defaults, iOS >= 15`. If PR-1's build shows that target breaks Bootstrap 6's CSS (§3 RK-1), the build target moves to the C-2 floor, and this test is re-aimed to that floor. Every C-2 browser parses range media queries, so this does not weaken it. | G-1 (C-2) |
 
 #### AC-1 — Bootstrap 6.0.0-alpha.1 is installed, and no Sass transformer is
@@ -621,6 +622,15 @@ These are the only sprint 1 assertions that sprint 2 may change (C-8). AC-27 che
   - `rg -n -i '\bmodal\b' README.md` prints nothing.
 - **Executable as:** `lint`
 
+#### AC-36 — Both buttons are at least 44 px tall
+
+- **Verifies:** R-14
+- **Given** the local target at `desktop` and again at `small`, with the dialog shown for the submit button
+- **When** each button's bounding box is read
+- **Then** each one meets the 44 px target size that sprint 1 applied to the social links and back-to-top (sprint 1 C-33, AC-60)
+- **Assertion:** `boundingBox().height` ≥ 44 for the contact button and for the submit button, at both viewports
+- **Executable as:** `e2e`
+
 ### 2.4 Success metrics
 
 | ID | Metric | Baseline | Target | Measured by |
@@ -693,7 +703,7 @@ none. No stored state. Web3Forms submissions keep the same fields. Only the `red
   - `<dialog class="dialog dialog-lg dialog-scrollable" id="contactModal" aria-labelledby="contactModalLabel">` (`dialog-scrollable` makes `.dialog-body` scroll, so the submit button stays reachable on short viewports) has no `aria-hidden`, `tabindex` or `fade`. Inside it, `.dialog-header` holds `<h2 class="dialog-title" id="contactModalLabel">`, pinned to `20px` in `style.css`, and `<button type="button" class="btn-close" data-bs-dismiss="dialog" aria-label="Close">`. `.dialog-body` holds the form.
   - The form is `class="contact-form"`, replacing `php-email-form`. Each field is a `<div class="form-field">` holding a visible `<label class="form-label">` (today's text), the control with `autocomplete` (`name`, `email`, `off`, `off`) and `aria-describedby="<id>-error"`, and an empty `<div class="field-error" id="<id>-error">`. Placeholders stay.
   - The status regions are always rendered and empty until a result arrives: `<div id="error-message" role="alert">` and `<div id="sent-message" role="status">`. Their colored box applies only `:not(:empty)`.
-  - The opener is `<button class="btn-solid theme-site contact-modal-btn" data-bs-toggle="dialog" data-bs-target="#contactModal" type="button">`. The submit button is `<button type="submit" id="submit-btn" class="btn-solid theme-site">`.
+  - The opener is `<button class="btn-solid btn-lg theme-site contact-modal-btn" data-bs-toggle="dialog" data-bs-target="#contactModal" type="button">`. The submit button is `<button type="submit" id="submit-btn" class="btn-solid btn-lg theme-site">`. `btn-lg` uses Bootstrap 6's `--bs-btn-input-lg-min-height` (2.75rem, which is 44 px), so both buttons are at least 44 px tall (AC-36) with no site sizing rule (AC-22).
 - **Events.** `hidden.bs.modal` becomes `hidden.bs.dialog`, and the test helpers wait on `shown.bs.dialog` and `hidden.bs.dialog` (F7). The exported helper names in `tests/e2e/helpers/contact-modal.js` stay the same, so the embedded AC-90 spec in `baseline-sensitivity.test.js` runs unchanged (AC-30).
 - **No-JS path (resolves D-2).**
   - `#contact` gains `<a class="btn-solid theme-site contact-nojs-link" href="#contactModal">Send Me a Message</a>`. It is `display: none` by default. Under `@media (scripting: none)` it is shown and `.contact-modal-btn` is hidden.
@@ -770,26 +780,28 @@ No item needs a TDD chain. §3.7 gives the reasons.
 
 - **domain:** `frontend`
 - **depends-on:** WI-2
-- **satisfies:** AC-14, AC-15, AC-16, AC-17, AC-18, AC-19, AC-20, AC-21, AC-22, AC-25
+- **satisfies:** AC-14, AC-15, AC-16, AC-17, AC-18, AC-19, AC-20, AC-21, AC-22, AC-25, AC-36
 - **change:**
   - **Markup.** Apply the §3.3 field, status and button markup. Rename `php-email-form` to `contact-form` in HTML and CSS, and delete the `.validate` divs and their rule (NG-10).
   - **`main.js`.**
     - Remove the 2 s auto-close timer and its `getOrCreateInstance` call (A-M2). On success, write `Your message has been sent. Thank you!` into `#sent-message`. On failure, write the service message into `#error-message`.
     - On `hidden.bs.dialog`, empty both regions, clear `aria-invalid` and the error texts, and reset the form, as today.
     - **Error wiring.** Native `required`/`type=email` validation stays, so it behaves the same without JS. An `invalid` listener on each field sets `aria-invalid="true"` and writes `validationMessage` into its `.field-error`. An `input` listener clears both once the field is valid.
-  - **Buttons (resolves D-7).** `style.css` gains `.theme-site`, which sets only `--bs-theme-*` custom properties (V-4) from `--color-accent-strong`, `--color-accent-strong-hover` and `--color-white`. Take the exact token names from `rg -o -- '--bs-theme-[a-z-]+' node_modules/bootstrap/dist/css/bootstrap.css`. Delete `.contact-modal-btn` and `.contact-form button[type='submit']` with their `:hover` rules. The focus ring stays the global `:focus-visible` outline (`--color-focus`, AC-20). If `btn-solid`'s derived hover color falls below 4.5:1, set the hover token in `.theme-site`.
+  - **Buttons (resolves D-7).** Both buttons get `btn-solid btn-lg theme-site`. `btn-lg` gives the 44 px minimum height (AC-36), so no site padding or size rule is needed (AC-22). `style.css` gains `.theme-site`, the button-only accent theme that is the C-5 exception to NG-1, which sets only `--bs-theme-*` custom properties (V-4) from `--color-accent-strong`, `--color-accent-strong-hover` and `--color-white`. Take the exact token names from `rg -o -- '--bs-theme-[a-z-]+' node_modules/bootstrap/dist/css/bootstrap.css`. Delete `.contact-modal-btn` and `.contact-form button[type='submit']` with their `:hover` rules. The focus ring stays the global `:focus-visible` outline (`--color-focus`, AC-20). If `btn-solid`'s derived hover color falls below 4.5:1, set the hover token in `.theme-site`.
 - **done when:** WI-4's tests pass with the rest of the gate.
 
 #### WI-4 — Re-aim the submit rows and add the form, button and leftovers tests
 
 - **domain:** `tests`
 - **depends-on:** WI-3
-- **satisfies:** AC-14, AC-15, AC-16, AC-17, AC-18, AC-19, AC-20, AC-21, AC-22, AC-25
+- **satisfies:** AC-14, AC-15, AC-16, AC-17, AC-18, AC-19, AC-20, AC-21, AC-22, AC-25, AC-36
 - **change:**
   - `smoke.spec.js` `Submit, success:` becomes AC-14, with the 5 s persistence check. `Submit, error:` becomes AC-15.
   - New smoke tests: AC-16, AC-17, AC-18, AC-19, AC-20 and AC-21. The contrast math reuses `helpers/contrast.js`, extended to convert `oklch()` to sRGB.
   - **AC-22** goes in a Node-side spec, `tests/e2e/button-rules.spec.js`. It loads `dist/index.html` with `page.setContent`, parses `src/css/style.css` with postcss, strips dynamic pseudo-classes, and counts forbidden declarations in the rules whose selector matches either button.
   - **AC-25** goes in `cleanup.test.js` through its `trackedFileSearch`. The pattern is joined from fragments, as `PACKAGE_PATTERN` is, so the file never matches itself.
+  - **AC-36:** a new smoke test checks that `boundingBox().height` is at least 44 for both buttons, at `desktop` and at `small`.
+  - **`css-tokens.test.js` AC-29 guard (§2.3 row):** the guard is narrowed so that it still fails on any `--bs-*` declaration in `style.css`, except `--bs-theme-*` declarations inside the `.theme-site` rule. Nothing else in that test changes.
   - `css-hygiene.test.js` AC-22's `FORM_BOX_PATTERN` follows the rename to `.contact-form`, with its `expect` lines unchanged. `a11y.spec.js` AC-45 needs no change, because the ids are kept.
 - **done when:** the gate shows six zeros on PR-2's head.
 
@@ -905,6 +917,7 @@ Both are records of the release, not code behavior. There is no surface to stub,
 | AC-22 | `button-rules.spec.js` | lint | gate (smoke, after build) |
 | AC-23, AC-24 | `no-js.spec.js` | e2e | gate, PR-3 on |
 | AC-25 | `cleanup.test.js` tracked-file search | lint | gate, PR-2 on |
+| AC-36 | new smoke test, button heights at `desktop` and `small` | e2e | gate, PR-2 on |
 | AC-26 | gate, `test:e2e:slow` and `test:e2e:live` on the release commit | build | WI-9, after the merge |
 | AC-27 | AC-27's diff walk over `git diff 4.0.0 <release> -- tests/e2e __tests__`: removed `expect` lines and changed pattern constants, matched to §2.3 rows, with the `css-targets.spec.js` row counted only if RK-1 fired | lint | WI-9 |
 | AC-28, AC-29, AC-30 | `baseline-sensitivity.test.js` via `yarn verify:release` | integration | PR-1 (AC-28, AC-29, AC-90), PR-3 (AC-90), and WI-9 on the release commit |

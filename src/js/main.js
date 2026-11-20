@@ -5,7 +5,8 @@ import Swiper from 'swiper';
 import { A11y, Autoplay, Pagination } from 'swiper/modules';
 import GLightbox from 'glightbox';
 // Deep import: bare 'bootstrap' loads every plugin, and its datepicker needs vanilla-calendar-pro (R9).
-import Dialog from 'bootstrap/js/dist/dialog.js';
+// Imported for its data API: data-bs-toggle and data-bs-dismiss="dialog" drive the contact dialog.
+import 'bootstrap/js/dist/dialog.js';
 
 import 'swiper/swiper.css';
 import 'swiper/modules/a11y.css';
@@ -344,6 +345,52 @@ function initDialogFocus(dialogEl) {
   });
 }
 
+const SENT_TEXT = 'Your message has been sent. Thank you!';
+const FAILED_TEXT = 'Failed to send message. Please try again.';
+
+/**
+ * The field-level error element named by a control's aria-describedby.
+ * @param {HTMLInputElement | HTMLTextAreaElement} field
+ * @returns {HTMLElement | null}
+ */
+function fieldErrorOf(field) {
+  return document.getElementById(field.getAttribute('aria-describedby'));
+}
+
+/**
+ * Marks a field valid again: drops aria-invalid and empties its error text.
+ * @param {HTMLInputElement | HTMLTextAreaElement} field
+ */
+function clearFieldError(field) {
+  field.removeAttribute('aria-invalid');
+  const error = fieldErrorOf(field);
+  if (error) error.textContent = '';
+}
+
+/**
+ * Mirrors native constraint validation onto each field (AC-16): an `invalid` event marks
+ * the field and writes the browser's message into its error text; typing clears both once
+ * the field is valid, or refreshes the message while it is still invalid.
+ * @param {HTMLInputElement[] | HTMLTextAreaElement[]} fields
+ */
+function wireFieldErrors(fields) {
+  fields.forEach((field) => {
+    field.addEventListener('invalid', () => {
+      field.setAttribute('aria-invalid', 'true');
+      const error = fieldErrorOf(field);
+      if (error) error.textContent = field.validationMessage;
+    });
+    field.addEventListener('input', () => {
+      if (field.validity.valid) {
+        clearFieldError(field);
+      } else if (field.hasAttribute('aria-invalid')) {
+        const error = fieldErrorOf(field);
+        if (error) error.textContent = field.validationMessage;
+      }
+    });
+  });
+}
+
 /**
  * Initialize Web3Forms contact form submission
  */
@@ -356,23 +403,25 @@ function initContactForm() {
 
   if (!form || !submitBtn || !errorMessage || !sentMessage) return;
 
+  const fields = Array.from(form.querySelectorAll('.form-control[aria-describedby]'));
+  wireFieldErrors(fields);
+
   const defaultButtonText = submitBtn.textContent;
   let abortController = null;
-  let autoCloseTimer = null;
 
-  // Abort in-flight request and reset form state whenever the dialog is fully hidden
+  // Abort in-flight request and reset form state whenever the dialog is fully hidden.
+  // The result text stays in its region until then (AC-14).
   if (modalEl) {
     modalEl.addEventListener('hidden.bs.dialog', () => {
       if (abortController) {
         abortController.abort();
         abortController = null;
       }
-      clearTimeout(autoCloseTimer);
-      autoCloseTimer = null;
       form.reset();
+      fields.forEach(clearFieldError);
       form.removeAttribute('aria-busy');
-      errorMessage.style.display = 'none';
-      sentMessage.style.display = 'none';
+      errorMessage.textContent = '';
+      sentMessage.textContent = '';
       submitBtn.disabled = false;
       submitBtn.textContent = defaultButtonText;
     });
@@ -381,12 +430,10 @@ function initContactForm() {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    // Cancel any previous in-flight request and pending auto-close timer
+    // Cancel any previous in-flight request
     if (abortController) {
       abortController.abort();
     }
-    clearTimeout(autoCloseTimer);
-    autoCloseTimer = null;
 
     abortController = new AbortController();
     const { signal } = abortController;
@@ -394,8 +441,8 @@ function initContactForm() {
     form.setAttribute('aria-busy', 'true');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Sending...';
-    errorMessage.style.display = 'none';
-    sentMessage.style.display = 'none';
+    errorMessage.textContent = '';
+    sentMessage.textContent = '';
 
     try {
       const formData = new FormData(form);
@@ -413,27 +460,15 @@ function initContactForm() {
       const data = await response.json();
 
       if (data.success) {
-        sentMessage.style.display = 'block';
-        errorMessage.style.display = 'none';
         form.reset();
-        // Close the dialog after a short delay so the user sees the success message
-        if (modalEl) {
-          autoCloseTimer = setTimeout(() => {
-            autoCloseTimer = null;
-            Dialog.getOrCreateInstance(modalEl).hide();
-          }, 2000);
-        }
+        sentMessage.textContent = SENT_TEXT;
       } else {
-        errorMessage.textContent = data.message || 'Failed to send message. Please try again.';
-        errorMessage.style.display = 'block';
-        sentMessage.style.display = 'none';
+        errorMessage.textContent = data.message || FAILED_TEXT;
       }
     } catch (error) {
       // hidden.bs.dialog already handles cleanup when the request is aborted
       if (error.name === 'AbortError') return;
-      errorMessage.textContent = 'Failed to send message. Please try again.';
-      errorMessage.style.display = 'block';
-      sentMessage.style.display = 'none';
+      errorMessage.textContent = FAILED_TEXT;
     } finally {
       // Skip the reset when aborted: hidden.bs.dialog has already reset the form, or a newer
       // request has set the busy state and owns it now.

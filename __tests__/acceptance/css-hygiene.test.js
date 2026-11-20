@@ -32,8 +32,11 @@ const DEAD_SELECTOR_PATTERNS = Object.freeze([
   /#hero\s+h2/,
 ]);
 
-/** AC-22: a rule block whose whole selector is the contact-form base box. */
-const FORM_BOX_PATTERN = /^\s*(#contactModal\s+)?\.php-email-form\s*(\{|$)/gm;
+/**
+ * AC-22: a rule block whose whole selector is the contact-form base box. Sprint 2
+ * (spec bootstrap-6-upgrade, section 2.3) renamed the class to `.contact-form`.
+ */
+const FORM_BOX_PATTERN = /^\s*(#contactModal\s+)?\.contact-form\s*(\{|$)/gm;
 
 /** AC-23: the four line checks, by the label each violation is listed under. */
 const LINE_CHECKS = Object.freeze({

@@ -474,7 +474,7 @@
                     <div class="align-items-center d-flex justify-content-center lg:col-7 lg:mt-0 mt-12">
                         <div class="contact-cta text-center">
                             <p>Have a question or want to work together?</p>
-                            <button class="contact-modal-btn" data-bs-target="#contactModal" data-bs-toggle="dialog" type="button">
+                            <button class="btn-solid btn-lg theme-site contact-modal-btn" data-bs-target="#contactModal" data-bs-toggle="dialog" type="button">
                                 <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-envelope"></use></svg> Send Me a Message
                             </button>
                         </div>
@@ -510,36 +510,35 @@
             <button aria-label="Close" class="btn-close" data-bs-dismiss="dialog" type="button"></button>
         </div>
         <div class="dialog-body">
-            <form action="https://api.web3forms.com/submit" class="php-email-form" id="contact-form" method="POST">
+            <form action="https://api.web3forms.com/submit" class="contact-form" id="contact-form" method="POST">
                 <input type="hidden" name="access_key" value="9837ba21-4ccf-4710-9e29-0551dc6e1a76">
                 <input type="hidden" name="redirect" value="false">
                 <input type="checkbox" name="botcheck" hidden tabindex="-1" autocomplete="off">
 
-                <div class="form-group">
-                    <label class="visually-hidden" for="name">Your Name</label>
-                    <input type="text" name="name" class="form-control" id="name" placeholder="Your Name" required>
-                    <div class="validate"></div>
+                <div class="form-field">
+                    <label class="form-label" for="name">Your Name</label>
+                    <input type="text" name="name" class="form-control" id="name" placeholder="Your Name" autocomplete="name" aria-describedby="name-error" required>
+                    <div class="field-error" id="name-error"></div>
                 </div>
-                <div class="form-group">
-                    <label class="visually-hidden" for="email">Your Email</label>
-                    <input type="email" name="email" class="form-control" id="email" placeholder="Your Email" required>
-                    <div class="validate"></div>
+                <div class="form-field">
+                    <label class="form-label" for="email">Your Email</label>
+                    <input type="email" name="email" class="form-control" id="email" placeholder="Your Email" autocomplete="email" aria-describedby="email-error" required>
+                    <div class="field-error" id="email-error"></div>
                 </div>
-                <div class="form-group">
-                    <label class="visually-hidden" for="subject">Subject</label>
-                    <input type="text" name="subject" class="form-control" id="subject" placeholder="Subject" required>
+                <div class="form-field">
+                    <label class="form-label" for="subject">Subject</label>
+                    <input type="text" name="subject" class="form-control" id="subject" placeholder="Subject" autocomplete="off" aria-describedby="subject-error" required>
+                    <div class="field-error" id="subject-error"></div>
                 </div>
-                <div class="form-group">
-                    <label class="visually-hidden" for="message">Message</label>
-                    <textarea class="form-control" name="message" id="message" rows="5" placeholder="Message" required></textarea>
-                    <div class="validate"></div>
+                <div class="form-field">
+                    <label class="form-label" for="message">Message</label>
+                    <textarea class="form-control" name="message" id="message" rows="5" placeholder="Message" autocomplete="off" aria-describedby="message-error" required></textarea>
+                    <div class="field-error" id="message-error"></div>
                 </div>
-                <div class="mb-5">
-                    <div class="error-message" id="error-message"></div>
-                    <div class="sent-message" id="sent-message">Your message has been sent. Thank you!</div>
-                </div>
+                <div id="error-message" role="alert"></div>
+                <div id="sent-message" role="status"></div>
                 <div class="text-center">
-                    <button type="submit" id="submit-btn">Send Message</button>
+                    <button type="submit" id="submit-btn" class="btn-solid btn-lg theme-site">Send Message</button>
                 </div>
             </form>
         </div>

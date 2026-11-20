@@ -35,6 +35,15 @@ export function contactButton(page) {
 }
 
 /**
+ * The submit button: the button in the dialog named "Send Message" (AC Conventions).
+ *
+ * @param {import('@playwright/test').Page} page
+ */
+export function submitButton(page) {
+  return contactDialog(page).getByRole('button', { name: 'Send Message', exact: true });
+}
+
+/**
  * Listens once for a Bootstrap dialog event on the contact dialog, and returns a
  * function that waits until that event has fired.
  *
