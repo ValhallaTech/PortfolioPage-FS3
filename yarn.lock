@@ -4956,6 +4956,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"gsap@npm:3.15.1":
+  version: 3.15.1
+  resolution: "gsap@npm:3.15.1"
+  checksum: 10c0/5e35682cc9d18af83b457b657c3c1aa1b9b49b187560059e187d079752a7f07c661150e3aa95eeefe0be279a71a60359d015698aba3db5d554049d3769975197
+  languageName: node
+  linkType: hard
+
 "has-flag@npm:^4.0.0":
   version: 4.0.0
   resolution: "has-flag@npm:4.0.0"
@@ -5086,22 +5093,6 @@ __metadata:
   dependencies:
     hasown: "npm:^2.0.4"
   checksum: 10c0/2962ad96ff260241a9059ec23b467c69fc5c824168d5f24e806839e32099be69c8e32f444b5ad43854d738e7ca073b31db74c20654f870c96e721d1d785c723b
-  languageName: node
-  linkType: hard
-
-"is-dom-node-list@npm:^1.2.1":
-  version: 1.2.1
-  resolution: "is-dom-node-list@npm:1.2.1"
-  dependencies:
-    is-dom-node: "npm:^1.0.4"
-  checksum: 10c0/2447811cb72a2f660ce213dc7c278005d3bb8599c4d5e31660fa2ca3e00b4b46b2a45e14b887e95e8e5edb5e83dc3df0ae3d23ab0e05ac43b51519116c619720
-  languageName: node
-  linkType: hard
-
-"is-dom-node@npm:^1.0.4":
-  version: 1.0.4
-  resolution: "is-dom-node@npm:1.0.4"
-  checksum: 10c0/a27bd15c01c53dce1e926e37708a5af6aef7455cdae864a17c27f94d5e4a08718b9eee7f9de13ab2d95ffce6bbd54b10caa52bfe67357ddf6271ebb174a37f67
   languageName: node
   linkType: hard
 
@@ -6132,13 +6123,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"miniraf@npm:1.0.0":
-  version: 1.0.0
-  resolution: "miniraf@npm:1.0.0"
-  checksum: 10c0/b7ae36a85fa6a8901eae183c0be3b3ddc7ada520c678e021415626b3eb9c3c5140063b38395dbadd9bfac0ba96dcf25394a80aa7994d26a9cf83f11bdc199076
-  languageName: node
-  linkType: hard
-
 "minizlib@npm:^3.0.1, minizlib@npm:^3.1.0":
   version: 3.1.0
   resolution: "minizlib@npm:3.1.0"
@@ -6613,13 +6597,13 @@ __metadata:
     eslint-plugin-prettier: "npm:5.5.5"
     glightbox: "npm:3.3.1"
     globals: "npm:17.5.0"
+    gsap: "npm:3.15.1"
     jest: "npm:30.5.2"
     jest-environment-jsdom: "npm:30.5.2"
     muuri: "patch:muuri@npm%3A0.9.5#~/.yarn/patches/muuri-npm-0.9.5-3a44bf1a49.patch"
     parcel: "npm:2.16.4"
     postcss: "npm:8.5.33"
     prettier: "npm:3.8.3"
-    scrollreveal: "npm:4.0.9"
     smol-toml: "npm:1.9.1"
     swiper: "npm:14.3.0"
     typed.js: "npm:3.0.0"
@@ -6765,13 +6749,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rematrix@npm:0.3.0":
-  version: 0.3.0
-  resolution: "rematrix@npm:0.3.0"
-  checksum: 10c0/61ad954a9e27ca6965ef61653ada95e95fb3a19325db193bccdea7e3a909c75cbb5b993f1a6498ec148ab04e44564bff601e34ae2e6f7fc95b131b5bafb38966
-  languageName: node
-  linkType: hard
-
 "require-directory@npm:^2.1.1":
   version: 2.1.1
   resolution: "require-directory@npm:2.1.1"
@@ -6850,17 +6827,6 @@ __metadata:
   dependencies:
     xmlchars: "npm:^2.2.0"
   checksum: 10c0/3847b839f060ef3476eb8623d099aa502ad658f5c40fd60c105ebce86d244389b0d76fcae30f4d0c728d7705ceb2f7e9b34bb54717b6a7dbedaf5dad2d9a4b74
-  languageName: node
-  linkType: hard
-
-"scrollreveal@npm:4.0.9":
-  version: 4.0.9
-  resolution: "scrollreveal@npm:4.0.9"
-  dependencies:
-    miniraf: "npm:1.0.0"
-    rematrix: "npm:0.3.0"
-    tealight: "npm:0.3.6"
-  checksum: 10c0/06d7dbc794f2bfd871e0b8d23edd163f5c723efe55f6c53b02a24f184188c9f1195415f0aae9b7fb03a01b771c83e1ea6160647f67c486112d378eb2b900f748
   languageName: node
   linkType: hard
 
@@ -7115,16 +7081,6 @@ __metadata:
     minizlib: "npm:^3.1.0"
     yallist: "npm:^5.0.0"
   checksum: 10c0/41324dc475f655e6a322729dacac14e3114ed4b18cba350be5d1eb52b1aa2794a1c78c2a5b7f49d3d15f53c058158168121eaf6c5d2f75a0a9565b344bf3a18a
-  languageName: node
-  linkType: hard
-
-"tealight@npm:0.3.6":
-  version: 0.3.6
-  resolution: "tealight@npm:0.3.6"
-  dependencies:
-    is-dom-node: "npm:^1.0.4"
-    is-dom-node-list: "npm:^1.2.1"
-  checksum: 10c0/e4a3fe8b55f0a0ba8be9af36f806e3227ed8eca18071ff97688ad0d434d8b0a18c83f5d3c8154a84df5b5f332a672160e39eaaf025217a0f0bbfc455a3c99c52
   languageName: node
   linkType: hard
 

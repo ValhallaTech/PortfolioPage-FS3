@@ -442,6 +442,27 @@ h6 {
   z-index: 2;
 }
 
+/* The hero entrance gate (AD-5). With scripting on and motion allowed, the hero starts
+   hidden, so it never flashes before the script fades it in. If the script is late or
+   fails, the fallback below shows it from 2 s on; once the script owns the fade it turns
+   the fallback off. With no script, or under reduced motion, the hero is never hidden. */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .hero-container:not(.is-shown) {
+    animation: hero-fallback-reveal 1s ease-in-out 2s forwards;
+    opacity: 0;
+  }
+
+  .hero-container.is-script-owned {
+    animation: none;
+  }
+}
+
+@keyframes hero-fallback-reveal {
+  to {
+    opacity: 1;
+  }
+}
+
 #hero h1 {
   color: var(--color-white);
   font-size: 64px;

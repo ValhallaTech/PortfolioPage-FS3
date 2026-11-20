@@ -1,5 +1,4 @@
 import Typed from 'typed.js';
-import ScrollReveal from 'scrollreveal';
 import Muuri from 'muuri';
 import Swiper from 'swiper';
 import { A11y, Autoplay, Pagination } from 'swiper/modules';
@@ -36,6 +35,10 @@ import {
   resolveHashTarget,
   resolveLightboxHref,
 } from './utils.js';
+import { introHero, revealOnScroll } from './motion.js';
+
+/** The reveal targets the scroll reveals own: every `data-reveal` element but the hero. */
+const REVEAL_TARGET_SELECTOR = '[data-reveal]:not([data-reveal="hero"])';
 
 /**
  * Stops the typing cursor once the last phrase is typed (C-31): it stays visible but no
@@ -276,30 +279,6 @@ function initLightbox() {
   return GLightbox({ selector: '.glightbox', zoomable: false });
 }
 
-/**
- * Initialize ScrollReveal
- */
-function initScrollReveal() {
-  const sr = ScrollReveal({
-    distance: '60px',
-    duration: 1000,
-    easing: 'ease-in-out',
-    once: true,
-  });
-
-  sr.reveal('.hero-container', { origin: 'top', delay: 200 });
-  sr.reveal('[data-sr="fade-right"]', { origin: 'right' });
-  sr.reveal('[data-sr="fade-left"]', { origin: 'left' });
-  sr.reveal('[data-sr="fade-up"]', { origin: 'bottom' });
-  sr.reveal('[data-sr="fade-in"]', { origin: 'bottom', distance: '0px' });
-
-  sr.reveal('[data-sr-delay="100"]', { delay: 100 });
-  sr.reveal('[data-sr-delay="200"]', { delay: 200 });
-  sr.reveal('[data-sr-delay="300"]', { delay: 300 });
-  sr.reveal('[data-sr-delay="400"]', { delay: 400 });
-  sr.reveal('[data-sr-delay="500"]', { delay: 500 });
-}
-
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), ' +
   'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -487,6 +466,9 @@ function initContactForm() {
  * Main initialization - wires up all functionality
  */
 function init() {
+  // Hero entrance first, while the style.css gate still hides the hero (AD-5)
+  introHero(document.querySelector('.hero-container'));
+
   // Hero typed
   const typedEl = document.querySelector('.typed');
   initTyped(typedEl);
@@ -539,12 +521,12 @@ function init() {
     document.querySelector('.testimonials-autoplay-toggle')
   );
 
-  // Init ScrollReveal
-  initScrollReveal();
-
   // Contact dialog and form
   initDialogFocus(document.querySelector('#contactModal'));
   initContactForm();
+
+  // Scroll reveals last, after every other initializer
+  revealOnScroll(document.querySelectorAll(REVEAL_TARGET_SELECTOR));
 }
 
 // Auto-initialize on DOM ready
