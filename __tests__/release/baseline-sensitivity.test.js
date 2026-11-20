@@ -17,6 +17,9 @@
  * - AC-92: `data-bs-toggle="modal"` on `.contact-modal-btn` becomes `"dialog"`.
  *   The `Dialog open` test fails.
  *
+ * In AC-91 and AC-92 the target test must fail on its own `expect`, and the `Grid`
+ * test, which neither change can touch, must pass in the same run.
+ *
  * Every child runs with `process.env` minus every `JEST_*` variable (as WI-7 does),
  * so Playwright loads the tests. The smoke server uses port 4173, so the cases run
  * one after the other, which Jest does within a file. The scratch worktree is
@@ -32,8 +35,6 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..');
 /** The commands each case runs in its worktree. Constant strings, so the shell sees no input. */
 const INSTALL_COMMAND = 'yarn install --immutable';
 const BUILD_COMMAND = 'yarn build';
-const SMOKE_COMMAND = 'yarn test:smoke --reporter=json';
-
 /** Playwright writes the JSON reporter's output to this file instead of stdout. */
 const JSON_OUTPUT_VARIABLE = 'PLAYWRIGHT_JSON_OUTPUT_FILE';
 
@@ -44,6 +45,14 @@ const INSTALL_TIMEOUT_MS = 15 * 60 * 1000;
 const BUILD_TIMEOUT_MS = 10 * 60 * 1000;
 const SMOKE_TIMEOUT_MS = 15 * 60 * 1000;
 const GIT_TIMEOUT_MS = 5 * 60 * 1000;
+
+/**
+ * Playwright's own budget for the smoke run, below `SMOKE_TIMEOUT_MS`, so Playwright
+ * stops its web server and browsers itself before `spawnSync` kills the shell and
+ * leaves them running with the scratch folder as their working directory.
+ */
+const SMOKE_GLOBAL_TIMEOUT_MS = SMOKE_TIMEOUT_MS - 2 * 60 * 1000;
+const SMOKE_COMMAND = `yarn test:smoke --reporter=json --global-timeout=${SMOKE_GLOBAL_TIMEOUT_MS}`;
 const CASE_TIMEOUT_MS = INSTALL_TIMEOUT_MS + BUILD_TIMEOUT_MS + SMOKE_TIMEOUT_MS + GIT_TIMEOUT_MS;
 
 /** How much of a failed step's output a failure message shows. */
@@ -65,6 +74,20 @@ const CHANGED_MODAL_TOGGLE = 'data-bs-toggle="dialog"';
 const UNMOCKED_SPEC_FILE = 'zz-unmocked-submit.spec.js';
 const UNMOCKED_TEST_TITLE = 'Unmocked submit: a valid form is sent without a Web3Forms mock';
 const WEB3FORMS_LOG_ATTACHMENT = 'web3forms-request-log';
+
+/**
+ * Every Playwright `expect` failure message names its matcher as `expect(...)`, so
+ * this marks a test that failed on its own assertion rather than on a browser or
+ * server error.
+ */
+const ASSERTION_FAILURE_MARKER = 'expect(';
+
+/**
+ * A test that neither change can touch: it measures the Services grid at 991 and
+ * 992 px, below both the old and the changed breakpoint, and never opens the dialog.
+ * It passing in the same run shows that the browser and the server worked.
+ */
+const CONTROL_TEST = 'Grid:';
 
 /** The start of the message the fixtures.js guard fails a test with. */
 const GUARD_MESSAGE = 'Web3Forms requests the test did not mock';
@@ -234,9 +257,40 @@ function collectTests(report) {
 }
 
 /**
- * Makes a scratch worktree of `HEAD`, lets `change` edit it, builds it, runs the
- * smoke command there and returns the report's tests. The worktree is removed
- * afterwards, also when a step fails.
+ * Makes the worktree, lets `change` edit it, builds it, runs the smoke command
+ * there and returns the report's tests. Throws on the first step that fails.
+ *
+ * @param {(worktree: string) => void} change Applies the case's change in the worktree.
+ * @param {string} worktree Where the scratch worktree goes.
+ * @param {string} reportFile Where Playwright writes the JSON report.
+ * @returns {ReturnType<typeof collectTests>} The tests in the smoke run's JSON report.
+ */
+function buildAndRunSmoke(change, worktree, reportFile) {
+  git(['worktree', 'add', '--detach', worktree, 'HEAD']);
+  change(worktree);
+  runSetupStep(INSTALL_COMMAND, worktree, INSTALL_TIMEOUT_MS);
+  runSetupStep(BUILD_COMMAND, worktree, BUILD_TIMEOUT_MS);
+
+  const smoke = runCommand(SMOKE_COMMAND, worktree, SMOKE_TIMEOUT_MS, {
+    [JSON_OUTPUT_VARIABLE]: reportFile,
+  });
+  if (smoke.error || (smoke.status !== 0 && smoke.status !== 1) || !fs.existsSync(reportFile)) {
+    throw new Error(`Harness error: no JSON report. ${describeRun(SMOKE_COMMAND, smoke)}`);
+  }
+  const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
+  const globalErrors = (report.errors ?? []).map((error) => error.message ?? '');
+  if (globalErrors.length > 0) {
+    throw new Error(
+      `Harness error: the smoke run reported errors outside tests:\n${globalErrors.join('\n')}`
+    );
+  }
+  return collectTests(report);
+}
+
+/**
+ * Runs one case in a scratch worktree of `HEAD` in the OS temp directory, and
+ * removes the worktree afterwards, also when a step fails. A cleanup failure is
+ * thrown too, carrying the case's own failure when there was one.
  *
  * @param {(worktree: string) => void} change Applies the case's change in the worktree.
  * @returns {ReturnType<typeof collectTests>} The tests in the smoke run's JSON report.
@@ -244,53 +298,89 @@ function collectTests(report) {
 function runSmokeWithChange(change) {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'baseline-sensitivity-'));
   const worktree = path.join(scratch, 'worktree');
-  const reportFile = path.join(scratch, 'report.json');
+  let tests = [];
+  let failure = null;
   try {
-    git(['worktree', 'add', '--detach', worktree, 'HEAD']);
-    change(worktree);
-    runSetupStep(INSTALL_COMMAND, worktree, INSTALL_TIMEOUT_MS);
-    runSetupStep(BUILD_COMMAND, worktree, BUILD_TIMEOUT_MS);
-
-    const smoke = runCommand(SMOKE_COMMAND, worktree, SMOKE_TIMEOUT_MS, {
-      [JSON_OUTPUT_VARIABLE]: reportFile,
-    });
-    if (smoke.error || (smoke.status !== 0 && smoke.status !== 1) || !fs.existsSync(reportFile)) {
-      throw new Error(`Harness error: no JSON report. ${describeRun(SMOKE_COMMAND, smoke)}`);
-    }
-    const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
-    const globalErrors = (report.errors ?? []).map((error) => error.message ?? '');
-    if (globalErrors.length > 0) {
-      throw new Error(
-        `Harness error: the smoke run reported errors outside tests:\n${globalErrors.join('\n')}`
-      );
-    }
-    return collectTests(report);
-  } finally {
-    removeScratchWorktree(scratch, worktree);
+    tests = buildAndRunSmoke(change, worktree, path.join(scratch, 'report.json'));
+  } catch (error) {
+    failure = error;
   }
+
+  const cleanupFailures = removeScratchWorktree(scratch, worktree);
+  if (cleanupFailures.length > 0) {
+    throw withCleanupFailures(failure, cleanupFailures);
+  }
+  if (failure !== null) {
+    throw failure;
+  }
+  return tests;
+}
+
+/**
+ * Runs `git` with `args` in the repo for cleanup, and describes a failure instead
+ * of throwing it.
+ *
+ * @param {string[]} args The git arguments.
+ * @returns {string | null} What went wrong, or null when it exited 0.
+ */
+function gitCleanupStep(args) {
+  const run = spawnSync('git', args, {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    timeout: GIT_TIMEOUT_MS,
+    windowsHide: true,
+  });
+  return run.error || run.status !== 0 ? describeRun(`git ${args.join(' ')}`, run) : null;
 }
 
 /**
  * Removes the scratch worktree and its directory, then prunes git's worktree list.
- * Each step runs even when an earlier one fails.
+ * Each step is guarded on its own, so a failing step never skips a later one, and
+ * the prune always runs.
  *
  * @param {string} scratch The temp directory holding the worktree and the report.
  * @param {string} worktree The worktree's path.
+ * @returns {string[]} A description of each step that failed; empty when all worked.
  */
 function removeScratchWorktree(scratch, worktree) {
-  spawnSync('git', ['worktree', 'remove', '--force', worktree], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-    timeout: GIT_TIMEOUT_MS,
-    windowsHide: true,
-  });
-  fs.rmSync(scratch, { recursive: true, force: true, maxRetries: 5, retryDelay: 1000 });
-  spawnSync('git', ['worktree', 'prune'], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-    timeout: GIT_TIMEOUT_MS,
-    windowsHide: true,
-  });
+  const failures = [];
+  const removed = gitCleanupStep(['worktree', 'remove', '--force', worktree]);
+  if (removed) {
+    failures.push(removed);
+  }
+  try {
+    fs.rmSync(scratch, { recursive: true, force: true, maxRetries: 5, retryDelay: 1000 });
+  } catch (error) {
+    failures.push(`Removing ${scratch}: ${error instanceof Error ? error.message : error}`);
+  }
+  const pruned = gitCleanupStep(['worktree', 'prune']);
+  if (pruned) {
+    failures.push(pruned);
+  }
+  return failures;
+}
+
+/**
+ * Builds the one error a case throws when its cleanup failed: the case's own
+ * failure, if any, with every cleanup failure appended to its message.
+ *
+ * @param {unknown} failure The error the case threw, or null when it succeeded.
+ * @param {string[]} cleanupFailures What went wrong while cleaning up.
+ * @returns {Error} The error to throw.
+ */
+function withCleanupFailures(failure, cleanupFailures) {
+  const detail = `\n\nCleanup of the scratch worktree failed:\n${cleanupFailures.join('\n')}`;
+  if (!(failure instanceof Error)) {
+    const original = failure === null ? '' : `${String(failure)}\n`;
+    return new Error(`${original}Harness error:${detail}`);
+  }
+  const original = failure.message;
+  failure.message = `${original}${detail}`;
+  // V8 formats `stack` lazily, so it may already carry the new message.
+  if (typeof failure.stack === 'string' && !failure.stack.includes(detail)) {
+    failure.stack = failure.stack.replace(original, failure.message);
+  }
+  return failure;
 }
 
 /**
@@ -310,12 +400,35 @@ function editFile(worktree, file, edit) {
  *
  * @param {ReturnType<typeof collectTests>} tests The report's tests.
  * @param {string} text The text to look for.
- * @returns {Array<{ title: string, status: string }>} Each match's title and status.
+ * @returns {Array<{ title: string, status: string, failedOnAssertion: boolean }>} Each
+ *   match's title, status, and whether one of its errors is an `expect` failure.
  */
 function testsTitled(tests, text) {
   return tests
     .filter((test) => test.title.includes(text))
-    .map(({ title, status }) => ({ title, status }));
+    .map(({ title, status, errors }) => ({
+      title,
+      status,
+      failedOnAssertion: errors.some((message) => message.includes(ASSERTION_FAILURE_MARKER)),
+    }));
+}
+
+/**
+ * Asserts that exactly one test's title contains `target` and that it failed on its
+ * own assertion, and that the control test passed in the same run, so a run in which
+ * every test failed (a browser launch or server error) cannot pass.
+ *
+ * @param {ReturnType<typeof collectTests>} tests The report's tests.
+ * @param {string} target The text in the title of the test the change must fail.
+ */
+function expectOnlyTargetBroken(tests, target) {
+  const matches = testsTitled(tests, target);
+  expect(matches).toHaveLength(1);
+  expect(matches[0]).toMatchObject({ status: 'failed', failedOnAssertion: true });
+
+  const control = testsTitled(tests, CONTROL_TEST);
+  expect(control).toHaveLength(1);
+  expect(control[0].status).toBe('passed');
 }
 
 /**
@@ -376,9 +489,7 @@ describe('WI-61: the smoke baseline catches unintended changes', () => {
         });
       });
 
-      const layout = testsTitled(tests, 'Layout');
-      expect(layout).toHaveLength(1);
-      expect(layout[0].status).toBe('failed');
+      expectOnlyTargetBroken(tests, 'Layout');
     },
     CASE_TIMEOUT_MS
   );
@@ -395,9 +506,7 @@ describe('WI-61: the smoke baseline catches unintended changes', () => {
         });
       });
 
-      const dialogOpen = testsTitled(tests, 'Dialog open');
-      expect(dialogOpen).toHaveLength(1);
-      expect(dialogOpen[0].status).toBe('failed');
+      expectOnlyTargetBroken(tests, 'Dialog open');
     },
     CASE_TIMEOUT_MS
   );
