@@ -7,7 +7,7 @@
   "browserslist": "defaults, iOS >= 15",
   "scripts": {
     "start": "parcel src/index.html",
-    "build": "parcel build src/index.html --public-url ./ --no-source-maps && node scripts/third-party-notices.mjs",
+    "build": "PARCEL_WORKER_BACKEND=process parcel build src/index.html --public-url ./ --no-source-maps && node scripts/third-party-notices.mjs",
     "test": "jest --coverage",
     "test:ci": "jest --coverage --ci",
     "lint": "eslint src/js __tests__ tests scripts",
