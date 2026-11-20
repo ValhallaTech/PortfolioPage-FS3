@@ -966,98 +966,63 @@ section {
   font-size: 20px;
 }
 
-#contactModal .php-email-form {
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
-  width: 100%;
+/*
+ * Bootstrap 6 theme tokens for the site accent (D-7). Only --bs-theme-* is set here, so
+ * .btn-solid draws the buttons and its derived hover darkens the fill (AC-19 to AC-22).
+ * The keyboard ring is the unlayered :focus-visible outline above, which wins over Bootstrap's.
+ */
+.theme-site {
+  --bs-theme-base: var(--color-accent-strong);
+  --bs-theme-fg: var(--color-accent-strong);
+  --bs-theme-fg-emphasis: var(--color-accent-strong-hover);
+  --bs-theme-bg: var(--color-accent-strong);
+  --bs-theme-border: var(--color-accent-strong);
+  --bs-theme-contrast: var(--color-white);
+  --bs-theme-focus-ring: var(--color-focus);
 }
 
-.php-email-form .form-group {
-  padding-bottom: 8px;
+.contact-form .form-field {
+  margin-bottom: 16px;
 }
 
-.php-email-form .validate {
-  color: var(--color-danger);
-  display: none;
-  font-size: 13px;
-  font-weight: 400;
-  margin: 0 0 15px 0;
-}
-
-.php-email-form .error-message {
-  background: var(--color-danger);
-  color: var(--color-white);
-  display: none;
-  font-weight: 600;
-  padding: 15px;
-  text-align: left;
-}
-
-.php-email-form .sent-message {
-  background: var(--color-success);
-  color: var(--color-white);
-  display: none;
-  font-weight: 600;
-  padding: 15px;
-  text-align: center;
-}
-
-.php-email-form button[type='submit'] {
-  background: var(--color-accent-strong);
-  border: 0;
-  border-radius: 4px;
-  color: var(--color-white);
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-  padding: 10px 30px;
-  transition: 0.4s;
-}
-
-.php-email-form button[type='submit']:hover {
-  background: var(--color-accent-strong-hover);
-}
-
-.php-email-form input,
-.php-email-form textarea {
+.contact-form .form-control {
   border-radius: 0;
   box-shadow: none;
   font-size: 14px;
 }
 
-.php-email-form input {
+.contact-form input.form-control {
   height: 44px;
 }
 
-.php-email-form textarea {
-  padding: 10px 12px;
+.contact-form .field-error:not(:empty) {
+  color: var(--color-danger);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+/* The status regions stay in the page, empty, so a result is announced (AC-14, AC-15). */
+#error-message:not(:empty),
+#sent-message:not(:empty) {
+  color: var(--color-white);
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding: 15px;
+}
+
+#error-message:not(:empty) {
+  background: var(--color-danger);
+}
+
+#sent-message:not(:empty) {
+  background: var(--color-success);
+  text-align: center;
 }
 
 .contact-cta p {
   color: var(--color-heading);
   font-size: 16px;
   margin-bottom: 20px;
-}
-
-.contact-modal-btn {
-  background: var(--color-accent-strong);
-  border: 0;
-  border-radius: 4px;
-  color: var(--color-white);
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 600;
-  padding: 12px 36px;
-  transition: 0.4s;
-}
-
-.contact-modal-btn:hover {
-  background: var(--color-accent-strong-hover);
-}
-
-.contact-modal-btn .icon {
-  margin-right: 8px;
 }
 
 /*--------------------------------------------------------------
