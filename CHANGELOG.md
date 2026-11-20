@@ -61,6 +61,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#77]).
 - ESLint now checks `src/js`, `__tests__`, `tests` and `scripts`, and Prettier checks the same
   folders plus `src/css`. `.gitattributes` gives every platform the same line endings ([#70]).
+- Every dependency range is pinned to an exact version instead of a caret range, and `yarn.lock`
+  uses the exact specifiers ([#34]).
 - The six devDependencies that used `latest` are pinned to exact versions, including ESLint 10
   and Prettier 3 ([#71]).
 - The runtime-version sync moved into `scripts/sync-runtime-versions.mjs`. It updates every
@@ -215,6 +217,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#30]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/30
 [#31]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/31
 [#32]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/32
+[#34]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/34
 [#53]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/53
 [#66]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/66
 [#67]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/67
