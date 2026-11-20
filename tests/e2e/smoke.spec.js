@@ -82,6 +82,9 @@ const WIDTH_WALK_TIMEOUT_MS = 120_000;
 /** The dialog's title (AC-12). */
 const DIALOG_TITLE = 'Send Me a Message';
 
+/** A phone in landscape: shorter than the open dialog (PR-1 code review). */
+const SHORT_VIEWPORT = Object.freeze({ width: 667, height: 375 });
+
 /** The left edge of a locator's box, polled because `#header` slides with a transition. */
 function boxX(locator) {
   return async () => (await locator.boundingBox())?.x;
@@ -584,4 +587,33 @@ test('Dialog title: one level-2 heading names the dialog, at 20 px', async ({ pa
   const heading = dialog.getByRole('heading', { level: 2, name: DIALOG_TITLE });
   await expect(heading).toHaveCount(1);
   await expect(heading).toHaveCSS('font-size', '20px');
+});
+
+test('Short viewport: the submit button can be scrolled to and clicked at 667×375', async ({
+  page,
+}) => {
+  await page.setViewportSize(SHORT_VIEWPORT);
+  await mockWeb3Forms(page, { success: true });
+  await page.goto('/');
+  await openContactModal(page);
+  await fillContactForm(page);
+  const dialog = contactDialog(page);
+  const submitButton = dialog.getByRole('button', { name: 'Send Message' });
+
+  // Scroll it into view as a visitor would, through whatever scroll container the page has.
+  await submitButton.evaluate((element) => element.scrollIntoView({ block: 'end' }));
+  await expect(submitButton, 'the submit button is fully inside the viewport').toBeInViewport({
+    ratio: 1,
+  });
+  expect(
+    await submitButton.evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      return element.contains(hit);
+    }),
+    'a click at the center of the submit button lands on it'
+  ).toBe(true);
+
+  await submitButton.click();
+  await expect(page.locator('#sent-message'), 'the mocked submission succeeded').toBeVisible();
 });
