@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-11-20
+
+### Added
+
+- The contact form works without JavaScript. A "Send Me a Message" link opens the form as a
+  panel, and a submission ends on a new `/thanks.html` page ([#91]).
+- Every contact-form field has a visible label and an autofill hint. Field errors are announced
+  on the field they belong to ([#90]).
+
+### Changed
+
+- **BREAKING:** The site uses Bootstrap 6, pinned to the prerelease `6.0.0-alpha.1`, instead of
+  Bootstrap 5.3.8. Supported browsers are now Chrome and Edge 130 and later, Firefox 132 and
+  later, and Safari 18 and later, with no fallbacks for older browsers. The `browserslist` build
+  target stays `defaults, iOS >= 15` ([#89]).
+- The contact popup is a native `<dialog>`, driven by the Bootstrap 6 Dialog component. Keyboard
+  focus stays inside it while it is open, and its form scrolls on short screens ([#89]).
+- The sidebar and the menu button switch at 1280 px, and the grid changes at 1024 px, so widths
+  from 992 to 1023 px show 2 columns ([#89]).
+- The page, the contact dialog and the embedded map stay light when the operating system is in dark mode ([#89]).
+- Contact-form results are announced to screen readers and stay until the dialog closes, instead
+  of closing it after 2 seconds ([#90]).
+- The contact and submit buttons use Bootstrap 6 button classes in the site accent color, and
+  are 44 px tall ([#90]).
+
+### Removed
+
+- The `@popperjs/core` package, which Bootstrap 6 does not use ([#89]).
+- The template leftovers: the `php-email-form` class, renamed `contact-form`, and the empty
+  `.validate` elements with their CSS rule ([#90]).
+
+### Security
+
+- The report-only Content Security Policy allows `'self'` in `form-action`, so a form submission
+  without JavaScript can redirect to `/thanks.html` ([#91]).
+
 ## [4.0.0] - 2026-11-20
 
 ### Added
@@ -192,7 +228,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[Unreleased]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/4.0.0...HEAD
+[Unreleased]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/5.0.0...HEAD
+[5.0.0]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/4.0.0...5.0.0
 [4.0.0]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/3.0.0...4.0.0
 [3.0.0]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/2.5.0...3.0.0
 [2.5.0]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/2.0.2...2.5.0
@@ -236,3 +273,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#84]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/84
 [#85]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/85
 [#86]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/86
+[#89]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/89
+[#90]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/90
+[#91]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/91

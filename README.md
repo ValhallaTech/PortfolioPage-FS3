@@ -23,7 +23,7 @@ The site is a single-page application (`src/index.html`) composed of six section
 | **Portfolio** | Filterable image gallery (All / App / Card / Web) laid out by Muuri, with a GLightbox viewer |
 | **Services** | Six service cards: Web Development, Mobile App Developer, Quality Assurance, C# Programming, .NET Core Framework Development, UI/UX Design |
 | **Testimonials** | Swiper carousel with a pause/play button. Focus or a mouse over it holds rotation, and it never autoplays when the visitor asks for reduced motion |
-| **Contact** | Contact details, a map, and a modal contact form submitted to the Web3Forms API |
+| **Contact** | Contact details, a map, and a contact form in a native dialog, submitted to the Web3Forms API. Without JavaScript, a link opens the form as a panel, and a submission ends on `/thanks.html` |
 
 ### Tech Stack
 
@@ -31,7 +31,7 @@ The site is a single-page application (`src/index.html`) composed of six section
 
 | Library | Purpose |
 |---|---|
-| Bootstrap 6 | Layout and the contact dialog (no Popper dependency) |
+| Bootstrap 6 | Layout and the contact dialog, pinned to the prerelease `6.0.0-alpha.1` |
 | Fontsource 5 (Open Sans, Raleway, Poppins) | Self-hosted web fonts, imported from `src/js/main.js` |
 | Font Awesome Free 7.3.1 icon shapes | Inline SVG icon sprite in `src/index.html`, not an installed package (license notice kept in the sprite) |
 | Typed.js 3 | Hero typing animation |
@@ -46,7 +46,7 @@ The site is a single-page application (`src/index.html`) composed of six section
 
 | Tool | Purpose |
 |---|---|
-| Parcel 2 | Bundler (entry: `src/index.html`, output: `dist/`) |
+| Parcel 2 | Bundler (entries: `src/index.html` and `src/thanks.html`, output: `dist/`) |
 | Yarn 4 | Package manager, at the version in the `packageManager` field of `package.json` (run through Corepack) |
 | Node 26 | Runtime, at the exact version pinned in `.nvmrc` |
 | Jest 30 + jsdom | Unit and acceptance tests; 80% coverage threshold on `src/js/utils.js` |
@@ -58,21 +58,25 @@ The site is a single-page application (`src/index.html`) composed of six section
 
 ### Supported browsers
 
-The build targets the Browserslist query `defaults, iOS >= 15`, set in the `browserslist` field of `package.json`. Change it there; Parcel reads it for both the CSS and the JS output.
+The site supports Chrome and Edge 130 and later, Firefox 132 and later, and Safari 18 and later: the floor of the Bootstrap 6 release the site uses. Older browsers are not supported.
+
+The build target is a separate setting: the Browserslist query `defaults, iOS >= 15`, set in the `browserslist` field of `package.json`. Change it there; Parcel reads it for both the CSS and the JS output.
 
 - `defaults` is Browserslist's default set: browsers with more than 0.5% usage, the last two versions of each browser, and Firefox ESR, leaving out browsers without updates for 24 months.
-- `iOS >= 15` adds Safari on iOS 15 and later. Without it, Lightning CSS (Parcel's CSS transformer) keeps range-syntax media queries such as `@media (width>=1200px)`, which iOS Safari before 16.4 cannot parse, so those browsers lose every breakpoint. The iOS 15 floor makes it emit `min-width`/`max-width` instead, and it also flattens the nested CSS in Swiper's stylesheet.
+- `iOS >= 15` adds Safari on iOS 15 and later. Without it, Lightning CSS (Parcel's CSS transformer) keeps range-syntax media queries such as `@media (width>=1280px)`, which iOS Safari before 16.4 cannot parse, so those browsers lose every breakpoint. The iOS 15 floor makes it emit `min-width`/`max-width` instead, and it also flattens the nested CSS in Swiper's stylesheet.
 
 ### Key files
 
 ```text
 src/
-  index.html            # Single-page HTML entry point, with the inline SVG icon sprite
+  index.html            # Main HTML entry point, with the inline SVG icon sprite
+  thanks.html           # Page a contact-form submission without JavaScript ends on
   js/
     main.js             # App initialization (Typed.js, Muuri, Swiper, GLightbox, ScrollReveal, Bootstrap dialog, contact form)
     utils.js            # DOM helpers (nav, scroll, back-to-top, portfolio filters, hash and lightbox links)
   css/
     style.css           # Site styles and color tokens
+    thanks.css          # Styles for thanks.html
   images/               # Favicons, plus hero, portfolio, profile and testimonials images (AVIF, WebP and JPEG variants)
 __tests__/              # Jest tests: unit tests, acceptance/ (run by yarn test) and release/ (run by yarn verify:release)
 tests/e2e/              # Playwright end-to-end tests and the smoke baseline
