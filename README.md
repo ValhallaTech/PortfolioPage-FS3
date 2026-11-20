@@ -224,3 +224,9 @@ Pull requests are welcome. Please open an issue first to discuss significant cha
 ## License
 
 [GNU General Public License v3.0 only](LICENSE) (`GPL-3.0-only`) © Valhalla Tech
+
+Valhalla Tech, the copyright holder, grants the following additional permission.
+
+### Additional permission under GNU GPL version 3 section 7
+
+If you modify this Program, or any covered work, by linking or combining it with GSAP (or a modified version of that library), containing parts covered by the terms of [GSAP's Standard "no charge" license](https://gsap.com/standard-license), the licensors of this Program grant you additional permission to convey the resulting work.
