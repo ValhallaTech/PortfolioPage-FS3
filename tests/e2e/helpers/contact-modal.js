@@ -12,14 +12,36 @@ export const CONTACT_FIELDS = Object.freeze([
   { selector: '#message', value: 'Sent by the smoke suite to a mocked endpoint.' },
 ]);
 
+/** The dialog's accessible name, its title (bootstrap-6-upgrade AC Conventions). */
+const CONTACT_DIALOG_NAME = 'Send Me a Message';
+
 /**
- * Listens once for a Bootstrap modal event on the contact dialog, and returns a
+ * The contact dialog, by role and name (bootstrap-6-upgrade AC Conventions).
+ *
+ * @param {import('@playwright/test').Page} page
+ */
+export function contactDialog(page) {
+  // includeHidden, so a closed dialog still resolves and "dialog closed" can be asserted.
+  return page.getByRole('dialog', { name: CONTACT_DIALOG_NAME, includeHidden: true });
+}
+
+/**
+ * The contact button: the button in `#contact` named like the dialog (AC Conventions).
+ *
+ * @param {import('@playwright/test').Page} page
+ */
+export function contactButton(page) {
+  return page.locator('#contact').getByRole('button', { name: CONTACT_DIALOG_NAME });
+}
+
+/**
+ * Listens once for a Bootstrap dialog event on the contact dialog, and returns a
  * function that waits until that event has fired.
  *
  * Arm it before the action that fires the event, so the event cannot slip past.
  *
  * @param {import('@playwright/test').Page} page
- * @param {'shown.bs.modal' | 'hidden.bs.modal'} eventName
+ * @param {'shown.bs.dialog' | 'hidden.bs.dialog'} eventName
  * @returns {Promise<() => Promise<void>>} Resolves once the listener is attached.
  */
 export async function armModalEvent(page, eventName) {
@@ -45,13 +67,13 @@ export async function armModalEvent(page, eventName) {
 }
 
 /**
- * Opens the contact dialog from its button and waits for `shown.bs.modal`, after
- * which Bootstrap's focus trap is active.
+ * Opens the contact dialog from its button and waits for `shown.bs.dialog`, after
+ * which the page has moved focus into the dialog and its Tab wrap is active.
  *
  * @param {import('@playwright/test').Page} page
  */
 export async function openContactModal(page) {
-  const shown = await armModalEvent(page, 'shown.bs.modal');
+  const shown = await armModalEvent(page, 'shown.bs.dialog');
   await page.locator(CONTACT_MODAL_BUTTON).click();
   await shown();
 }

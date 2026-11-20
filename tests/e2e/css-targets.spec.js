@@ -24,8 +24,16 @@ import { test, expect } from './fixtures.js';
 
 const DIST_DIR = path.resolve(__dirname, '..', '..', 'dist');
 
-/** The at-rules whose params hold media-feature queries. */
-const QUERY_AT_RULE = /^(media|container)$/i;
+/**
+ * The at-rules whose range syntax an older browser in the build target drops.
+ *
+ * Only `@media` (spec bootstrap-6-upgrade §2.3, `css-targets.spec.js` row). Bootstrap 6
+ * ships `@container (width>=…)` queries, which Lightning CSS never rewrites. Range syntax
+ * is native to container queries: every browser with `@container` support parses it, and
+ * a browser without that support drops the rule either way. The test keeps its sprint 1
+ * title, so AC-27 maps it to that row.
+ */
+const QUERY_AT_RULE = /^media$/i;
 
 /** One parenthesized feature that compares with `<`, `>`, `<=`, `>=` or `=`. */
 const RANGE_FEATURE = /\([^()]*[<>=][^()]*\)/;
@@ -140,8 +148,10 @@ test.describe('CSS browser targets', () => {
     expect(sheets.length, 'dist/**/*.css files').toBeGreaterThan(0);
 
     const counts = new Map();
+    let checked = 0;
     for (const { file, root } of sheets) {
       root.walkAtRules(QUERY_AT_RULE, (rule) => {
+        checked += 1;
         if (!RANGE_FEATURE.test(rule.params)) return;
         const key = `${file}: @${rule.name} ${rule.params}`;
         counts.set(key, (counts.get(key) ?? 0) + 1);
@@ -149,6 +159,8 @@ test.describe('CSS browser targets', () => {
     }
     const offending = [...counts].map(([key, count]) => `${key} (x${count})`);
 
+    // The sidebar switch alone is four @media blocks, so zero means the check saw nothing.
+    expect(checked, '@media rules in dist CSS').toBeGreaterThan(0);
     expect(offending, 'query at-rules whose features use range syntax').toEqual([]);
   });
 

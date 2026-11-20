@@ -3,7 +3,9 @@
  */
 /**
  * S1 acceptance tests for chain J (spec stabilize-and-cleanup, sections 2.3,
- * 3.4 WI-27 and 3.7): AC-15, AC-16, AC-17, AC-18, AC-19, AC-25, AC-26 and AC-30.
+ * 3.4 WI-27 and 3.7): AC-15, AC-16, AC-17, AC-18, AC-19, AC-26 and AC-30.
+ * AC-25 (`@popperjs/core` remains) is retired by sprint 2 (spec
+ * bootstrap-6-upgrade, section 2.3), because Bootstrap 6 drops Popper.
  *
  * The Conventions' tracked-file search runs in Node, because `rg` is absent from
  * the Linux gate container: the paths `git ls-files` lists (with the three
@@ -218,17 +220,6 @@ test('AC-19: there is exactly one mobile-nav toggle', () => {
 
   // Assert
   expect(toggles).toHaveLength(1);
-});
-
-test('AC-25: @popperjs/core remains', () => {
-  // Arrange
-  const manifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8'));
-
-  // Act
-  const declared = manifest.dependencies?.['@popperjs/core'] ?? null;
-
-  // Assert
-  expect(declared).not.toBeNull();
 });
 
 test('AC-26: template and history comments are gone', () => {

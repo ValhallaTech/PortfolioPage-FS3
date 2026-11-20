@@ -45,7 +45,7 @@ const MAX_TAB_PRESSES = 120;
 const BOX_TOLERANCE_PX = 1;
 
 /** AC-121's widths, all at height 900. */
-const AC_121_WIDTHS = [320, 375, 768, 991, 992, 1199, 1200, 1440, 1920];
+const AC_121_WIDTHS = [320, 375, 768, 991, 992, 1023, 1024, 1199, 1200, 1279, 1280, 1440, 1920];
 const AC_121_HEIGHT = 900;
 
 /** Budgets of the tests that walk several viewports with fixed settles. */

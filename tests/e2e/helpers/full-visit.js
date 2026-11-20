@@ -20,11 +20,11 @@ const MAX_SCROLL_STEPS = 200;
 /**
  * Scrolls to the bottom in fixed steps, a fixed delay apart (Full visit, step 2).
  * `instant` overrides Bootstrap's `scroll-behavior: smooth`, so each step lands
- * before the next one starts.
+ * before the next one starts. Also the scroll of bootstrap-6-upgrade AC-2.
  *
  * @param {import('@playwright/test').Page} page
  */
-async function scrollToBottomInSteps(page) {
+export async function scrollToBottomInSteps(page) {
   for (let step = 0; step < MAX_SCROLL_STEPS; step += 1) {
     const atBottom = await page.evaluate((stepPx) => {
       const root = document.documentElement;
@@ -71,7 +71,7 @@ export async function fullVisit(page) {
     await page.locator(LIGHTBOX).waitFor({ state: 'detached' });
 
     await openContactModal(page);
-    const hidden = await armModalEvent(page, 'hidden.bs.modal');
+    const hidden = await armModalEvent(page, 'hidden.bs.dialog');
     await page.keyboard.press('Escape');
     await hidden();
 

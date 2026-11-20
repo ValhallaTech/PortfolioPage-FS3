@@ -31,7 +31,7 @@ The site is a single-page application (`src/index.html`) composed of six section
 
 | Library | Purpose |
 |---|---|
-| Bootstrap 5 | Layout and the contact modal (`@popperjs/core` is installed as its peer dependency) |
+| Bootstrap 6 | Layout and the contact dialog (no Popper dependency) |
 | Fontsource 5 (Open Sans, Raleway, Poppins) | Self-hosted web fonts, imported from `src/js/main.js` |
 | Font Awesome Free 7.3.1 icon shapes | Inline SVG icon sprite in `src/index.html`, not an installed package (license notice kept in the sprite) |
 | Typed.js 3 | Hero typing animation |
@@ -69,7 +69,7 @@ The build targets the Browserslist query `defaults, iOS >= 15`, set in the `brow
 src/
   index.html            # Single-page HTML entry point, with the inline SVG icon sprite
   js/
-    main.js             # App initialization (Typed.js, Muuri, Swiper, GLightbox, ScrollReveal, Bootstrap modal, contact form)
+    main.js             # App initialization (Typed.js, Muuri, Swiper, GLightbox, ScrollReveal, Bootstrap dialog, contact form)
     utils.js            # DOM helpers (nav, scroll, back-to-top, portfolio filters, hash and lightbox links)
   css/
     style.css           # Site styles and color tokens

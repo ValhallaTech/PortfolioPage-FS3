@@ -12,12 +12,13 @@
  * - AC-90: an extra, uncommitted spec submits a valid form without a Web3Forms mock.
  *   That test fails on the guard, no real Web3Forms response arrives, and every
  *   other test passes.
- * - AC-91: both `max-width: 1199px` queries in src/css/style.css become `1279px`.
- *   The `Layout` test fails.
- * - AC-92: `data-bs-toggle="modal"` on `.contact-modal-btn` becomes `"dialog"`.
- *   The `Dialog open` test fails.
+ * - AC-28 (spec bootstrap-6-upgrade, re-aiming sprint 1's AC-91): the four sidebar-switch
+ *   queries in src/css/style.css, `(width < 1280px)` and `(width >= 1280px)`, move to
+ *   `1200px`. The `Layout` test fails.
+ * - AC-29 (re-aiming sprint 1's AC-92): `data-bs-toggle="dialog"` on `.contact-modal-btn`
+ *   goes back to the Bootstrap 5 value `"modal"`. The `Dialog open` test fails.
  *
- * In AC-91 and AC-92 the target test must fail on its own `expect`, and the `Grid`
+ * In AC-28 and AC-29 the target test must fail on its own `expect`, and the `Grid`
  * test, which neither change can touch, must pass in the same run.
  *
  * Every child runs with `process.env` minus every `JEST_*` variable (as WI-7 does),
@@ -58,17 +59,19 @@ const CASE_TIMEOUT_MS = INSTALL_TIMEOUT_MS + BUILD_TIMEOUT_MS + SMOKE_TIMEOUT_MS
 /** How much of a failed step's output a failure message shows. */
 const OUTPUT_TAIL_CHARS = 6000;
 
-/** AC-91: the stylesheet and the breakpoint change. */
+/** AC-28: the stylesheet, and each sidebar-switch query with the form it changes to. */
 const STYLESHEET = path.join('src', 'css', 'style.css');
-const BREAKPOINT_QUERY = 'max-width: 1199px';
-const CHANGED_BREAKPOINT_QUERY = 'max-width: 1279px';
-const BREAKPOINT_QUERY_COUNT = 2;
+const BREAKPOINT_CHANGES = Object.freeze([
+  { query: '(width < 1280px)', changed: '(width < 1200px)' },
+  { query: '(width >= 1280px)', changed: '(width >= 1200px)' },
+]);
+const BREAKPOINT_QUERY_COUNT = 4;
 
-/** AC-92: the page, the contact button's opening tag, and the toggle change. */
+/** AC-29: the page, the contact button's opening tag, and the toggle change. */
 const PAGE = path.join('src', 'index.html');
 const CONTACT_BUTTON_TAG = /<[a-z]+\b[^>]*\bclass="[^"]*\bcontact-modal-btn\b[^"]*"[^>]*>/g;
-const MODAL_TOGGLE = 'data-bs-toggle="modal"';
-const CHANGED_MODAL_TOGGLE = 'data-bs-toggle="dialog"';
+const DIALOG_TOGGLE = 'data-bs-toggle="dialog"';
+const CHANGED_DIALOG_TOGGLE = 'data-bs-toggle="modal"';
 
 /** AC-90: the uncommitted spec, its test's title, and the log it attaches. */
 const UNMOCKED_SPEC_FILE = 'zz-unmocked-submit.spec.js';
@@ -83,8 +86,8 @@ const WEB3FORMS_LOG_ATTACHMENT = 'web3forms-request-log';
 const ASSERTION_FAILURE_MARKER = 'expect(';
 
 /**
- * A test that neither change can touch: it measures the Services grid at 991 and
- * 992 px, below both the old and the changed breakpoint, and never opens the dialog.
+ * A test that neither change can touch: it measures the Services grid at 1023 and
+ * 1024 px, below both the old and the changed breakpoint, and never opens the dialog.
  * It passing in the same run shows that the browser and the server worked.
  */
 const CONTROL_TEST = 'Grid:';
@@ -480,12 +483,19 @@ describe('WI-61: the smoke baseline catches unintended changes', () => {
   );
 
   test(
-    'AC-91: moving both 1199px breakpoints to 1279px fails the Layout test',
+    'AC-28: moving the four 1280px sidebar-switch queries to 1200px fails the Layout test',
     () => {
       const tests = runSmokeWithChange((worktree) => {
         editFile(worktree, STYLESHEET, (text) => {
-          expect(text.split(BREAKPOINT_QUERY).length - 1).toBe(BREAKPOINT_QUERY_COUNT);
-          return text.split(BREAKPOINT_QUERY).join(CHANGED_BREAKPOINT_QUERY);
+          const occurrences = BREAKPOINT_CHANGES.reduce(
+            (total, { query }) => total + text.split(query).length - 1,
+            0
+          );
+          expect(occurrences).toBe(BREAKPOINT_QUERY_COUNT);
+          return BREAKPOINT_CHANGES.reduce(
+            (changedText, { query, changed }) => changedText.split(query).join(changed),
+            text
+          );
         });
       });
 
@@ -495,14 +505,14 @@ describe('WI-61: the smoke baseline catches unintended changes', () => {
   );
 
   test(
-    'AC-92: changing the contact button toggle from modal to dialog fails the Dialog open test',
+    'AC-29: changing the contact button toggle from dialog back to modal fails the Dialog open test',
     () => {
       const tests = runSmokeWithChange((worktree) => {
         editFile(worktree, PAGE, (text) => {
           const tags = text.match(CONTACT_BUTTON_TAG) ?? [];
           expect(tags).toHaveLength(1);
-          expect(tags[0].split(MODAL_TOGGLE).length - 1).toBe(1);
-          return text.replace(tags[0], tags[0].replace(MODAL_TOGGLE, CHANGED_MODAL_TOGGLE));
+          expect(tags[0].split(DIALOG_TOGGLE).length - 1).toBe(1);
+          return text.replace(tags[0], tags[0].replace(DIALOG_TOGGLE, CHANGED_DIALOG_TOGGLE));
         });
       });
 

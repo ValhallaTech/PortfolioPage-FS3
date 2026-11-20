@@ -4,9 +4,9 @@ import Muuri from 'muuri';
 import Swiper from 'swiper';
 import { A11y, Autoplay, Pagination } from 'swiper/modules';
 import GLightbox from 'glightbox';
-import { Modal } from 'bootstrap';
+// Deep import: bare 'bootstrap' loads every plugin, and its datepicker needs vanilla-calendar-pro (R9).
+import Dialog from 'bootstrap/js/dist/dialog.js';
 
-import 'bootstrap/dist/css/bootstrap.min.css';
 import 'swiper/swiper.css';
 import 'swiper/modules/a11y.css';
 import 'swiper/modules/pagination.css';
@@ -299,6 +299,51 @@ function initScrollReveal() {
   sr.reveal('[data-sr-delay="500"]', { delay: 500 });
 }
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), ' +
+  'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * The controls in the dialog that Tab can reach, in document order.
+ * @param {HTMLDialogElement} dialogEl - The dialog element
+ * @returns {HTMLElement[]}
+ */
+function dialogFocusables(dialogEl) {
+  return [...dialogEl.querySelectorAll(FOCUSABLE_SELECTOR)].filter(
+    (el) => !el.hidden && el.getClientRects().length > 0
+  );
+}
+
+/**
+ * Keeps focus in the open dialog, as Bootstrap 5's focus trap did (RK-2):
+ * - On shown, focus moves to the first control. Bootstrap 6 calls showModal() while the
+ *   dialog is still `visibility: hidden`, so the browser's own initial focus finds nothing.
+ * - Tab and Shift+Tab wrap, because native showModal() lets focus leave the document.
+ * @param {HTMLDialogElement|null} dialogEl - The dialog element
+ */
+function initDialogFocus(dialogEl) {
+  if (!dialogEl) return;
+  dialogEl.addEventListener('shown.bs.dialog', () => {
+    if (dialogEl.contains(document.activeElement)) return;
+    dialogFocusables(dialogEl)[0]?.focus();
+  });
+  dialogEl.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab' || !dialogEl.open) return;
+    const focusable = dialogFocusables(dialogEl);
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey && (active === first || active === dialogEl)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+}
+
 /**
  * Initialize Web3Forms contact form submission
  */
@@ -315,9 +360,9 @@ function initContactForm() {
   let abortController = null;
   let autoCloseTimer = null;
 
-  // Abort in-flight request and reset form state whenever the modal is fully hidden
+  // Abort in-flight request and reset form state whenever the dialog is fully hidden
   if (modalEl) {
-    modalEl.addEventListener('hidden.bs.modal', () => {
+    modalEl.addEventListener('hidden.bs.dialog', () => {
       if (abortController) {
         abortController.abort();
         abortController = null;
@@ -371,11 +416,11 @@ function initContactForm() {
         sentMessage.style.display = 'block';
         errorMessage.style.display = 'none';
         form.reset();
-        // Close the modal after a short delay so the user sees the success message
+        // Close the dialog after a short delay so the user sees the success message
         if (modalEl) {
           autoCloseTimer = setTimeout(() => {
             autoCloseTimer = null;
-            Modal.getOrCreateInstance(modalEl).hide();
+            Dialog.getOrCreateInstance(modalEl).hide();
           }, 2000);
         }
       } else {
@@ -384,13 +429,13 @@ function initContactForm() {
         sentMessage.style.display = 'none';
       }
     } catch (error) {
-      // hidden.bs.modal already handles cleanup when the request is aborted
+      // hidden.bs.dialog already handles cleanup when the request is aborted
       if (error.name === 'AbortError') return;
       errorMessage.textContent = 'Failed to send message. Please try again.';
       errorMessage.style.display = 'block';
       sentMessage.style.display = 'none';
     } finally {
-      // Skip the reset when aborted: hidden.bs.modal has already reset the form, or a newer
+      // Skip the reset when aborted: hidden.bs.dialog has already reset the form, or a newer
       // request has set the busy state and owns it now.
       if (!signal.aborted) {
         abortController = null;
@@ -461,7 +506,8 @@ function init() {
   // Init ScrollReveal
   initScrollReveal();
 
-  // Contact form
+  // Contact dialog and form
+  initDialogFocus(document.querySelector('#contactModal'));
   initContactForm();
 }
 
