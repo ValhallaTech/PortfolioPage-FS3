@@ -13,7 +13,8 @@
  *
  * Viewports and selectors follow the AC Conventions. Waits are web-first; the only
  * fixed delays are the ones the ACs fix: the full visit's scroll steps, the 1 s
- * portfolio and grid settles and the 3 s mock delay of `Abort on close`.
+ * portfolio and grid settles, the 3 s mock delay of `Abort on close` and the 5 s
+ * persistence wait of `Submit, success` (AC-14).
  */
 import { test, expect } from './fixtures.js';
 import { desktop, small } from './viewports.js';
@@ -27,7 +28,10 @@ import {
   fillContactForm,
   mockWeb3Forms,
   openContactModal,
+  submitButton,
 } from './helpers/contact-modal.js';
+import { measureContrast } from './helpers/contrast.js';
+import { focusBody, hasFocusIndicator, readFocusStyle, tabUntil } from './helpers/tab-walk.js';
 import { fullVisit, scrollToBottomInSteps } from './helpers/full-visit.js';
 import {
   FILTER_ITEM_SETS,
@@ -84,6 +88,48 @@ const DIALOG_TITLE = 'Send Me a Message';
 
 /** A phone in landscape: shorter than the open dialog (PR-1 code review). */
 const SHORT_VIEWPORT = Object.freeze({ width: 667, height: 375 });
+
+/** The success text (AC-14) and how long it must stay shown after it appears. */
+const SENT_TEXT = 'Your message has been sent. Thank you!';
+const SENT_PERSIST_MS = 5_000;
+
+/** The four fields by label text, with the autofill hint each carries (AC-17, AC-18). */
+const FIELDS = Object.freeze([
+  { label: 'Your Name', autocomplete: 'name' },
+  { label: 'Your Email', autocomplete: 'email' },
+  { label: 'Subject', autocomplete: 'off' },
+  { label: 'Message', autocomplete: 'off' },
+]);
+
+/** The smallest label box AC-17 accepts; `.visually-hidden` gives 1 × 1. */
+const MIN_LABEL_PX = 10;
+
+/** WCAG thresholds (sprint 1 R-30, AC-45): text, and UI components such as a focus ring. */
+const TEXT_CONTRAST = 4.5;
+const UI_CONTRAST = 3;
+
+/** The 44 px target size (AC-36, sprint 1 C-33). */
+const MIN_TARGET_PX = 44;
+
+/**
+ * The two buttons AC-19 to AC-21 and AC-36 measure: how to find each, whether it is
+ * measured in the shown dialog, and the selector `tabUntil` stops on.
+ */
+const BUTTONS = Object.freeze([
+  {
+    name: 'contact button',
+    locate: contactButton,
+    inDialog: false,
+    focusTarget: CONTACT_MODAL_BUTTON,
+  },
+  { name: 'submit button', locate: submitButton, inDialog: true, focusTarget: '#submit-btn' },
+]);
+
+/** A point where the pointer hovers nothing the tests measure: the sidebar, or the backdrop. */
+const POINTER_PARKING = Object.freeze({ x: 5, y: 5 });
+
+/** The most Tab presses from `body` to the contact button, and from inside the dialog. */
+const MAX_TABS_TO_BUTTON = 120;
 
 /** The left edge of a locator's box, polled because `#header` slides with a transition. */
 function boxX(locator) {
@@ -301,28 +347,42 @@ test('Dialog dismiss: the close button and a backdrop click each close the dialo
   await expect(button).toBeFocused();
 });
 
-test('Submit, success: a successful response shows the sent message', async ({ page }) => {
+test('Submit, success: a successful response is announced and stays shown', async ({ page }) => {
   await mockWeb3Forms(page, { success: true });
   await page.goto('/');
   await openContactModal(page);
   await fillContactForm(page);
+  const dialog = contactDialog(page);
+  const status = dialog.getByRole('status');
+  // AC-14: one status region, in the accessibility tree before anything is sent.
+  await expect(status, 'status regions in the dialog before the submit').toHaveCount(1);
 
-  await page.locator('#submit-btn').click();
+  await submitButton(page).click();
 
-  await expect(page.locator('#sent-message')).toBeVisible();
+  await expect(status).toHaveText(SENT_TEXT);
+  await expect(status).toBeVisible();
+
+  // 4.0.0 closed the dialog 2 s after a success; the result now stays until it is closed.
+  await page.waitForTimeout(SENT_PERSIST_MS);
+  await expect(status).toHaveText(SENT_TEXT);
+  await expect(status).toBeVisible();
+  await expect(dialog).toBeVisible();
+  await expect.poll(isModal(dialog), 'the dialog is still shown as a modal').toBe(true);
 });
 
-test('Submit, error: a failed response shows its message', async ({ page }) => {
+test('Submit, error: a failed response is announced as an alert', async ({ page }) => {
   await mockWeb3Forms(page, { success: false, message: 'x' });
   await page.goto('/');
   await openContactModal(page);
   await fillContactForm(page);
+  const alert = contactDialog(page).getByRole('alert');
+  // AC-15: one alert region before the submit.
+  await expect(alert, 'alert regions in the dialog before the submit').toHaveCount(1);
 
-  await page.locator('#submit-btn').click();
+  await submitButton(page).click();
 
-  const errorMessage = page.locator('#error-message');
-  await expect(errorMessage).toBeVisible();
-  await expect(errorMessage).toHaveText('x');
+  await expect(alert).toBeVisible();
+  await expect(alert).toHaveText('x');
 });
 
 test('Abort on close: closing the dialog mid-submit resets the form', async ({ page }) => {
@@ -597,16 +657,15 @@ test('Short viewport: the submit button can be scrolled to and clicked at 667×3
   await page.goto('/');
   await openContactModal(page);
   await fillContactForm(page);
-  const dialog = contactDialog(page);
-  const submitButton = dialog.getByRole('button', { name: 'Send Message' });
+  const submit = submitButton(page);
 
   // Scroll it into view as a visitor would, through whatever scroll container the page has.
-  await submitButton.evaluate((element) => element.scrollIntoView({ block: 'end' }));
-  await expect(submitButton, 'the submit button is fully inside the viewport').toBeInViewport({
+  await submit.evaluate((element) => element.scrollIntoView({ block: 'end' }));
+  await expect(submit, 'the submit button is fully inside the viewport').toBeInViewport({
     ratio: 1,
   });
   expect(
-    await submitButton.evaluate((element) => {
+    await submit.evaluate((element) => {
       const box = element.getBoundingClientRect();
       const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
       return element.contains(hit);
@@ -614,6 +673,243 @@ test('Short viewport: the submit button can be scrolled to and clicked at 667×3
     'a click at the center of the submit button lands on it'
   ).toBe(true);
 
-  await submitButton.click();
+  await submit.click();
   await expect(page.locator('#sent-message'), 'the mocked submission succeeded').toBeVisible();
+});
+
+/**
+ * Brings an element into view if it is outside it, and waits until it and its ancestors
+ * are at rest: no running animation or transition, and every ScrollReveal container among
+ * them revealed (sprint 1 AC-45's settle).
+ *
+ * @param {import('@playwright/test').Locator} locator
+ */
+async function settle(locator) {
+  await locator.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const inView =
+      box.bottom > 0 && box.top < innerHeight && box.right > 0 && box.left < innerWidth;
+    if (!inView) element.scrollIntoView({ block: 'center', behavior: 'instant' });
+  });
+  await expect
+    .poll(
+      () =>
+        locator.evaluate((element) => {
+          const chain = [];
+          for (let node = element; node; node = node.parentElement) chain.push(node);
+          const animating = chain.some((node) =>
+            node.getAnimations().some((animation) => animation.playState === 'running')
+          );
+          const unrevealed = chain.some(
+            (node) => node.matches('[data-sr]') && getComputedStyle(node).opacity !== '1'
+          );
+          return !animating && !unrevealed;
+        }),
+      { message: 'the element and its ancestors are revealed and not animating' }
+    )
+    .toBe(true);
+}
+
+/**
+ * Loads the page and makes `button` measurable: the contact button scrolled into view
+ * and settled, the submit button in the shown dialog. The pointer is parked away.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {(typeof BUTTONS)[number]} button
+ * @returns {Promise<import('@playwright/test').Locator>} The button.
+ */
+async function showButton(page, button) {
+  await page.goto('/');
+  if (button.inDialog) await openContactModal(page);
+  const locator = button.locate(page);
+  await settle(locator);
+  await page.mouse.move(POINTER_PARKING.x, POINTER_PARKING.y);
+  await settle(locator);
+  return locator;
+}
+
+/**
+ * Focuses `button` by pressing Tab from `body`, so `:focus-visible` applies, and waits
+ * for any focus transition to end.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {(typeof BUTTONS)[number]} button
+ */
+async function focusByKeyboard(page, button) {
+  await focusBody(page);
+  const presses = await tabUntil(page, button.focusTarget, MAX_TABS_TO_BUTTON);
+  expect(presses, `Tab reaches the ${button.name}`).not.toBeNull();
+  await settle(button.locate(page));
+}
+
+/** The three colors AC-21 compares. */
+function readButtonColors(locator) {
+  return locator.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      backgroundColor: style.backgroundColor,
+      color: style.color,
+      borderColor: style.borderColor,
+    };
+  });
+}
+
+test('Field errors: invalid fields are marked and described, and nothing is sent', async ({
+  page,
+}) => {
+  const mock = await mockWeb3Forms(page, { success: true });
+  await page.goto('/');
+  await openContactModal(page);
+  const dialog = contactDialog(page);
+  const field = (label) => dialog.getByLabel(label, { exact: true });
+
+  // AC-16 (a): every field empty.
+  await submitButton(page).click();
+  for (const { label } of FIELDS) {
+    await expect(field(label), `${label} is marked invalid`).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    );
+    await expect(field(label), `${label} carries an error description`).toHaveAccessibleDescription(
+      /\S/
+    );
+  }
+  expect(mock.answered(), 'requests sent with every field empty').toBe(0);
+
+  // AC-16 (b): filled, except an email address that is not one.
+  await fillContactForm(page);
+  await field('Your Email').fill('not-an-email');
+  await submitButton(page).click();
+  await expect(field('Your Email')).toHaveAttribute('aria-invalid', 'true');
+  await expect(field('Your Email')).toHaveAccessibleDescription(/\S/);
+  for (const { label } of FIELDS.filter(({ label }) => label !== 'Your Email')) {
+    await expect(field(label), `${label} is not marked invalid`).not.toHaveAttribute(
+      'aria-invalid',
+      'true'
+    );
+  }
+  expect(mock.answered(), 'requests sent with an invalid email').toBe(0);
+});
+
+for (const [viewportName, viewport] of Object.entries({ desktop, small })) {
+  test.describe(`at ${viewportName}`, () => {
+    test.use(viewport);
+
+    test(`Field labels at ${viewportName}: each field has its own visible label`, async ({
+      page,
+    }) => {
+      await page.goto('/');
+      await openContactModal(page);
+      await fillContactForm(page);
+      const dialog = contactDialog(page);
+
+      // AC-17.
+      for (const { label } of FIELDS) {
+        await expect(
+          dialog.getByLabel(label, { exact: true }),
+          `fields labeled ${label}`
+        ).toHaveCount(1);
+        const labelElement = dialog.locator('label').filter({ hasText: new RegExp(`^${label}$`) });
+        await expect(labelElement).toBeVisible();
+        const box = await labelElement.boundingBox();
+        expect(box.width, `the ${label} label's width`).toBeGreaterThanOrEqual(MIN_LABEL_PX);
+        expect(box.height, `the ${label} label's height`).toBeGreaterThanOrEqual(MIN_LABEL_PX);
+      }
+    });
+
+    test(`Button size at ${viewportName}: both buttons are at least 44 px tall`, async ({
+      page,
+    }) => {
+      // AC-36.
+      for (const button of BUTTONS) {
+        const locator = await showButton(page, button);
+        const box = await locator.boundingBox();
+        expect(box.height, `the ${button.name}'s height`).toBeGreaterThanOrEqual(MIN_TARGET_PX);
+      }
+    });
+  });
+}
+
+test('Autofill: each field carries its autocomplete hint', async ({ page }) => {
+  await page.goto('/');
+  await openContactModal(page);
+  const dialog = contactDialog(page);
+
+  // AC-18.
+  for (const { label, autocomplete } of FIELDS) {
+    await expect(dialog.getByLabel(label, { exact: true })).toHaveAttribute(
+      'autocomplete',
+      autocomplete
+    );
+  }
+});
+
+test('Button contrast: both buttons keep 4.5:1 at rest, on hover and on keyboard focus', async ({
+  page,
+}) => {
+  const failures = [];
+  const check = async (button, state, locator) => {
+    const { ratio, foreground, background } = await measureContrast(locator);
+    if (ratio < TEXT_CONTRAST) {
+      failures.push(
+        `${button.name} ${state}: ${ratio.toFixed(2)} < ${TEXT_CONTRAST} (${foreground} on ${background})`
+      );
+    }
+  };
+
+  // AC-19: 2 buttons × 3 states.
+  for (const button of BUTTONS) {
+    const locator = await showButton(page, button);
+    await check(button, 'at rest', locator);
+
+    await locator.hover();
+    await settle(locator);
+    await check(button, 'hovered', locator);
+
+    await page.mouse.move(POINTER_PARKING.x, POINTER_PARKING.y);
+    await focusByKeyboard(page, button);
+    await check(button, 'focused by keyboard', locator);
+  }
+
+  expect(failures, 'button states below 4.5:1').toEqual([]);
+});
+
+test('Button focus ring: Tab draws a 3:1 indicator on both buttons', async ({ page }) => {
+  // AC-20.
+  for (const button of BUTTONS) {
+    const locator = await showButton(page, button);
+    await focusByKeyboard(page, button);
+
+    const focusStyle = await locator.evaluate(readFocusStyle);
+    expect(
+      hasFocusIndicator(focusStyle),
+      `${button.name} focus style ${JSON.stringify(focusStyle)}`
+    ).toBe(true);
+    const outlineDrawn =
+      focusStyle.outlineStyle !== 'none' && Number.parseFloat(focusStyle.outlineWidth) >= 1;
+    const { ratio, foreground, background } = await measureContrast(locator, {
+      foreground: outlineDrawn ? 'outline-color' : 'box-shadow',
+      backgroundFrom: 'parent',
+    });
+    expect(
+      ratio,
+      `${button.name} indicator ${foreground} on its parent's ${background}`
+    ).toBeGreaterThanOrEqual(UI_CONTRAST);
+  }
+});
+
+test('Button hover: both buttons change color on hover', async ({ page }) => {
+  // AC-21.
+  for (const button of BUTTONS) {
+    const locator = await showButton(page, button);
+    const rest = await readButtonColors(locator);
+
+    await locator.hover();
+    await settle(locator);
+    const hover = await readButtonColors(locator);
+
+    expect(hover, `${button.name}: background, color or border color changes on hover`).not.toEqual(
+      rest
+    );
+  }
 });
