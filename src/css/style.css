@@ -1025,6 +1025,61 @@ section {
   margin-bottom: 20px;
 }
 
+/*
+ * No-JS path (D-2): the link and the close link replace the two dialog buttons, and the
+ * dialog opens as the :target panel. The global a and a:hover colors are unlayered and
+ * beat btn-solid, so the link takes the button's own color tokens back.
+ */
+.contact-nojs-link,
+.contact-nojs-close {
+  display: none;
+}
+
+.contact-nojs-link {
+  color: var(--bs-btn-color);
+}
+
+.contact-nojs-link:hover {
+  color: var(--bs-btn-hover-color);
+}
+
+.contact-nojs-close,
+.contact-nojs-close:hover {
+  color: var(--bs-btn-close-color);
+}
+
+@media (scripting: none) {
+  .contact-modal-btn,
+  #contactModal .btn-close:not(.contact-nojs-close) {
+    display: none;
+  }
+
+  .contact-nojs-link {
+    display: inline-flex;
+  }
+
+  .contact-nojs-close {
+    display: block;
+  }
+
+  /*
+   * Overrides the closed .dialog (visibility, opacity, transform) above .back-to-top.
+   * With no showModal() there is no ::backdrop, so a spread shadow dims the page instead.
+   */
+  #contactModal:target {
+    box-shadow: 0 0 0 100vmax var(--color-hero-overlay);
+    height: fit-content;
+    inset: 0;
+    max-height: calc(100% - var(--bs-dialog-margin) * 2);
+    opacity: 1;
+    overflow-y: auto;
+    position: fixed;
+    transform: none;
+    visibility: visible;
+    z-index: 100000;
+  }
+}
+
 /*--------------------------------------------------------------
 # Footer
 --------------------------------------------------------------*/

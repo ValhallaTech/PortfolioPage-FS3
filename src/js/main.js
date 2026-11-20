@@ -446,7 +446,8 @@ function initContactForm() {
 
     try {
       const formData = new FormData(form);
-      const payload = Object.fromEntries(formData.entries());
+      // The markup's redirect is the no-JS thank-you page; a fetch answers with JSON instead.
+      const payload = { ...Object.fromEntries(formData.entries()), redirect: 'false' };
 
       const response = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',

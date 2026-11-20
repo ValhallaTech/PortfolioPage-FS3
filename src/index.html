@@ -477,6 +477,9 @@
                             <button class="btn-solid btn-lg theme-site contact-modal-btn" data-bs-target="#contactModal" data-bs-toggle="dialog" type="button">
                                 <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-envelope"></use></svg> Send Me a Message
                             </button>
+                            <a class="btn-solid btn-lg theme-site contact-nojs-link" href="#contactModal">
+                                <svg aria-hidden="true" class="icon" focusable="false"><use href="#icon-envelope"></use></svg> Send Me a Message
+                            </a>
                         </div>
                     </div>
 
@@ -508,11 +511,12 @@
         <div class="dialog-header">
             <h2 class="dialog-title" id="contactModalLabel">Send Me a Message</h2>
             <button aria-label="Close" class="btn-close" data-bs-dismiss="dialog" type="button"></button>
+            <a aria-label="Close" class="btn-close contact-nojs-close" href="#contact"></a>
         </div>
         <div class="dialog-body">
             <form action="https://api.web3forms.com/submit" class="contact-form" id="contact-form" method="POST">
                 <input type="hidden" name="access_key" value="9837ba21-4ccf-4710-9e29-0551dc6e1a76">
-                <input type="hidden" name="redirect" value="false">
+                <input type="hidden" name="redirect" value="https://fs3portfolio.netlify.app/thanks.html">
                 <input type="checkbox" name="botcheck" hidden tabindex="-1" autocomplete="off">
 
                 <div class="form-field">

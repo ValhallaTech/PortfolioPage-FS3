@@ -1,0 +1,76 @@
+/*
+ * The no-JS thank-you page (WI-5). It loads no Bootstrap and no script: Web3Forms
+ * redirects here after a plain HTML POST, so the page stands on its own.
+ */
+@import 'npm:@fontsource/open-sans/latin-400.css';
+@import 'npm:@fontsource/raleway/latin-700.css';
+
+:root {
+  --color-text: #272829;
+  --color-white: #fff;
+  --color-section-bg: #f5f8fd;
+  --color-heading: #173b6c;
+  --color-accent-strong: #0b6f9e;
+  --color-accent-strong-hover: #095a80;
+  --color-focus: var(--color-accent-strong);
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  align-items: center;
+  background: var(--color-section-bg);
+  color: var(--color-text);
+  display: flex;
+  font-family: 'Open Sans', sans-serif;
+  justify-content: center;
+  line-height: 1.5;
+  margin: 0;
+  min-height: 100vh;
+  padding: 16px;
+}
+
+.thanks {
+  max-width: 36rem;
+  text-align: center;
+}
+
+.thanks-title {
+  color: var(--color-heading);
+  font-family: 'Raleway', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 16px;
+}
+
+.thanks-text {
+  font-size: 1rem;
+  margin: 0 0 24px;
+}
+
+/* 44 px target and 5.5:1 text contrast, like the site's buttons. */
+.thanks-link {
+  align-items: center;
+  background: var(--color-accent-strong);
+  border-radius: 6px;
+  color: var(--color-white);
+  display: inline-flex;
+  min-height: 44px;
+  padding: 8px 24px;
+  text-decoration: none;
+}
+
+.thanks-link:hover {
+  background: var(--color-accent-strong-hover);
+}
+
+.thanks-link:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
