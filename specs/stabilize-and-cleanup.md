@@ -2049,12 +2049,13 @@ The `build` script gains `--no-source-maps` (resolves D-5; WI-59). Local `yarn s
 
 **D-6 — CSP text and reporting.** The report-only policy that WI-58 ships (resolves D-6):
 
-`default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.web3forms.com; frame-src https://www.google.com; form-action https://api.web3forms.com; base-uri 'self'; object-src 'none'; frame-ancestors 'none'`
+`default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.web3forms.com; frame-src https://www.google.com; form-action https://api.web3forms.com; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; style-src-attr 'unsafe-hashes' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='`
 
 - *Why each source:*
   - `img-src data:` covers the SVG data URIs in Bootstrap's CSS.
   - `frame-src` covers the Maps embed, which C-3 keeps.
   - The two Web3Forms sources cover the form's fetch and its no-JS post.
+  - `style-src-attr 'unsafe-hashes'` with the SHA-256 of the empty string allows exactly one inline style attribute value, `style=""`, and no other. GLightbox 3.3.1's touch pinch reset writes it (`mediaImage.setAttribute('style', '')`, `glightbox.js:1979`), and that handler runs whatever `zoomable` is set to. Click-to-zoom, whose `zoomOut` writes non-empty values (`glightbox.js:608-609`), is turned off instead (`zoomable: false`, WI-58). This is the Security Reviewer's RK-7 decision, which Fred applied on 2026-11-19: no `'unsafe-inline'` anywhere. iOS 15.0–15.3 may not support `style-src-attr`, fall back to `style-src 'self'` and report the pinch reset (the reviewer's note; not re-verified here). In a report-only policy that blocks nothing and is harmless. *(Handler lines read 2026-11-19 in the installed `node_modules/glightbox/dist/js/glightbox.js`.)*
 - *Left out on purpose:* `upgrade-insecure-requests` and `sandbox`. Browsers ignore them in a report-only policy and log a console message. That message would fail AC-83.
 - *Reporting:* violations go nowhere beyond the browser console in sprint 1. No `report-uri` or `report-to` is set, because no collector exists and adding one adds a third party. The signal is the AC-83 full visit, run locally and live (RK-18). A collector is a decision for the enforcement step (NG-9).
 
@@ -2209,7 +2210,7 @@ The `build` script gains `--no-source-maps` (resolves D-5; WI-59). Local `yarn s
   - Hidden items' links are `display: none` and cannot be clicked. Every visible item opens the lightbox (AC-120).
   - GLightbox's gallery still includes all nine slides, as it does today.
 - **CSP.** Muuri 0.9.5 writes styles only per property (`element.style[prop] = …`) and animates through `element.animate()` (the Web Animations API). It never calls `setAttribute('style')`, never assigns `style.cssText`, and never creates a `<style>` element. CSP `style-src` does not govern either mechanism. *(Verified 2026-11-17 by reading `unpkg.com/muuri@0.9.5/dist/muuri.module.js` in three windows: `setStyles`, `ItemVisibility._finishHide`, the resize handler, `filter`.)*
-  - *Workers, corrected 2026-11-19.* The 2026-11-17 read missed one more mechanism. When the module loads, unpatched Muuri runs `URL.createObjectURL(new Blob(…))` and then `new Worker(blobUrl)` twice, for its default packer. D-6 sets no `worker-src` or `child-src`, so workers fall back to `script-src 'self'`, and `'self'` never matches a `blob:` URL. Under the report-only policy every page load would then report a violation, and AC-83 would fail in PR-10. The patch (0 workers) leaves `createWorkerProcessors` uncalled, so no `blob:` URL and no worker is ever created. With the patch, the D-6 policy needs no change. *(Verified 2026-11-19: the worker code in the installed source, and the `'self'` rule in CSP Level 3 §6.7.2.8, step 4: "If url's scheme is "blob", return "Does Not Match"".)*
+  - *Workers, corrected 2026-11-19.* The 2026-11-17 read missed one more mechanism. When the module loads, unpatched Muuri runs `URL.createObjectURL(new Blob(…))` and then `new Worker(blobUrl)` twice, for its default packer. D-6 sets no `worker-src` or `child-src`, so workers fall back to `script-src 'self'`, and `'self'` never matches a `blob:` URL. Under the report-only policy every page load would then report a violation, and AC-83 would fail in PR-10. The patch (0 workers) leaves `createWorkerProcessors` uncalled, so no `blob:` URL and no worker is ever created. With the patch, the D-6 policy needs no `worker-src` or `child-src`. *(Verified 2026-11-19: the worker code in the installed source, and the `'self'` rule in CSP Level 3 §6.7.2.8, step 4: "If url's scheme is "blob", return "Does Not Match"".)*
 - **Sprint 3 (GSAP) interaction:**
   - Muuri owns `transform` on `.portfolio-item` (position), `opacity` and `transform` on `.portfolio-wrap` (visibility), and `display` on hidden items.
   - GSAP must not animate any of those properties on those elements. That is gsap-analysis §5 G5, which applied to Isotope too. Scroll reveals target the section or `.portfolio-container`, never items.
@@ -2227,6 +2228,7 @@ The `build` script gains `--no-source-maps` (resolves D-5; WI-59). Local `yarn s
 - Netlify installs Yarn when `packageManager` names it, and marks `YARN_VERSION` deprecated. Read via Context7 `/websites/netlify`, "Manage dependencies". **Not verified:** that this works on a Node line without bundled Corepack (RK-2).
 - Typed.js inserts a `<style>` element when `autoInsertCss` is on. It also stops on the last string when `loop: false`, and calls `onComplete`. Read via Context7 `/mattboldt/typed.js` (initializer and `doneTyping` source) and confirmed in the installed `node_modules/typed.js/dist/typed.module.js`.
 - GLightbox 3.3.1 calls `setAttribute('style', …)` only when a slide has a title or description, or on zoom and video. It reads titles from `data-*` attributes, not from `title`. Read in `node_modules/glightbox/dist/js/glightbox.js` (`parseConfig`; lines 2861–2878).
+  - *Zoom paths, added 2026-11-19 (RK-7 decision).* Click-to-zoom's `zoomOut` writes `style=""` on the image's parent and the image's `data-style` value on the image (lines 608–609). Turning it off with `zoomable: false` (default `true`, lines 1077 and 2059) removes both. The touch pinch handler writes `style=""` when the scale drops to 1 or below (line 1979). `zoomable` does not gate that handler; `touchNavigation` (default `true`, lines 2066 and 2215–2216) does. So D-6's `style-src-attr` hash allows exactly that value. *(Read 2026-11-19 in the installed `node_modules/glightbox/dist/js/glightbox.js`.)*
 - ScrollReveal 4.0.9, `swiper/shared/swiper-core.mjs` and `bootstrap.esm.js` make no `setAttribute('style')` or `<style>` injection matched by `rg`.
 - Swiper 14.3.0 emits "Swiper Loop Warning: The number of slides is not enough for loop mode" (`swiper-core.mjs:1688`). It has a `rewind` option. Its A11y module gives clickable bullets `role="button"` and the label "Go to slide N". Read in installed `node_modules/swiper`.
 - Bootstrap 5.3.8 reboot sets `[hidden] { display: none !important; }`. Read in installed `bootstrap.css:598`.
@@ -3054,7 +3056,7 @@ S1 tests implement the Conventions' tracked-file search in Node (`git ls-files` 
 - **depends-on:** WI-56, WI-55
 - **satisfies:** AC-84
 - **change:**
-  - **Honeypot (`index.html:480`):** `class="d-none" tabindex="-1" autocomplete="off" aria-hidden="true"`.
+  - **Honeypot (`index.html:480`):** `hidden tabindex="-1" autocomplete="off"`. The plain `hidden` attribute keeps it hidden, and out of the accessibility tree, even if the stylesheet fails to load, which `class="d-none"` would not; so no `aria-hidden` is needed (RK-7 decision, 2026-11-19).
   - **Map iframe (`:427-432`):** `class="contact-map"`, with border, height and width moved to CSS. Drop the deprecated `frameborder`. The `src` and `title` stay as they are (C-3).
 - **done when:** WI-56's AC-84 test passes and the smoke suite passes.
 
@@ -3070,7 +3072,9 @@ S1 tests implement the Conventions' tracked-file search in Node (`git ls-files` 
   - add `Cross-Origin-Opener-Policy = "same-origin"`
   - keep `X-Frame-Options`, `X-Content-Type-Options` and `Referrer-Policy`
 
-  The Security Reviewer authors the policy and signs it off in PR-10. If AC-83 finds a library that needs inline style attributes, the reviewer chooses between a code change and `style-src-attr 'unsafe-inline'` in writing (RK-7).
+  In `src/js/main.js`, the GLightbox call becomes `GLightbox({ selector: '.glightbox', zoomable: false })`, so the lightbox has no click-to-magnify. This one line is a `frontend` file; the item keeps its `security` domain, because the line exists only to keep the policy free of `'unsafe-inline'`.
+
+  The Security Reviewer authors the policy and signs it off in PR-10. If AC-83 finds a library that needs inline style attributes, the reviewer chooses between a code change and a `style-src-attr` allowance in writing (RK-7). *Decided 2026-11-19 (RK-7):* GLightbox's zoom paths write inline styles. The code change is `zoomable: false`. The allowance is the D-6 directive `style-src-attr 'unsafe-hashes'` with the hash of the empty string, for the touch pinch reset. No `'unsafe-inline'`.
 - **done when:** WI-56's AC-81 passes and WI-60's AC-83 passes locally. AC-82, AC-85, AC-86 and AC-113 pass on the live site at release.
 
 #### WI-59 — Build without source maps
@@ -3087,6 +3091,7 @@ S1 tests implement the Conventions' tracked-file search in Node (`git ls-files` 
 - **depends-on:** WI-58
 - **satisfies:** AC-83
 - **change:** `tests/e2e/csp.spec.js` runs the Conventions' full visit with `securitypolicyviolation` and console listeners, tagged `@live`. Locally, `serve-dist.mjs` supplies the header.
+  - **Zoom case (RK-7 decision, 2026-11-19):** at a 1024×560 viewport, open the lightbox, click its image twice, and expect 0 violations and 0 CSP console messages. The full visit never zooms, so this case is what proves `zoomable: false` holds.
 - **done when:** it passes in `yarn test:smoke`.
 
 #### Phase 8 — baseline finalization (PR-11)
@@ -3211,7 +3216,7 @@ The report sprint-1 order is kept, minus phase (a):
 | RK-4 | Timing-based tests make the gate flaky: scroll waits, the 11 s and 16 s carousel checks, the 60 s typing checks | med | med | Slow tests sit outside the smoke command (`@slow`). Web-first assertions and `expect.poll` replace fixed sleeps where an AC allows. `retries: 0` in the gate, because a flaky test is a defect that goes back to its author | WI-8, WI-35, WI-40, WI-46, WI-51, WI-55 |
 | RK-5 | The Chromium-only baseline misses WebKit regressions in sprint 2, such as the Bootstrap 6 dialog on Safari 18 | med | med | The `phone` viewport uses iPhone 13 metrics. Sprint 2 can add a WebKit project with one config entry and `playwright install webkit`. Accepted for sprint 1 | WI-6, WI-8 |
 | RK-6 | WI-10's whole-file Prettier pass over `style.css` conflicts with any branch already editing CSS | low | low | It lands in PR-1, in a formatting-only commit, and no CSS work starts before PR-1 merges | WI-10 |
-| RK-7 | CSP report-only violations from libraries. Verified sources: Typed.js `<style>` injection, and GLightbox `setAttribute('style')` when a slide has a title or description. Muuri 0.9.5 was checked and writes only through the CSSOM and the Web Animations API. *(Corrected 2026-11-19:* unpatched, it also creates two `blob:` workers when the module loads, which `script-src 'self'` does not allow) | med | med | WI-53 turns off `autoInsertCss`. WI-49 adds no `data-title` or `data-description`. WI-37's Muuri patch builds the packer with 0 workers, so no worker is created. AC-83 catches the rest. The Security Reviewer decides any inline-style allowance in writing, never silently | WI-49, WI-53, WI-58, WI-60 |
+| RK-7 | CSP report-only violations from libraries. Verified sources: Typed.js `<style>` injection, and GLightbox `setAttribute('style')` when a slide has a title or description. Muuri 0.9.5 was checked and writes only through the CSSOM and the Web Animations API. *(Corrected 2026-11-19:* unpatched, it also creates two `blob:` workers when the module loads, which `script-src 'self'` does not allow) | med | med | WI-53 turns off `autoInsertCss`. WI-49 adds no `data-title` or `data-description`. WI-37's Muuri patch builds the packer with 0 workers, so no worker is created. AC-83 catches the rest. The Security Reviewer decides any inline-style allowance in writing, never silently. *Decided 2026-11-19 (PR-10 sign-off, applied by Fred):* GLightbox's click-zoom (`zoomOut`, `glightbox.js:608-609`) and touch pinch reset (`:1979`) write inline styles, and AC-83's full visit never zooms. WI-58 sets `zoomable: false` and adds `style-src-attr 'unsafe-hashes'` with the empty-string hash to D-6, which allows only `style=""`; no `'unsafe-inline'`. WI-57's honeypot uses the `hidden` attribute. WI-60's zoom case proves it | WI-49, WI-53, WI-57, WI-58, WI-60 |
 | RK-8 | Some high or critical dev advisories have no fix in a compatible range (A-15) | med | med | `yarn up -R` first, then targeted `resolutions` with the gate re-run after each. If an advisory needs a tool swap, WI-23 halts and the finding goes to Fred. It is not dropped | WI-23 |
 | RK-9 | The ESM switch drags Parcel into Babel, or coverage falls below 80% once `observeSkills` and its tests go | low | med | The Babel config sits inline in `jest.config.js` (D-12). WI-34, WI-39 and WI-45 add tests for every new function. The threshold fails the gate if they fall short | WI-31, WI-32 |
 | RK-10 | The font and icon swap changes rendering. A missed weight gives faux bold; a mis-sized `.icon` shifts layout | med | low | WI-42 derives the weights from computed styles. AC-71 and AC-72 automate the measurable part. AC-73 compares against WI-1's live screenshots | WI-42, WI-43 |
@@ -3352,7 +3357,7 @@ The report sprint-1 order is kept, minus phase (a):
 | AC-80 | `live-sourcemaps.test.js`: every `<script src>.map` returns 404 | integration | S5 (live) |
 | AC-81 | `headers-config.test.js` | lint | S1 |
 | AC-82 | `live-headers.test.js`: report-only CSP present, enforcing CSP absent | integration | S5 (live) |
-| AC-83 | `csp.spec.js`: full visit, 0 violations and 0 CSP console messages (`@live`) | e2e | S2 and S4 |
+| AC-83 | `csp.spec.js`: full visit, 0 violations and 0 CSP console messages (`@live`); plus the zoom case at 1024×560 (lightbox open, image clicked twice, 0 violations; RK-7) | e2e | S2 and S4 |
 | AC-84 | `inline-styles.test.js` | lint | S1 |
 | AC-85 | `live-headers.test.js`: no `x-xss-protection` | integration | S5 (live) |
 | AC-86 | `live-headers.test.js`: `permissions-policy` | integration | S5 (live) |
