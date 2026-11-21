@@ -142,16 +142,54 @@ export class FreshCloneError extends Error {
 }
 
 /**
+ * Deletes every local tag that `HEAD` cannot reach, so the clone holds exactly
+ * the tags that existed at the checked-out release. A release's own tests check
+ * every tag in the repo (the changelog test, for one) and would fail on later
+ * tags they cannot know about.
+ *
+ * @param {string} dir The fresh clone, with `HEAD` already detached at the ref.
+ * @returns {Promise<void>}
+ * @throws {FreshCloneError} When git cannot list or delete the tags.
+ */
+async function deleteUnreachableTags(dir) {
+  const listing = await runGit(['tag', '--no-merged', 'HEAD'], {
+    cwd: dir,
+    timeoutMs: GIT_TIMEOUT_MS,
+    captureStdout: true,
+  });
+  if (listing.code !== 0) {
+    throw new FreshCloneError(`git tag --no-merged HEAD failed (${listing.problem})`);
+  }
+
+  const unreachableTags = listing.stdout
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (unreachableTags.length === 0) {
+    return;
+  }
+
+  const deletion = await runGit(['tag', '-d', '--', ...unreachableTags], {
+    cwd: dir,
+    timeoutMs: GIT_TIMEOUT_MS,
+  });
+  if (deletion.code !== 0) {
+    throw new FreshCloneError(`git tag -d of the unreachable tags failed (${deletion.problem})`);
+  }
+}
+
+/**
  * Clones `url` into a new temp directory and detaches `HEAD` at `ref`. The
  * clone is full, not shallow. With `autocrlf`, the clone is made with
- * `-c core.autocrlf=true`, which also applies to the checkout.
+ * `-c core.autocrlf=true`, which also applies to the checkout. Tags the ref
+ * cannot reach are then deleted (see {@link deleteUnreachableTags}).
  *
  * The caller owns the returned directory and removes it with
  * {@link removeFreshClone}; on failure this function removes it itself.
  *
  * @param {import('./cli.mjs').FreshClone} request Validated URL, ref and autocrlf flag.
  * @returns {Promise<{ dir: string, sha: string }>} The checkout and the full SHA of its `HEAD`.
- * @throws {FreshCloneError} When the clone, the checkout or the SHA check fails.
+ * @throws {FreshCloneError} When the clone, the checkout, the SHA check or the tag cleanup fails.
  */
 export async function createFreshClone({ url, ref, autocrlf }) {
   const dir = await mkdtemp(path.join(os.tmpdir(), CLONE_DIR_PREFIX));
@@ -177,6 +215,8 @@ export async function createFreshClone({ url, ref, autocrlf }) {
     if (sha === null || !sha.startsWith(ref)) {
       throw new FreshCloneError(`the clone's HEAD is ${sha ?? 'unreadable'}, not ${ref}`);
     }
+
+    await deleteUnreachableTags(dir);
     return { dir, sha };
   } catch (error) {
     await removeFreshClone(dir);
