@@ -6,6 +6,10 @@ import path from 'node:path';
 import postcss from 'postcss';
 import {
   smoothScrollTo,
+  scrollBehaviorFor,
+  sectionTarget,
+  navigateTo,
+  lightboxEffects,
   toggleMobileNav,
   closeMobileNav,
   markCurrentNavLink,
@@ -113,6 +117,37 @@ describe('smoothScrollTo', () => {
       top: 0,
       behavior: 'smooth',
     });
+  });
+
+  describe('with a behavior argument', () => {
+    test.each(['instant', 'smooth', 'auto'])(
+      'scrolls with the "%s" behavior it is given',
+      (behavior) => {
+        const target = { offsetTop: 300 };
+
+        smoothScrollTo(target, behavior);
+
+        expect(window.scrollTo).toHaveBeenCalledWith({ top: 300, behavior });
+      }
+    );
+
+    test('glides when the behavior argument is undefined', () => {
+      const target = { offsetTop: 300 };
+
+      smoothScrollTo(target, undefined);
+
+      expect(window.scrollTo).toHaveBeenCalledWith({ top: 300, behavior: 'smooth' });
+    });
+  });
+});
+
+describe('scrollBehaviorFor', () => {
+  test('jumps under reduced motion', () => {
+    expect(scrollBehaviorFor(true)).toBe('instant');
+  });
+
+  test('glides without reduced motion', () => {
+    expect(scrollBehaviorFor(false)).toBe('smooth');
   });
 });
 
@@ -856,6 +891,193 @@ describe('resolveHashTarget', () => {
   });
 });
 
+/**
+ * A page shaped like src/index.html for in-page navigation: sections inside #main, a
+ * heading with its own id inside one of them, the contact dialog outside #main, and a
+ * section outside #main.
+ */
+const SECTION_FIXTURE = `
+  <main id="main">
+    <section id="about"><h2 id="about-title">About</h2></section>
+    <section id="portfolio"></section>
+    <section>No id</section>
+  </main>
+  <div id="contactModal" role="dialog"></div>
+  <section id="outside"></section>
+`;
+
+describe('sectionTarget', () => {
+  beforeEach(() => {
+    document.body.innerHTML = SECTION_FIXTURE;
+  });
+
+  test('resolves a hash that names a section in #main to that section', () => {
+    const result = sectionTarget('#portfolio', document);
+
+    expect(result).toBe(document.getElementById('portfolio'));
+  });
+
+  describe('returns null', () => {
+    test.each([
+      ['a non-section id such as the contact dialog', '#contactModal'],
+      ['an element inside a section', '#about-title'],
+      ['a section outside #main', '#outside'],
+      ['an id no element has', '#does-not-exist'],
+      ['an encoded selector fragment', '#a%22%5D%2C*'],
+      ['a malformed percent-escape', '#%E0%A4%A'],
+      ['a bare "#"', '#'],
+      ['an empty string', ''],
+    ])('for %s (%s), without throwing', (_label, hash) => {
+      let result;
+
+      expect(() => {
+        result = sectionTarget(hash, document);
+      }).not.toThrow();
+      expect(result).toBeNull();
+    });
+  });
+
+  test('reads an encoded selector fragment as a literal id, never as a selector', () => {
+    const section = document.getElementById('portfolio');
+    section.id = 'a"],*';
+
+    const result = sectionTarget('#a%22%5D%2C*', document);
+
+    expect(result).toBe(section);
+  });
+});
+
+describe('navigateTo', () => {
+  /** @type {jest.SpyInstance} */
+  let scrollTo;
+  /** @type {HTMLElement} */
+  let section;
+
+  /**
+   * Give the section the top a laid-out page would.
+   * @param {number} top - The section's offsetTop in pixels
+   */
+  const placeSection = (top) => {
+    Object.defineProperty(section, 'offsetTop', { configurable: true, value: top });
+  };
+
+  beforeEach(() => {
+    document.body.innerHTML = SECTION_FIXTURE;
+    section = document.getElementById('portfolio');
+    placeSection(800);
+    scrollTo = jest.spyOn(window, 'scrollTo').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    scrollTo.mockRestore();
+  });
+
+  test('does nothing when the section is null', () => {
+    navigateTo(null, { win: { scrollY: 0 } });
+
+    expect(scrollTo).not.toHaveBeenCalled();
+    expect(document.querySelectorAll('[tabindex]')).toHaveLength(0);
+  });
+
+  describe('tabindex', () => {
+    test('adds tabindex="-1" when the section has none', () => {
+      navigateTo(section, { win: { scrollY: 0 } });
+
+      expect(section.getAttribute('tabindex')).toBe('-1');
+    });
+
+    test('keeps a tabindex the section already has', () => {
+      section.setAttribute('tabindex', '0');
+
+      navigateTo(section, { win: { scrollY: 0 } });
+
+      expect(section.getAttribute('tabindex')).toBe('0');
+    });
+
+    test('adds tabindex to no other element', () => {
+      navigateTo(section, { win: { scrollY: 0 } });
+
+      expect(Array.from(document.querySelectorAll('[tabindex]'))).toEqual([section]);
+    });
+  });
+
+  describe('focus', () => {
+    test('moves focus to the section', () => {
+      navigateTo(section, { win: { scrollY: 0 } });
+
+      expect(document.activeElement).toBe(section);
+    });
+
+    test('focuses with preventScroll so the browser does not scroll for it', () => {
+      const focus = jest.spyOn(section, 'focus');
+
+      navigateTo(section, { win: { scrollY: 0 } });
+
+      expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+    });
+
+    test('moves focus even when the scroll is skipped', () => {
+      navigateTo(section, { win: { scrollY: 800 } });
+
+      expect(document.activeElement).toBe(section);
+    });
+  });
+
+  describe('scroll', () => {
+    test.each([799, 800, 801])(
+      'is skipped when the window is at %i px, within 1 px of the section top',
+      (scrollY) => {
+        navigateTo(section, { win: { scrollY } });
+
+        expect(scrollTo).not.toHaveBeenCalled();
+      }
+    );
+
+    test.each([798, 802, 0])(
+      'goes to the section top when the window is at %i px, more than 1 px away',
+      (scrollY) => {
+        navigateTo(section, { win: { scrollY } });
+
+        expect(scrollTo).toHaveBeenCalledWith({ top: 800, behavior: 'smooth' });
+      }
+    );
+
+    test('jumps under reduced motion', () => {
+      navigateTo(section, { reduce: true, win: { scrollY: 0 } });
+
+      expect(scrollTo).toHaveBeenCalledWith({ top: 800, behavior: 'instant' });
+    });
+
+    test('glides without reduced motion', () => {
+      navigateTo(section, { reduce: false, win: { scrollY: 0 } });
+
+      expect(scrollTo).toHaveBeenCalledWith({ top: 800, behavior: 'smooth' });
+    });
+
+    test('scrolls once per call', () => {
+      navigateTo(section, { reduce: true, win: { scrollY: 0 } });
+
+      expect(scrollTo).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('with no options given', () => {
+    test('glides, reading the scroll position of the global window', () => {
+      navigateTo(section);
+
+      expect(scrollTo).toHaveBeenCalledWith({ top: 800, behavior: 'smooth' });
+    });
+
+    test('skips the scroll when the global window is already at the section top', () => {
+      placeSection(window.scrollY);
+
+      navigateTo(section);
+
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+  });
+});
+
 describe('resolveLightboxHref', () => {
   // jsdom's global document is served from http://localhost/.
   const renderPortfolioItem = (imgMarkup, doc = document) => {
@@ -1087,6 +1309,34 @@ describe('portfolioFilterOptions', () => {
 
   test('returns animated show, hide and layout without reduced motion', () => {
     expect(portfolioFilterOptions(false)).toEqual({ instant: false, layout: true });
+  });
+});
+
+describe('lightboxEffects', () => {
+  test('fades on open, close and slide change under reduced motion', () => {
+    expect(lightboxEffects(true)).toEqual({
+      openEffect: 'fade',
+      closeEffect: 'fade',
+      slideEffect: 'fade',
+    });
+  });
+
+  test("keeps GLightbox's zoom, zoom and slide effects without reduced motion", () => {
+    expect(lightboxEffects(false)).toEqual({
+      openEffect: 'zoom',
+      closeEffect: 'zoom',
+      slideEffect: 'slide',
+    });
+  });
+
+  test.each([true, false])('returns a new object on each call (reduce: %s)', (reduce) => {
+    const first = lightboxEffects(reduce);
+    first.openEffect = 'changed';
+
+    const second = lightboxEffects(reduce);
+
+    expect(second).not.toBe(first);
+    expect(second.openEffect).not.toBe('changed');
   });
 });
 
