@@ -5,8 +5,9 @@
  * S5 release test for chain I (spec stabilize-and-cleanup, sections 2.3 and 3.4 WI-24):
  * AC-104, the CHANGELOG dates match the releases.
  *
- * The releases are AC-103's set: every tag from `git tag --list` that matches
- * `^\d+\.\d+\.\d+$`, plus the `package.json` version. For each release T, every
+ * The releases are AC-103's set: every tag from `git tag --merged HEAD` (the tags
+ * HEAD can reach) that matches `^\d+\.\d+\.\d+$`, plus the `package.json` version.
+ * For each release T, every
  * `## [T] - YYYY-MM-DD` heading in CHANGELOG.md must carry the UTC date of
  * `gh release view T --json publishedAt`, or, when T has no GitHub release, the UTC date
  * of its tag commit (`git log -1 --format=%cI`). A release with no heading is a failure,
@@ -90,7 +91,7 @@ function compareVersions(a, b) {
  */
 function listReleases() {
   const problems = [];
-  const tagList = run('git', ['tag', '--list']);
+  const tagList = run('git', ['tag', '--merged', 'HEAD']);
   const tags = tagList.ok
     ? tagList.stdout
         .split(/\r?\n/)
@@ -98,9 +99,9 @@ function listReleases() {
         .filter((tag) => RELEASE_TAG.test(tag))
     : [];
   if (!tagList.ok) {
-    problems.push(`git tag --list failed (${tagList.reason})`);
+    problems.push(`git tag --merged HEAD failed (${tagList.reason})`);
   } else if (tags.length === 0) {
-    problems.push('git tag --list found no tag matching ^\\d+\\.\\d+\\.\\d+$');
+    problems.push('git tag --merged HEAD found no tag matching ^\\d+\\.\\d+\\.\\d+$');
   }
 
   let version = null;
