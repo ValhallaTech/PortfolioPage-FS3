@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and ScrollReveal ([#94], [#95]).
 - The page script grew by 20.7 KB gzipped, from 77,495 to 98,707 bytes (273,270 to 323,699 bytes
   raw).
+- The Contact map loads only when it is about to scroll into view, so the page draws sooner.
 
 ### Removed
 
