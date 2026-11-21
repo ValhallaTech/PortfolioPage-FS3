@@ -20,6 +20,8 @@ import {
   resolveLightboxHref,
   revealOffset,
   revealDelays,
+  sharedPrefixLength,
+  typingSchedule,
 } from '../src/js/utils.js';
 
 const STYLE_CSS = path.resolve(__dirname, '..', 'src', 'css', 'style.css');
@@ -1278,5 +1280,241 @@ describe('revealDelays', () => {
 
     // Assert
     expect(delays).toEqual([]);
+  });
+});
+
+describe('sharedPrefixLength', () => {
+  test.each([
+    ['a Designer', 'a Developer', 4],
+    ['a Developer', 'a Photographer', 2],
+    ['a Photographer', 'a Coding Ninja', 2],
+    ['same', 'same', 4],
+    ['ab', 'abc', 2],
+    ['abc', 'ab', 2],
+    ['x', 'y', 0],
+    ['', 'abc', 0],
+    ['', '', 0],
+  ])('the start "%s" and "%s" share is %i characters long', (a, b, expected) => {
+    // Act
+    const length = sharedPrefixLength(a, b);
+
+    // Assert
+    expect(length).toBe(expected);
+  });
+});
+
+describe('typingSchedule', () => {
+  /** The page's phrases, in the order `data-typed-items` lists them in index.html. */
+  const PAGE_PHRASES = ['a Designer', 'a Developer', 'a Photographer', 'a Coding Ninja'];
+
+  /** 5.0.0's base timings (AD-6). */
+  const TIMINGS = { typeMs: 100, eraseMs: 50, holdMs: 2000 };
+
+  /** The jitter at its least and at its most: each step adds `random() * base / 2`. */
+  const NO_JITTER = () => 0;
+  const FULL_JITTER = () => 1;
+
+  /**
+   * The gaps between consecutive text changes that both lengthen, or both shorten, the text.
+   * @param {object[]} steps - A typing schedule
+   * @param {'lengthen'|'shorten'} direction - Which changes to time
+   * @returns {number[]} The gaps in milliseconds, in time order
+   */
+  function textChangeGaps(steps, direction) {
+    const changes = [];
+    let previousText = '';
+    steps.forEach((step) => {
+      if (step.text === undefined) return;
+      changes.push({ at: step.at, lengthens: step.text.length > previousText.length });
+      previousText = step.text;
+    });
+    const wanted = direction === 'lengthen';
+    return changes.slice(1).flatMap((change, index) => {
+      const previous = changes[index];
+      return change.lengthens === wanted && previous.lengthens === wanted
+        ? [change.at - previous.at]
+        : [];
+    });
+  }
+
+  /**
+   * The shortest text written between each pair of consecutive complete phrases.
+   * @param {object[]} steps - A typing schedule
+   * @param {string[]} phrases - The phrases the schedule types
+   * @returns {string[]} One erase point per pair, in order
+   */
+  function erasePoints(steps, phrases) {
+    const texts = steps.filter((step) => step.text !== undefined).map((step) => step.text);
+    let searchFrom = 0;
+    return phrases.slice(0, -1).map((phrase, index) => {
+      const start = texts.indexOf(phrase, searchFrom);
+      const end = texts.indexOf(phrases[index + 1], start + 1);
+      searchFrom = end;
+      return texts
+        .slice(start + 1, end)
+        .reduce((shortest, text) => (text.length < shortest.length ? text : shortest), phrase);
+    });
+  }
+
+  test('returns no steps for no phrases', () => {
+    // Act
+    const steps = typingSchedule([], TIMINGS, NO_JITTER);
+
+    // Assert
+    expect(steps).toEqual([]);
+  });
+
+  test('types one phrase on, then stops the cursor one typing step later', () => {
+    // Act
+    const steps = typingSchedule(['ab'], TIMINGS, NO_JITTER);
+
+    // Assert
+    expect(steps).toEqual([
+      { at: 0, cursor: 'blink' },
+      { at: 100, text: 'a', cursor: 'steady' },
+      { at: 200, text: 'ab', cursor: 'steady' },
+      { at: 300, cursor: 'done' },
+    ]);
+  });
+
+  test('with no jitter, falls on exact 100 ms, 50 ms and 2 000 ms marks', () => {
+    // Act
+    const steps = typingSchedule(['ab', 'ac'], TIMINGS, NO_JITTER);
+
+    // Assert
+    expect(steps).toEqual([
+      { at: 0, cursor: 'blink' },
+      { at: 100, text: 'a', cursor: 'steady' },
+      { at: 200, text: 'ab', cursor: 'steady' },
+      { at: 300, cursor: 'blink' },
+      { at: 2300, cursor: 'steady' },
+      { at: 2400, text: 'a' },
+      { at: 2500, text: 'ac', cursor: 'steady' },
+      { at: 2600, cursor: 'done' },
+    ]);
+  });
+
+  test('with the most jitter, falls on 150 ms and 75 ms marks around the 2 000 ms hold', () => {
+    // Act
+    const steps = typingSchedule(['ab', 'ac'], TIMINGS, FULL_JITTER);
+
+    // Assert
+    expect(steps).toEqual([
+      { at: 0, cursor: 'blink' },
+      { at: 150, text: 'a', cursor: 'steady' },
+      { at: 300, text: 'ab', cursor: 'steady' },
+      { at: 450, cursor: 'blink' },
+      { at: 2450, cursor: 'steady' },
+      { at: 2600, text: 'a' },
+      { at: 2750, text: 'ac', cursor: 'steady' },
+      { at: 2900, cursor: 'done' },
+    ]);
+  });
+
+  test.each([
+    ['no jitter', NO_JITTER, 100, 50],
+    ['the most jitter', FULL_JITTER, 150, 75],
+  ])(
+    'with %s, types the page phrases every %i ms and erases them every %i ms',
+    (_label, random, typeStepMs, eraseStepMs) => {
+      // Act
+      const steps = typingSchedule(PAGE_PHRASES, TIMINGS, random);
+
+      // Assert
+      expect({
+        typing: [...new Set(textChangeGaps(steps, 'lengthen'))],
+        erasing: [...new Set(textChangeGaps(steps, 'shorten'))],
+      }).toEqual({ typing: [typeStepMs], erasing: [eraseStepMs] });
+    }
+  );
+
+  test.each([
+    ['no jitter', NO_JITTER, 100, 50],
+    ['the most jitter', FULL_JITTER, 150, 75],
+  ])(
+    'with %s, blinks %i ms after each held phrase, then erases 2 000 ms and two %i ms steps later',
+    (_label, random, typeStepMs, eraseStepMs) => {
+      // Arrange
+      const steps = typingSchedule(PAGE_PHRASES, TIMINGS, random);
+      const completions = PAGE_PHRASES.slice(0, -1).map((phrase) =>
+        steps.findIndex((step) => step.text === phrase)
+      );
+
+      // Act
+      const holds = completions.map((index) => ({
+        toBlink: steps[index + 1].at - steps[index].at,
+        toSteady: steps[index + 2].at - steps[index + 1].at,
+        toFirstErase: steps[index + 3].at - steps[index + 2].at,
+        cursors: [steps[index + 1].cursor, steps[index + 2].cursor],
+      }));
+
+      // Assert
+      const expected = {
+        toBlink: typeStepMs,
+        toSteady: 2000,
+        toFirstErase: 2 * eraseStepMs,
+        cursors: ['blink', 'steady'],
+      };
+      expect(holds).toEqual([expected, expected, expected]);
+    }
+  );
+
+  test('erases the page phrases only back to the start each shares with the next', () => {
+    // Act
+    const steps = typingSchedule(PAGE_PHRASES, TIMINGS, NO_JITTER);
+
+    // Assert
+    expect(erasePoints(steps, PAGE_PHRASES)).toEqual(['a De', 'a ', 'a ']);
+  });
+
+  test('never erases the last phrase, and stops the cursor one typing step after it', () => {
+    // Act
+    const steps = typingSchedule(PAGE_PHRASES, TIMINGS, NO_JITTER);
+    const lastText = steps.findLastIndex((step) => step.text !== undefined);
+
+    // Assert
+    expect({ lastText: steps[lastText].text, after: steps.slice(lastText + 1) }).toEqual({
+      lastText: 'a Coding Ninja',
+      after: [{ at: steps[lastText].at + 100, cursor: 'done' }],
+    });
+  });
+
+  test('erases nothing when a phrase is the start of the next', () => {
+    // Act
+    const steps = typingSchedule(['a', 'ab'], TIMINGS, NO_JITTER);
+
+    // Assert
+    expect(steps.filter((step) => step.text !== undefined).map((step) => step.text)).toEqual([
+      'a',
+      'ab',
+    ]);
+  });
+
+  test('takes any timing left out from the 5.0.0 defaults', () => {
+    // Act
+    const steps = typingSchedule(['ab', 'ac'], { holdMs: 500 }, NO_JITTER);
+
+    // Assert
+    expect(steps.map((step) => step.at)).toEqual([0, 100, 200, 300, 800, 900, 1000, 1100]);
+  });
+
+  describe('with no timings and no random given', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    test('uses the 5.0.0 timings and draws one Math.random value per step', () => {
+      // Arrange
+      const random = jest.spyOn(Math, 'random').mockReturnValue(0);
+
+      // Act
+      const steps = typingSchedule(['ab', 'ac']);
+
+      // Assert
+      expect({
+        at: steps.map((step) => step.at),
+        randomCalls: random.mock.calls.length,
+      }).toEqual({ at: [0, 100, 200, 300, 2300, 2400, 2500, 2600], randomCalls: 7 });
+    });
   });
 });

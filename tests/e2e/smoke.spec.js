@@ -1029,9 +1029,31 @@ test('Overlay gutter: the open dialog fills the scrollbar gutter with its backdr
 }) => {
   await page.goto('/');
   await openContactModal(page);
-  const backdrop = await page
-    .locator(CONTACT_MODAL)
-    .evaluate((element) => getComputedStyle(element, '::backdrop').backgroundColor);
+  const dialog = page.locator(CONTACT_MODAL);
+  // `shown.bs.dialog` can fire while the ::backdrop's background-color transition is still
+  // running, so the backdrop's final color is read only once every transition on the
+  // dialog, its ::backdrop included, has finished.
+  await expect
+    .poll(
+      () =>
+        dialog.evaluate((element) =>
+          document
+            .getAnimations()
+            .filter(
+              (animation) =>
+                animation.effect?.target === element && animation.playState === 'running'
+            )
+            .map(
+              (animation) =>
+                `${animation.effect.pseudoElement ?? ''} ${animation.transitionProperty ?? animation.animationName ?? ''}`
+            )
+        ),
+      { message: 'the dialog and its ::backdrop have finished transitioning' }
+    )
+    .toEqual([]);
+  const backdrop = await dialog.evaluate(
+    (element) => getComputedStyle(element, '::backdrop').backgroundColor
+  );
 
   expectGutterFilled(await readGutterPaint(page), backdrop, 'dialog open');
 });

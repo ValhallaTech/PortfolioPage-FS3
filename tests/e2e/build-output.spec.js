@@ -1,7 +1,9 @@
 /**
  * Build-output checks for the performance assets (spec stabilize-and-cleanup, WI-41:
  * AC-69, AC-70, AC-74, AC-75), and for GSAP's terms in the third-party notices (spec
- * gsap-animations, WI-5: AC-5's notices-file checks; its stderr check runs in WI-16).
+ * gsap-animations, WI-5: AC-5's notices-file checks; its stderr check runs in WI-16), and
+ * for Typed.js and ScrollReveal being gone from the build (WI-9: AC-2's `dist` and
+ * notices-line checks; its manifest, lockfile and `src` checks are unit tests).
  *
  * Each test reads `dist/` from `yarn build` on the Node side and never opens a page.
  * The fixtures.js guards are auto fixtures and still create a browser context; no test
@@ -22,6 +24,13 @@ const PACKAGE_JSON = path.resolve(__dirname, '..', '..', 'package.json');
 const EXACT_VERSION = /^\d+\.\d+\.\d+$/;
 const RULE_LINE = /^====+$/;
 const SECTION_LABEL = /^--- .+ ---$/;
+
+/**
+ * AC-2: ScrollReveal's marker attribute and Typed.js's default fade class, string literals
+ * that survive minification, and the notices header prefixes of the two libraries.
+ */
+const REMOVED_LIBRARY_MARKERS = Object.freeze(['data-sr-id', 'typed-fade-out']);
+const REMOVED_LIBRARY_NOTICE_PREFIXES = Object.freeze(['typed.js ', 'scrollreveal ']);
 
 /** AC-69: the two Google font hosts. */
 const GOOGLE_FONT_HOST = /fonts\.(googleapis|gstatic)\.com/;
@@ -142,6 +151,34 @@ test.describe('build output', { tag: '@build' }, () => {
       );
 
     expect(failing, '<img> elements without positive integer width and height').toEqual([]);
+  });
+
+  test('AC-2: no built file carries a Typed.js or ScrollReveal marker string', async () => {
+    const files = await distFiles();
+    expect(files, 'files in dist/').toContain('index.html');
+
+    // Every file is searched as raw bytes, binary ones included, which is at least as
+    // strict as `rg -l -F` on dist.
+    const markers = REMOVED_LIBRARY_MARKERS.map((marker) => Buffer.from(marker, 'utf8'));
+    const carrying = [];
+    for (const file of files) {
+      const bytes = await readFile(path.join(DIST_DIR, file));
+      markers.forEach((marker, i) => {
+        if (bytes.includes(marker)) carrying.push(`${file}: ${REMOVED_LIBRARY_MARKERS[i]}`);
+      });
+    }
+
+    expect(carrying, 'dist files that carry a marker string').toEqual([]);
+  });
+
+  test('AC-2: the notices file has no Typed.js or ScrollReveal section', async () => {
+    const lines = (await readFile(DIST_NOTICES, 'utf8')).split(/\r?\n/);
+    expect(lines.length, 'lines in dist/THIRD-PARTY-NOTICES.txt').toBeGreaterThan(1);
+
+    expect(
+      lines.filter((line) => REMOVED_LIBRARY_NOTICE_PREFIXES.some((p) => line.startsWith(p))),
+      'notices lines that start with "typed.js " or "scrollreveal "'
+    ).toEqual([]);
   });
 
   test('AC-5: the notices file has a GSAP section with its pinned version and license text', async () => {

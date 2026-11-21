@@ -1,6 +1,8 @@
 /**
  * Motion and the contact form's busy state (spec stabilize-and-cleanup, WI-55: AC-44,
- * AC-58, AC-59, AC-66, AC-109, AC-110, AC-111, AC-112, AC-114, AC-125).
+ * AC-58, AC-59, AC-66, AC-109, AC-110, AC-111, AC-112, AC-114, AC-125), and the hero typing's
+ * speeds (spec gsap-animations, WI-6: AC-24, on AC-110's recording), and the typing cursor at
+ * rest (WI-9: AC-25, at AC-111's settle point).
  *
  * The active testimonial is identified by the text of `.testimonial-name` inside
  * `.testimonials .swiper-slide-active`, as AC-44, AC-109 and AC-125 state, which works
@@ -10,7 +12,7 @@
  * The fixed waits are the ones the ACs name: the 11 s of AC-44 and AC-109, the 60 s typing
  * recording of AC-110 to AC-112 and the 10 s after its settle point, AC-114's 12 s, and
  * AC-66's 500 ms and 1 s instants. Everything else waits with web-first assertions or
- * `expect.poll` (RK-4). AC-44, AC-109 to AC-112, AC-114 and AC-125 carry `@slow`, so
+ * `expect.poll` (RK-4). AC-24, AC-25, AC-44, AC-109 to AC-112, AC-114 and AC-125 carry `@slow`, so
  * `yarn test:smoke` leaves them out. No AC here names both targets, so none carries
  * `@live`.
  */
@@ -18,6 +20,8 @@ import { test, expect, WEB3FORMS_URL } from './fixtures.js';
 import { desktop, small } from './viewports.js';
 import { fillContactForm, mockWeb3Forms, openContactModal } from './helpers/contact-modal.js';
 import { focusBody, TAB_WALK_MAX_PRESSES } from './helpers/tab-walk.js';
+import { finishFrameTrace, seriesOf, traceFromFirstFrame } from './helpers/frame-trace.js';
+import { installTypingRecorder } from './helpers/typing.js';
 
 const TESTIMONIALS = '#testimonials';
 const ACTIVE_SLIDE = '.testimonials .swiper-slide-active';
@@ -55,6 +59,32 @@ const TYPED_PHRASES = Object.freeze([
 const LAST_PHRASE = 'a Coding Ninja';
 const SETTLE_DEADLINE_AFTER_LOAD_MS = 45_000;
 const QUIET_AFTER_SETTLE_MS = 10_000;
+
+/**
+ * AC-24 (spec gsap-animations): the erase point between each pair of consecutive phrases,
+ * and 5.0.0's step and hold ranges, inclusive. Typed.js 3.0.0 times each step as
+ * `base + Math.round(random() * base / 2)` (V-5), so typing runs at 100–150 ms per character
+ * and erasing at 50–75 ms.
+ *
+ * The hold is calibrated (WI-6). Typed.js waits one more typing step after the last character
+ * before its 2 s back delay, then one erase step, so 5.0.0 measured holds of 2 253–2 308 ms,
+ * median 2 277 ms, over three runs on 2026-11-20. That is outside AC-24's 2 000–2 200 ms, so
+ * the AC's own rule applies: 5.0.0's measured value ± 10 %.
+ */
+const ERASE_POINTS = Object.freeze(['a De', 'a ', 'a ']);
+const TYPE_STEP_MEDIAN_MS = Object.freeze({ min: 100, max: 150 });
+const ERASE_STEP_MEDIAN_MS = Object.freeze({ min: 50, max: 75 });
+const HOLD_MEASURED_ON_5_0_0_MS = 2_277;
+const HOLD_MS = Object.freeze({
+  min: HOLD_MEASURED_ON_5_0_0_MS * 0.9,
+  max: HOLD_MEASURED_ON_5_0_0_MS * 1.1,
+});
+const HELD_PHRASE_COUNT = 3;
+
+/** AC-25: the typing cursor, traced for 3 s from 1 s after the settle point. */
+const TYPED_CURSOR = { name: 'typing cursor', selector: '.typed-cursor' };
+const CURSOR_TRACE_AFTER_SETTLE_MS = 1_000;
+const CURSOR_TRACE_MS = 3_000;
 
 /** AC-114's widths, all at height 900, and its wait after the carousel is in view. */
 const AC_114_WIDTHS = [375, 767, 768, 899, 900, 1440, 1920];
@@ -138,33 +168,6 @@ async function accessibleName(locator) {
 }
 
 /**
- * Runs in the page before any page script. From `DOMContentLoaded`, records each distinct
- * `textContent` of the hero typing element with its time, and records the `load` time.
- *
- * @param {string} selector The typing element.
- */
-function installTypingRecorder(selector) {
-  const recording = { domContentLoadedAt: null, loadAt: null, changes: [] };
-  window.__typingRecording = recording;
-  window.addEventListener('load', () => {
-    recording.loadAt = performance.now();
-  });
-  document.addEventListener('DOMContentLoaded', () => {
-    recording.domContentLoadedAt = performance.now();
-    const element = document.querySelector(selector);
-    if (!element) return;
-    let last = element.textContent;
-    recording.changes.push({ at: recording.domContentLoadedAt, text: last });
-    new MutationObserver(() => {
-      const text = element.textContent;
-      if (text === last) return;
-      last = text;
-      recording.changes.push({ at: performance.now(), text });
-    }).observe(element, { childList: true, characterData: true, subtree: true });
-  });
-}
-
-/**
  * Loads `/` at no reduced-motion preference and records the hero typing element for 60 s
  * from `DOMContentLoaded` (AC-110's Given).
  *
@@ -194,6 +197,77 @@ async function recordTyping(page) {
  */
 function settlePoint(recording) {
   return recording.changes.at(-1);
+}
+
+/**
+ * @param {string} a
+ * @param {string} b
+ * @returns {string} The longest string that both start with.
+ */
+function longestCommonPrefix(a, b) {
+  let length = 0;
+  while (length < a.length && length < b.length && a[length] === b[length]) length += 1;
+  return a.slice(0, length);
+}
+
+/**
+ * @param {number[]} values
+ * @returns {number} The median, or `NaN` for no values.
+ */
+function median(values) {
+  if (values.length === 0) return Number.NaN;
+  const sorted = [...values].sort((x, y) => x - y);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+/**
+ * The index of the change that completes each phrase, searched in order, each after the
+ * previous one.
+ *
+ * @param {Array<{ text: string }>} changes
+ * @param {readonly string[]} phrases
+ * @returns {number[]} One index per phrase, or -1 from the first phrase never completed.
+ */
+function phraseCompletions(changes, phrases) {
+  const indexes = [];
+  let from = 0;
+  for (const phrase of phrases) {
+    const found =
+      from < 0 ? -1 : changes.findIndex((change, i) => i >= from && change.text === phrase);
+    indexes.push(found);
+    from = found < 0 ? -1 : found + 1;
+  }
+  return indexes;
+}
+
+/**
+ * The time between each two consecutive changes that both lengthen (`direction` 1) or both
+ * shorten (`direction` -1) the text. The first recorded text is a snapshot, not a change.
+ *
+ * @param {Array<{ at: number, text: string }>} changes
+ * @param {1 | -1} direction
+ * @returns {number[]}
+ */
+function stepGaps(changes, direction) {
+  const steps = (k) => Math.sign(changes[k].text.length - changes[k - 1].text.length) === direction;
+  const gaps = [];
+  for (let k = 2; k < changes.length; k += 1) {
+    if (steps(k - 1) && steps(k)) gaps.push(changes[k].at - changes[k - 1].at);
+  }
+  return gaps;
+}
+
+/**
+ * Asserts that `value` lies in `range`, inclusive.
+ *
+ * @param {number} value
+ * @param {{ min: number, max: number }} range
+ * @param {string} what
+ */
+function expectWithin(value, { min, max }, what) {
+  expect(value, `${what} is at least ${min} ms`).toBeGreaterThanOrEqual(min);
+  expect(value, `${what} is at most ${max} ms`).toBeLessThanOrEqual(max);
 }
 
 /**
@@ -486,6 +560,78 @@ test.describe('hero typing at desktop', () => {
         await page.evaluate(runningAnimationsInside, HERO),
         'running animations inside #hero 10 s after the typing settles'
       ).toEqual([]);
+    }
+  );
+
+  test(
+    "AC-24: the typing keeps 5.0.0's speeds and erases only to the shared start",
+    { tag: '@slow' },
+    async ({ page }) => {
+      test.setTimeout(TYPING_TIMEOUT_MS);
+      const { changes } = await recordTyping(page);
+
+      const completions = phraseCompletions(changes, TYPED_PHRASES);
+      expect(completions, `the change that completes each of ${TYPED_PHRASES}`).not.toContain(-1);
+
+      const sharedPrefixes = TYPED_PHRASES.slice(1).map((next, i) =>
+        longestCommonPrefix(TYPED_PHRASES[i], next)
+      );
+      expect(sharedPrefixes, 'the shared start of each pair of phrases').toEqual(ERASE_POINTS);
+      const shortestTexts = completions.slice(1).map((end, i) =>
+        changes
+          .slice(completions[i], end + 1)
+          .map(({ text }) => text)
+          .reduce((shortest, text) => (text.length < shortest.length ? text : shortest))
+      );
+
+      const typeMedian = median(stepGaps(changes, 1));
+      const eraseMedian = median(stepGaps(changes, -1));
+      const holds = completions
+        .slice(0, HELD_PHRASE_COUNT)
+        .map((index) => changes[index + 1].at - changes[index].at);
+      test.info().annotations.push({
+        type: 'AC-24 measured',
+        description: JSON.stringify({
+          typeMedianMs: Math.round(typeMedian * 10) / 10,
+          eraseMedianMs: Math.round(eraseMedian * 10) / 10,
+          holdsMs: holds.map((hold) => Math.round(hold * 10) / 10),
+          shortestTexts,
+        }),
+      });
+
+      expect(shortestTexts, 'the shortest text between each pair of phrases').toEqual(
+        sharedPrefixes
+      );
+      expectWithin(typeMedian, TYPE_STEP_MEDIAN_MS, 'the median typing step');
+      expectWithin(eraseMedian, ERASE_STEP_MEDIAN_MS, 'the median erase step');
+      holds.forEach((hold, i) => expectWithin(hold, HOLD_MS, `the hold on "${TYPED_PHRASES[i]}"`));
+    }
+  );
+
+  test(
+    'AC-25: the typing cursor stops blinking when the typing stops',
+    { tag: '@slow' },
+    async ({ page }) => {
+      test.setTimeout(TYPING_TIMEOUT_MS);
+      // The cursor is traced for the whole recording, and the AC's window is cut from it
+      // once the recording names the settle point.
+      await traceFromFirstFrame(page, 'cursor', [TYPED_CURSOR]);
+      const recording = await recordTyping(page);
+      const settle = settlePoint(recording);
+      const frames = await finishFrameTrace(page, 'cursor', 0);
+
+      const from = settle.at + CURSOR_TRACE_AFTER_SETTLE_MS;
+      const to = from + CURSOR_TRACE_MS;
+      const series = seriesOf(frames, TYPED_CURSOR.name);
+      expect(
+        Math.round(series.at(-1).t - to),
+        'ms traced past the end of the 3 s window'
+      ).toBeGreaterThanOrEqual(0);
+      const inWindow = series.filter((entry) => entry.t >= from && entry.t <= to);
+      expect(inWindow.length, 'frames in the 3 s window').toBeGreaterThan(0);
+
+      const opacities = [...new Set(inWindow.map((entry) => entry.opacity))];
+      expect(opacities, "the cursor's effective opacities in the 3 s window").toHaveLength(1);
     }
   );
 });

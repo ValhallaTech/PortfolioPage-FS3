@@ -30,8 +30,7 @@
     "glightbox": "3.3.1",
     "gsap": "3.15.1",
     "muuri": "patch:muuri@npm%3A0.9.5#~/.yarn/patches/muuri-npm-0.9.5-3a44bf1a49.patch",
-    "swiper": "14.3.0",
-    "typed.js": "3.0.0"
+    "swiper": "14.3.0"
   },
   "devDependencies": {
     "@babel/core": "7.29.13",

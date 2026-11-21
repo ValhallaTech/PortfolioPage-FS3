@@ -6606,7 +6606,6 @@ __metadata:
     prettier: "npm:3.8.3"
     smol-toml: "npm:1.9.1"
     swiper: "npm:14.3.0"
-    typed.js: "npm:3.0.0"
     yaml: "npm:2.9.1"
   languageName: unknown
   linkType: soft
@@ -7182,13 +7181,6 @@ __metadata:
   version: 0.21.3
   resolution: "type-fest@npm:0.21.3"
   checksum: 10c0/902bd57bfa30d51d4779b641c2bc403cdf1371fb9c91d3c058b0133694fcfdb817aef07a47f40faf79039eecbaa39ee9d3c532deff244f3a19ce68cea71a61e8
-  languageName: node
-  linkType: hard
-
-"typed.js@npm:3.0.0":
-  version: 3.0.0
-  resolution: "typed.js@npm:3.0.0"
-  checksum: 10c0/b195f5d215907e8ad9c6c2e524a56e9a093e325cd9ca4af7efaf3d5dd213a46aec424408a5d5bccd57d735eb784f0b7c38059ea7cc4106c8284e3833c31c851a
   languageName: node
   linkType: hard
 
