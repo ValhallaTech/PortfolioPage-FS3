@@ -747,11 +747,12 @@ These are the only sprint 1 and sprint 2 assertions that sprint 3 may change. AC
   2. At `desktop`, the nav link "Services" is clicked.
   3. At `small`, the menu button is clicked, and then the nav link "Portfolio" is clicked.
 - **When** the scroll settles, meaning `scrollY` is unchanged for 500 ms, and then Tab is pressed once
-- **Then** focus was at the target section, and the Tab moves to the section's first control
+- **Then** focus was at the target section, and the Tab continues from it to the next control
 - **Assertion:**
   - Before the Tab, `document.activeElement` is the target section (`#portfolio` or `#services`), or is inside it.
-  - After the Tab, in cases 1 and 3, the focused element is the button "All" in `#portfolio-filters`. In case 2, it is the link "Web Development" in `#services`.
+  - After the Tab, in cases 1 and 3, the focused element is the button "All" in `#portfolio-filters`. In case 2, it is the first Tab-reachable element that follows `#services`'s start in document order, inside or after the section. At `desktop` today that is the Contact email link. This is an example, not the check.
 - **Executable as:** `e2e`
+- **Note (2026-11-21):** case 2 no longer expects the link "Web Development". The build strips `href=""` from the six Services title links, as 5.0.0 already did, so they cannot take focus, and content stays unchanged (R1-Q18).
 
 #### AC-34 — After a hash on load, focus is at the target section
 
@@ -759,11 +760,12 @@ These are the only sprint 1 and sprint 2 assertions that sprint 3 may change. AC
 - **Security or auth:** no
 - **Given** the local target at `desktop`, in both motion modes
 - **When** `/#services` is loaded fresh, the scroll settles (`scrollY` unchanged for 500 ms), and Tab is pressed once
-- **Then** focus was at `#services`, and the Tab moves to its first control
+- **Then** focus was at `#services`, and the Tab continues from it to the next control
 - **Assertion:**
   - Before the Tab, `document.activeElement` is `#services` or is inside it.
-  - After the Tab, the focused element is the link "Web Development" in `#services`.
+  - After the Tab, the focused element is the first Tab-reachable element that follows `#services`'s start in document order, inside or after the section. At `desktop` today that is the Contact email link. This is an example, not the check.
 - **Executable as:** `e2e`
+- **Note (2026-11-21):** this AC no longer expects the link "Web Development". The build strips `href=""` from the six Services title links, as 5.0.0 already did, so they cannot take focus, and content stays unchanged (R1-Q18).
 
 #### AC-35 — A hash that names nothing, or is malformed, is ignored
 
