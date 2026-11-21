@@ -36,7 +36,7 @@ summarizes, in parentheses. Where this section and the body disagree, the body w
 - **Capabilities:** GSAP core only. Reveals start from one IntersectionObserver, and the hero fades in before it types, under `gsap.matchMedia`. A static hero sentence serves screen readers, no-JS and reduced motion. Under reduced motion, navigation jumps, and the grid, the lightbox and the CSS transitions stop moving. Nav links and a hash on load focus the target section. The README carries a section 7 permission, and the notices carry GSAP's terms. All of it ships in four PRs. A release-suite file, committed red before the work, checks the release records, and the baseline-sensitivity proof is a named guard. (AD-1, AD-2, AD-5, AD-6, AD-7, AD-8, AD-9, AD-10, AD-11, AD-12, AD-13, AD-14, AD-18, WI-1, WI-2, WI-3, WI-7, WI-10, WI-17, WI-18)
 - **Constraints:** The license stays GPL-3.0-only, and the permission reaches `main` no later than GSAP. Muuri's properties are never animated, and content never depends on script. Typing and reveals keep 5.0.0's look. Nothing in focus is hidden. The CSP stays report-only and raises nothing. Every PR head passes `yarn gate:linux`. (C-2, C-4, C-5, C-7, C-8, C-10, C-16, C-19, C-21)
 - **Non-goals:** No change to the scroll listener, the browser's scrolling with motion allowed, or the layout engine. No typing pause control and no content change. No Renovate change, no CSP enforcement and no tag push. The larger script is not shrunk. (NG-1, NG-2, NG-3, NG-4, NG-6, NG-7, NG-8, NG-9, NG-11)
-- **Success signal:** Every AC passes at the untagged 5.1.0 release commit. The baseline's sensitivity proof holds, and the visual check finds only the intended differences. Lighthouse accessibility is at least 95, and LCP is at most 2.5 s on the live site. (AC-37, AC-38, AC-42, AC-44, M-1, M-2)
+- **Success signal:** Every AC passes at the untagged 5.1.0 release commit. The baseline's sensitivity proof holds, and the visual check finds only the intended differences. Lighthouse accessibility is at least 95 on the live site. Lab LCP and first paint are recorded each release, and while the hero fade stays, median lab LCP is at most 3.6 s. (AC-37, AC-38, AC-42, AC-44, M-1, M-2)
 
 ---
 
@@ -342,7 +342,7 @@ These are the only sprint 1 and sprint 2 assertions that sprint 3 may change. AC
 - **When** the manifest, the lockfile, `src/` and `dist/` are searched
 - **Then** neither library is declared, locked, imported or built in
 - **Assertion:**
-  - `yq -p=json '[.dependencies, .devDependencies, .optionalDependencies] | .[] | keys | .[]' package.json` prints no `typed.js` line and no `scrollreveal` line.
+  - `yq -p=json '[.dependencies, .devDependencies, .optionalDependencies] | .[] | select(. != null) | keys | .[]' package.json` prints no `typed.js` line and no `scrollreveal` line, and exits 0. A section that `package.json` does not have is skipped, not an error.
   - `rg -n -e '^"?(typed\.js|scrollreveal)@' yarn.lock` prints nothing and exits 1.
   - `rg -n -e "from ['\"](typed\.js|scrollreveal)['\"]" src` prints nothing and exits 1.
   - `rg -l -F -e 'data-sr-id' -e 'typed-fade-out' dist` prints nothing and exits 1. These are ScrollReveal's marker attribute and Typed.js's default fade class, string literals that survive minification.
@@ -382,7 +382,7 @@ These are the only sprint 1 and sprint 2 assertions that sprint 3 may change. AC
 - **Then** the notices file has a GSAP section with its pinned version and its license text, and the build warns about nothing for GSAP
 - **Assertion:**
   - The file has a line equal to `gsap <v>`, where `<v>` is AC-1's version. The next line starts with `License: ` and contains `no charge`, case-insensitive (C-3).
-  - Between that line and the next `====` rule line, there is at least 1 line matching `^--- .+ ---$`, followed by at least 1 non-blank line.
+  - The GSAP section's body has at least 1 line matching `^--- .+ ---$`, followed by at least 1 non-blank line. Each section opens with a header block: the name line and the `License: ` line, closed by a `====` rule line (a line matching `^====+$`) right after the `License: ` line. The body starts after that closing rule and runs up to the next `====` rule line, which opens the next section's header, or to the end of the file. This is the reading `tests/e2e/build-output.spec.js` uses.
   - The stderr has no line that starts with `third-party-notices: warning: gsap `.
 - **Executable as:** `build`
 
@@ -945,9 +945,11 @@ These are the only sprint 1 and sprint 2 assertions that sprint 3 may change. AC
 | ID | Metric | Baseline | Target | Measured by |
 | --- | --- | --- | --- | --- |
 | M-1 | Lighthouse accessibility score of the live home page | unknown: needs a run against the live 5.0.0 site before the first sprint 3 PR merges, because Netlify deploys every merge to `main` | ≥ 95 (the sprint 1 M-7 threshold) | Lighthouse through `npx` against `https://fs3portfolio.netlify.app/`, before the first sprint 3 PR merges and again once the release commit is live |
-| M-2 | Largest Contentful Paint of the live home page, mobile lab run | unknown: needs a run against the live 5.0.0 site before the first sprint 3 PR merges | ≤ 2.5 s (the sprint 1 M-1 target), and no worse than the 5.0.0 baseline. Hiding the hero until its fade is the likeliest way to move it. | Lighthouse mobile preset through `npx`, the same run as M-1 |
+| M-2 | Largest Contentful Paint of the live home page, mobile lab run, with First Contentful Paint from the same runs | 5.0.0: median lab LCP 1953.77 ms. 5.1.0: median lab LCP 3573.05 ms over 3 runs (3275.71, 3573.05, 4521.99 ms), Lighthouse 13.6.0. First Contentful Paint: unknown, recorded from the next run on | Lab LCP and FCP recorded at each release, as the median of 3 runs. While the hero fade stays (R-17, R-21, AC-27), median lab LCP is no higher than 3.6 s, the 5.1.0 value. The 2.5 s target and "no worse than 5.0.0" do not apply. See the note below. | Lighthouse mobile preset through `npx`, the same run as M-1 |
 | M-3 | Bytes transferred on a first, empty-cache load at `phone` | unknown: needs a HAR of the live 5.0.0 site before the first sprint 3 PR merges | Recorded, with no cap (C-9, NG-11). Any growth is explained by the AC-43 JS delta. | Playwright HAR (`recordHar`) at `phone`, as in sprint 1 M-2 |
 | M-4 | Motion, focus or hero-text defects reported against 5.1.0 | unknown: count the same for 5.0.0 before the first sprint 3 PR merges | 0 in the 30 days after the 5.1.0 deploy | `gh issue list --label bug --search "created:>=<deploy date>"`, read by hand for motion, focus and hero defects |
+
+**M-2 amended 2026-11-21, Fred's decision.** After release, 5.1.0's median lab LCP was 3573.05 ms against 5.0.0's 1953.77 ms, with accessibility at 100 (M-1 met). Measurement traced the rise to the hero fade the spec requires (G-5, R-17, R-21, AD-5). Lighthouse's lab LCP model simulates text that is not painted in the very first frame as if it waited for the full resource set, which adds about 2 s. Any fade that starts at opacity 0.01 or less (AC-27) hits this, whether CSS or GSAP drives it. Real visitors see the hero about 0.2 s after first paint. Asked "Which should give?", Fred chose, verbatim: "Keep fade, adjust target (Recommended)". The hero fade stays, and a lab LCP of about 3.5 s is recorded as its known cost. The 2.5 s target, taken from sprint 1 M-1, no longer applies while the fade stays. A follow-up lazy-loads the map iframe, which should bring first paint about 0.7 s sooner. That is why M-2 now records FCP too.
 
 ### 2.5 Out of scope
 
