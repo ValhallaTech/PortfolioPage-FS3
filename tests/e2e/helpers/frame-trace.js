@@ -54,6 +54,31 @@ function frameTracerScript({ tracer, start }) {
       return opacity;
     };
 
+    // "Visible hero line" (Conventions): a text node counts when its parent is shown and
+    // has a box of at least 2 x 2 px. A visually hidden copy is clipped to a 1 x 1 px box
+    // while its descendants keep their full boxes, so every element from the parent up to
+    // the root must have that box, or the clipped copy's inner text would count.
+    const hasBox = (element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width >= 2 && rect.height >= 2;
+    };
+    const boxedUpTo = (element, root) => {
+      for (let node = element; node; node = node.parentElement) {
+        if (!hasBox(node)) return false;
+        if (node === root) return true;
+      }
+      return true;
+    };
+    const visibleText = (root) => {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let text = '';
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const parent = node.parentElement;
+        if (parent && effectiveOpacity(parent) > 0 && boxedUpTo(parent, root)) text += node.data;
+      }
+      return text.replace(/\s+/g, ' ').trim();
+    };
+
     const measure = (element, fixed) => {
       const rect = element.getBoundingClientRect();
       const dx = fixed ? 0 : window.scrollX;
@@ -103,9 +128,21 @@ function frameTracerScript({ tracer, start }) {
           channel.port1.onmessage = () => {
             const t = frameTimes.shift();
             const frame = { t, scrollY: window.scrollY, targets: {} };
-            for (const { name, selector, index = 0, fixed = false } of targets) {
+            for (const target of targets) {
+              const { name, selector, index = 0, fixed = false } = target;
               const element = document.querySelectorAll(selector)[index];
-              frame.targets[name] = element ? measure(element, fixed) : null;
+              if (!element) {
+                frame.targets[name] = null;
+                continue;
+              }
+              const record = measure(element, fixed);
+              if (target.text) record.text = visibleText(element);
+              if (target.descendants) {
+                record.descendantOpacities = [...element.querySelectorAll('*')].map(
+                  effectiveOpacity
+                );
+              }
+              frame.targets[name] = record;
             }
             if (focus) frame.focus = focusRecord();
             trace.frames.push(frame);
@@ -133,6 +170,12 @@ function frameTracerScript({ tracer, start }) {
       collect(id) {
         return traces.get(id).done;
       },
+      firstFrameWith(id, name) {
+        const frame = traces.get(id)?.frames.find((entry) => entry.targets[name]);
+        return frame ? frame.t : null;
+      },
+      effectiveOpacity,
+      visibleText,
     };
   }
   if (start) window[tracer].start(start.id, start.targets, start.options);
@@ -144,6 +187,10 @@ function frameTracerScript({ tracer, start }) {
  * @property {string} selector - A CSS selector, resolved again in every frame
  * @property {number} [index] - Which match of `selector` to trace (default 0)
  * @property {boolean} [fixed] - A fixed element: its box is recorded viewport-relative
+ * @property {boolean} [text] - Also record the element's visible text (Conventions,
+ *   "Visible hero line"), whitespace-collapsed, as `text`
+ * @property {boolean} [descendants] - Also record the effective opacity of every element
+ *   inside it, in document order, as `descendantOpacities`
  */
 
 /**
@@ -226,6 +273,52 @@ export function readEffectiveOpacity(locator) {
     }
     return opacity;
   });
+}
+
+/**
+ * Waits until `afterMs` have passed since the end of the document's `load` event: the fixed
+ * instants the hero ACs read at. It works with JavaScript off.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {number} afterMs
+ */
+export async function waitUntilAfterLoad(page, afterMs) {
+  const sinceLoad = await page.evaluate(
+    () => performance.now() - performance.getEntriesByType('navigation')[0].loadEventEnd
+  );
+  await page.waitForTimeout(Math.max(0, afterMs - sinceLoad));
+}
+
+/**
+ * Reads a locator's visible text now: the text of the text nodes inside it whose parent is
+ * shown and has a box of at least 2 x 2 px, joined in document order and
+ * whitespace-collapsed (Conventions, "Visible hero line"). The frame tracer records the same
+ * thing for a target marked `text`; this is its one-off form. It works with JavaScript off,
+ * because Playwright's evaluate runs regardless.
+ *
+ * @param {import('@playwright/test').Locator} locator
+ * @returns {Promise<string>}
+ */
+export async function readVisibleText(locator) {
+  await locator.page().evaluate(frameTracerScript, { tracer: TRACER, start: null });
+  return locator.evaluate((element, tracer) => window[tracer].visibleText(element), TRACER);
+}
+
+/**
+ * The page time of the first frame of a running trace in which the named target was in the
+ * document, or null while there is none yet.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} id
+ * @param {string} name
+ * @returns {Promise<number|null>}
+ */
+export function firstFrameWith(page, id, name) {
+  return page.evaluate(
+    ({ tracer, traceId, targetName }) =>
+      window[tracer]?.firstFrameWith(traceId, targetName) ?? null,
+    { tracer: TRACER, traceId: id, targetName: name }
+  );
 }
 
 /**

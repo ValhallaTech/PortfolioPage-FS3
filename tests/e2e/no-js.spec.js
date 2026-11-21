@@ -10,12 +10,18 @@
  * the `redirect` value's pathname on the test's own origin: Web3Forms only redirects to
  * an absolute https URL on the site's own domain (V-5), so this is the local model of it.
  * The thank-you page then comes from `dist`, as on Netlify.
+ *
+ * With JavaScript off, the hero shows its full sentence and every reveal target is visible
+ * in place (spec gsap-animations, WI-9: AC-19).
  */
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { WEB3FORMS_URL, test, expect } from './fixtures.js';
 import { desktop } from './viewports.js';
 import { contactDialog, fillContactForm, openContactModal } from './helpers/contact-modal.js';
+import { scrollToBottomInSteps } from './helpers/full-visit.js';
+import { HERO_SENTENCE, readVisibleHeroLine } from './helpers/hero.js';
+import { expectRevealTargets, revealTargetsAtRestFaults } from './helpers/reveals.js';
 
 const THANKS_PAGE = path.resolve(__dirname, '..', '..', 'dist', 'thanks.html');
 
@@ -154,6 +160,18 @@ test.describe('without JavaScript', () => {
       'the page is not a JSON body'
     ).toBe(false);
     expect(web3formsGuard, 'unmocked Web3Forms requests').toEqual([]);
+  });
+
+  test('AC-19: the hero sentence and every reveal target are visible', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'load' });
+    await expectRevealTargets(page);
+    await scrollToBottomInSteps(page);
+
+    expect(await readVisibleHeroLine(page), 'the visible hero line').toBe(HERO_SENTENCE);
+    expect(
+      await revealTargetsAtRestFaults(page),
+      'reveal targets not fully opaque, or translated or scaled'
+    ).toEqual([]);
   });
 
   test('No-JS close: the close link hides the form and returns to the contact section', async ({

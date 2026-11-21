@@ -109,3 +109,51 @@ export function shownAtOnceFaults(frames, targets) {
   }
   return faults;
 }
+
+/**
+ * AC-19's second check: each of the 13 reveal targets has effective opacity 1, and its
+ * computed `transform` is `none`, or a matrix with zero translation and a scale of 1. Returns
+ * one entry per target that breaks it, and one per missing target. It works with JavaScript
+ * off, because Playwright's evaluate runs regardless.
+ *
+ * @param {import('@playwright/test').Page} page
+ */
+export async function revealTargetsAtRestFaults(page) {
+  const states = await page.locator(REVEAL_TARGET).evaluateAll((elements) =>
+    elements.map((element) => {
+      let opacity = 1;
+      for (let node = element; node; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        if (style.display === 'none' || style.visibility !== 'visible') {
+          opacity = 0;
+          break;
+        }
+        opacity *= Number.parseFloat(style.opacity);
+      }
+      const { transform } = getComputedStyle(element);
+      let atRest = transform === 'none';
+      if (!atRest) {
+        const m = new DOMMatrixReadOnly(transform);
+        const near = (value, expected) => Math.abs(value - expected) < 1e-6;
+        atRest =
+          near(m.m41, 0) &&
+          near(m.m42, 0) &&
+          near(m.m43, 0) &&
+          near(Math.hypot(m.m11, m.m12, m.m13), 1) &&
+          near(Math.hypot(m.m21, m.m22, m.m23), 1) &&
+          near(Math.hypot(m.m31, m.m32, m.m33), 1);
+      }
+      return { opacity, transform, atRest };
+    })
+  );
+  const faults = [];
+  for (const target of REVEAL_TARGETS) {
+    const state = states[target.index];
+    if (!state) {
+      faults.push({ target: target.name, fault: 'missing' });
+    } else if (state.opacity !== 1 || !state.atRest) {
+      faults.push({ target: target.name, opacity: state.opacity, transform: state.transform });
+    }
+  }
+  return faults;
+}

@@ -1,7 +1,8 @@
 /**
  * Motion and the contact form's busy state (spec stabilize-and-cleanup, WI-55: AC-44,
  * AC-58, AC-59, AC-66, AC-109, AC-110, AC-111, AC-112, AC-114, AC-125), and the hero typing's
- * speeds (spec gsap-animations, WI-6: AC-24, on AC-110's recording).
+ * speeds (spec gsap-animations, WI-6: AC-24, on AC-110's recording), and the typing cursor at
+ * rest (WI-9: AC-25, at AC-111's settle point).
  *
  * The active testimonial is identified by the text of `.testimonial-name` inside
  * `.testimonials .swiper-slide-active`, as AC-44, AC-109 and AC-125 state, which works
@@ -11,7 +12,7 @@
  * The fixed waits are the ones the ACs name: the 11 s of AC-44 and AC-109, the 60 s typing
  * recording of AC-110 to AC-112 and the 10 s after its settle point, AC-114's 12 s, and
  * AC-66's 500 ms and 1 s instants. Everything else waits with web-first assertions or
- * `expect.poll` (RK-4). AC-24, AC-44, AC-109 to AC-112, AC-114 and AC-125 carry `@slow`, so
+ * `expect.poll` (RK-4). AC-24, AC-25, AC-44, AC-109 to AC-112, AC-114 and AC-125 carry `@slow`, so
  * `yarn test:smoke` leaves them out. No AC here names both targets, so none carries
  * `@live`.
  */
@@ -19,6 +20,8 @@ import { test, expect, WEB3FORMS_URL } from './fixtures.js';
 import { desktop, small } from './viewports.js';
 import { fillContactForm, mockWeb3Forms, openContactModal } from './helpers/contact-modal.js';
 import { focusBody, TAB_WALK_MAX_PRESSES } from './helpers/tab-walk.js';
+import { finishFrameTrace, seriesOf, traceFromFirstFrame } from './helpers/frame-trace.js';
+import { installTypingRecorder } from './helpers/typing.js';
 
 const TESTIMONIALS = '#testimonials';
 const ACTIVE_SLIDE = '.testimonials .swiper-slide-active';
@@ -77,6 +80,11 @@ const HOLD_MS = Object.freeze({
   max: HOLD_MEASURED_ON_5_0_0_MS * 1.1,
 });
 const HELD_PHRASE_COUNT = 3;
+
+/** AC-25: the typing cursor, traced for 3 s from 1 s after the settle point. */
+const TYPED_CURSOR = { name: 'typing cursor', selector: '.typed-cursor' };
+const CURSOR_TRACE_AFTER_SETTLE_MS = 1_000;
+const CURSOR_TRACE_MS = 3_000;
 
 /** AC-114's widths, all at height 900, and its wait after the carousel is in view. */
 const AC_114_WIDTHS = [375, 767, 768, 899, 900, 1440, 1920];
@@ -157,33 +165,6 @@ async function accessibleName(locator) {
   const snapshot = await locator.ariaSnapshot();
   const match = /^- \w+ "((?:[^"\\]|\\.)*)"/.exec(snapshot);
   return match ? JSON.parse(`"${match[1]}"`) : '';
-}
-
-/**
- * Runs in the page before any page script. From `DOMContentLoaded`, records each distinct
- * `textContent` of the hero typing element with its time, and records the `load` time.
- *
- * @param {string} selector The typing element.
- */
-function installTypingRecorder(selector) {
-  const recording = { domContentLoadedAt: null, loadAt: null, changes: [] };
-  window.__typingRecording = recording;
-  window.addEventListener('load', () => {
-    recording.loadAt = performance.now();
-  });
-  document.addEventListener('DOMContentLoaded', () => {
-    recording.domContentLoadedAt = performance.now();
-    const element = document.querySelector(selector);
-    if (!element) return;
-    let last = element.textContent;
-    recording.changes.push({ at: recording.domContentLoadedAt, text: last });
-    new MutationObserver(() => {
-      const text = element.textContent;
-      if (text === last) return;
-      last = text;
-      recording.changes.push({ at: performance.now(), text });
-    }).observe(element, { childList: true, characterData: true, subtree: true });
-  });
 }
 
 /**
@@ -624,6 +605,33 @@ test.describe('hero typing at desktop', () => {
       expectWithin(typeMedian, TYPE_STEP_MEDIAN_MS, 'the median typing step');
       expectWithin(eraseMedian, ERASE_STEP_MEDIAN_MS, 'the median erase step');
       holds.forEach((hold, i) => expectWithin(hold, HOLD_MS, `the hold on "${TYPED_PHRASES[i]}"`));
+    }
+  );
+
+  test(
+    'AC-25: the typing cursor stops blinking when the typing stops',
+    { tag: '@slow' },
+    async ({ page }) => {
+      test.setTimeout(TYPING_TIMEOUT_MS);
+      // The cursor is traced for the whole recording, and the AC's window is cut from it
+      // once the recording names the settle point.
+      await traceFromFirstFrame(page, 'cursor', [TYPED_CURSOR]);
+      const recording = await recordTyping(page);
+      const settle = settlePoint(recording);
+      const frames = await finishFrameTrace(page, 'cursor', 0);
+
+      const from = settle.at + CURSOR_TRACE_AFTER_SETTLE_MS;
+      const to = from + CURSOR_TRACE_MS;
+      const series = seriesOf(frames, TYPED_CURSOR.name);
+      expect(
+        Math.round(series.at(-1).t - to),
+        'ms traced past the end of the 3 s window'
+      ).toBeGreaterThanOrEqual(0);
+      const inWindow = series.filter((entry) => entry.t >= from && entry.t <= to);
+      expect(inWindow.length, 'frames in the 3 s window').toBeGreaterThan(0);
+
+      const opacities = [...new Set(inWindow.map((entry) => entry.opacity))];
+      expect(opacities, "the cursor's effective opacities in the 3 s window").toHaveLength(1);
     }
   );
 });
