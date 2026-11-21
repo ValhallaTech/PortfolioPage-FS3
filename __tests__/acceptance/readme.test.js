@@ -22,8 +22,7 @@
  * | README row   | package                       |
  * | ------------ | ----------------------------- |
  * | Bootstrap    | bootstrap                     |
- * | Typed.js     | typed.js                      |
- * | ScrollReveal | scrollreveal                  |
+ * | GSAP         | gsap                          |
  * | Muuri        | muuri                         |
  * | Swiper       | swiper                        |
  * | GLightbox    | glightbox                     |
@@ -78,8 +77,7 @@ const YARN_MENTION = /\byarn\b/i;
 /** AC-95: README Tech Stack row names mapped to their `package.json` packages. */
 const LIBRARY_PACKAGES = Object.freeze([
   { name: /^Bootstrap\b/i, packages: (deps) => deps.filter((dep) => dep === 'bootstrap') },
-  { name: /^Typed\.js\b/i, packages: (deps) => deps.filter((dep) => dep === 'typed.js') },
-  { name: /^ScrollReveal\b/i, packages: (deps) => deps.filter((dep) => dep === 'scrollreveal') },
+  { name: /^GSAP\b/i, packages: (deps) => deps.filter((dep) => dep === 'gsap') },
   { name: /^Muuri\b/i, packages: (deps) => deps.filter((dep) => dep === 'muuri') },
   { name: /^Swiper\b/i, packages: (deps) => deps.filter((dep) => dep === 'swiper') },
   { name: /^GLightbox\b/i, packages: (deps) => deps.filter((dep) => dep === 'glightbox') },

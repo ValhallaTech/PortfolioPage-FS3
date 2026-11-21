@@ -18,12 +18,14 @@ The site is a single-page application (`src/index.html`) composed of six section
 
 | Section | Description |
 |---|---|
-| **Hero** | Typing headline powered by Typed.js: each phrase is typed once, and the effect stops on the last one |
+| **Hero** | Typing headline animated with GSAP: each phrase is typed once, and the effect stops on the last one. Screen readers, and visitors without JavaScript, get the whole headline as one sentence |
 | **About** | Bio and personal details |
 | **Portfolio** | Filterable image gallery (All / App / Card / Web) laid out by Muuri, with a GLightbox viewer |
 | **Services** | Six service cards: Web Development, Mobile App Developer, Quality Assurance, C# Programming, .NET Core Framework Development, UI/UX Design |
 | **Testimonials** | Swiper carousel with a pause/play button. Focus or a mouse over it holds rotation, and it never autoplays when the visitor asks for reduced motion |
 | **Contact** | Contact details, a map, and a contact form in a native dialog, submitted to the Web3Forms API. Without JavaScript, a link opens the form as a panel, and a submission ends on `/thanks.html` |
+
+The page follows the visitor's reduced motion setting everywhere, and follows it live, so changing it takes effect without a reload: the scroll reveals, the hero typing, in-page scrolling, the mobile nav, the portfolio caption links, the lightbox, the carousel and the portfolio grid all stop animating. An in-page link, such as a nav item, also moves keyboard focus to the section it scrolls to.
 
 ### Tech Stack
 
@@ -34,13 +36,14 @@ The site is a single-page application (`src/index.html`) composed of six section
 | Bootstrap 6 | Layout and the contact dialog, pinned to the prerelease `6.0.0-alpha.1` |
 | Fontsource 5 (Open Sans, Raleway, Poppins) | Self-hosted web fonts, imported from `src/js/main.js` |
 | Font Awesome Free 7.3.1 icon shapes | Inline SVG icon sprite in `src/index.html`, not an installed package (license notice kept in the sprite) |
-| Typed.js 3 | Hero typing animation |
-| ScrollReveal 4 | Scroll-triggered reveal animations |
+| GSAP 3 | Hero entrance and typing, and the scroll-triggered reveals (GSAP core only, no plugins) |
 | Muuri 0.9.5 | Portfolio filter and layout, patched by one line so layout runs synchronously, without web workers |
 | Swiper 14 | Testimonials carousel |
 | GLightbox 3 | Portfolio lightbox |
 
 `package.json` pins every dependency to an exact version.
+
+GSAP replaced two animation libraries in 5.1.0, and the page script grew by 20.7 KB: the built JavaScript went from 77,495 to 98,707 bytes gzipped (273,270 to 323,699 bytes raw), measured on clean builds of 5.0.0 and 5.1.0.
 
 **Dev tooling**
 
@@ -72,7 +75,8 @@ src/
   index.html            # Main HTML entry point, with the inline SVG icon sprite
   thanks.html           # Page a contact-form submission without JavaScript ends on
   js/
-    main.js             # App initialization (Typed.js, Muuri, Swiper, GLightbox, ScrollReveal, Bootstrap dialog, contact form)
+    main.js             # App initialization (GSAP motion, Muuri, Swiper, GLightbox, Bootstrap dialog, contact form)
+    motion.js           # Every GSAP call: hero entrance and typing, scroll reveals, reduced motion
     utils.js            # DOM helpers (nav, scroll, back-to-top, portfolio filters, hash and lightbox links)
   css/
     style.css           # Site styles and color tokens
@@ -81,6 +85,7 @@ src/
 __tests__/              # Jest tests: unit tests, acceptance/ (run by yarn test) and release/ (run by yarn verify:release)
 tests/e2e/              # Playwright end-to-end tests and the smoke baseline
 scripts/                # Gate runners, local dist server, runtime-version sync and third-party notices
+third-party-licenses/   # License terms for the notices, for a dependency whose package ships none (GSAP)
 netlify.toml            # Netlify build, security headers and cache rules
 playwright.config.js    # Playwright setup: Chromium only, local or live target
 jest.config.js          # Jest setup for yarn test
