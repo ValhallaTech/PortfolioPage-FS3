@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-11-21
+
+### Added
+
+- The page follows the visitor's reduced motion setting everywhere, and follows it live, so a
+  change takes effect without a reload: the scroll reveals, the hero typing, in-page scrolling,
+  the mobile nav, the portfolio caption links, the lightbox, the carousel and the portfolio grid
+  ([#94], [#95], [#96]).
+- An in-page link, such as a nav item, moves keyboard focus to the section it scrolls to
+  ([#96]).
+- The hero headline is one sentence for screen readers and for visitors without JavaScript,
+  while the typing effect plays for everyone else ([#95]).
+- A GPLv3 section 7 additional permission, granted by Valhalla Tech, to combine the site with
+  GSAP under GSAP's Standard "no charge" license. It is in the README License section; `LICENSE`
+  is unchanged ([#94]).
+- GSAP's license terms in `dist/THIRD-PARTY-NOTICES.txt`, kept in the repo because the GSAP
+  package ships no license file ([#94]).
+
+### Changed
+
+- GSAP 3 animates the hero entrance, the hero typing and the scroll reveals, instead of Typed.js
+  and ScrollReveal ([#94], [#95]).
+- The page script grew by 20.7 KB gzipped, from 77,495 to 98,707 bytes (273,270 to 323,699 bytes
+  raw).
+
+### Removed
+
+- The `typed.js` and `scrollreveal` packages ([#94], [#95]).
+
 ## [5.0.0] - 2026-11-20
 
 ### Added
@@ -228,7 +257,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release.
 
-[Unreleased]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/5.0.0...HEAD
+[Unreleased]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/5.1.0...HEAD
+[5.1.0]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/5.0.0...5.1.0
 [5.0.0]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/4.0.0...5.0.0
 [4.0.0]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/3.0.0...4.0.0
 [3.0.0]: https://github.com/ValhallaTech/PortfolioPage-FS3/compare/2.5.0...3.0.0
@@ -276,3 +306,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#89]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/89
 [#90]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/90
 [#91]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/91
+[#94]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/94
+[#95]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/95
+[#96]: https://github.com/ValhallaTech/PortfolioPage-FS3/pull/96
