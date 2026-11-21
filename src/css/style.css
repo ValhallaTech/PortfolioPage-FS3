@@ -518,6 +518,12 @@ h6 {
   text-wrap: balance;
 }
 
+/* Each phrase of the sentence stays on one line, so a wrap never parts "a" from its
+   noun. The longest, "a Photographer", fits the 300 px floor above. */
+.hero-phrase {
+  white-space: nowrap;
+}
+
 .hero-line.is-typing .hero-typing {
   display: inline;
 }
