@@ -1,15 +1,17 @@
 import { defineConfig } from '@playwright/test';
 
 /**
- * Playwright setup (D-11). Chromium only, no retries (RK-4).
+ * Playwright setup. Chromium only (sprint 1 D-11, still true), no retries (RK-4).
  *
- * Two Chromium projects. `chromium` runs every spec except the frame-timing ones.
- * `chromium-frame-timing` runs the specs whose frame traces hold tight millisecond bounds
- * (spec gsap-animations §2.3, RK-2), one test at a time. It is listed second, so its tests
- * are queued behind every `chromium` test: they start as the main run drains, and never
- * share the machine with more than the main run's last few tests. Under ~15 parallel
- * browsers, main-thread stalls delayed the frame a target first appears in, so these
- * tests measured the machine's load rather than the page.
+ * A second Chromium project now exists for frame timing. `chromium` runs every spec
+ * except the frame-timing ones. `chromium-frame-timing` runs the specs whose frame traces
+ * hold tight millisecond bounds (spec gsap-animations §2.3, RK-2), one test at a time.
+ * It is listed second, so its tests are queued behind every `chromium` test. The first
+ * frame-timing test starts as soon as the last `chromium` test is handed out, so the
+ * first one or two can still overlap the end of the main run, while up to workers − 1
+ * `chromium` tests finish. No frame-timing test runs under more load than before, when
+ * all of them ran among ~15 parallel browsers whose main-thread stalls delayed the frame
+ * a target first appears in.
  *
  * The projects are not linked with `dependencies` or `teardown`. Playwright runs a
  * dependency or teardown project in full, without the command line's `--grep-invert @slow`,
