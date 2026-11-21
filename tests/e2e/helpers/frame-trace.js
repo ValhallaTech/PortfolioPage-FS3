@@ -4,7 +4,9 @@
  * GSAP tweens do not appear in `document.getAnimations()`, so the motion ACs read what the
  * page draws instead: a `requestAnimationFrame` loop in the page records, each frame,
  * `performance.now()`, `window.scrollY` and, for each traced element, its box and its
- * effective opacity. Optionally it also records `document.activeElement`.
+ * effective opacity. Optionally it also records `document.activeElement`. Each frame is
+ * read once all of its animation-frame callbacks have run, GSAP's included, so a record
+ * holds what that frame drew, not the frame before it.
  *
  * - Boxes are document-relative (`rect.x + scrollX`, `rect.y + scrollY`) for elements in
  *   the page flow, and viewport-relative for a target marked `fixed` (the sidebar, the
@@ -92,8 +94,14 @@ function frameTracerScript({ tracer, start }) {
         const trace = { frames: [], endsAt: Infinity, done: null };
         if (durationMs !== null) trace.endsAt = performance.now() + durationMs;
         trace.done = new Promise((resolve) => {
-          const tick = () => {
-            const t = performance.now();
+          // GSAP renders in its own requestAnimationFrame callback, which may run after this
+          // one in the same frame. So the frame's time is taken here, and the page is read
+          // in a task posted from here, which runs once every callback of the frame has
+          // run: the state read is the one the frame drew.
+          const channel = new MessageChannel();
+          const frameTimes = [];
+          channel.port1.onmessage = () => {
+            const t = frameTimes.shift();
             const frame = { t, scrollY: window.scrollY, targets: {} };
             for (const { name, selector, index = 0, fixed = false } of targets) {
               const element = document.querySelectorAll(selector)[index];
@@ -101,8 +109,16 @@ function frameTracerScript({ tracer, start }) {
             }
             if (focus) frame.focus = focusRecord();
             trace.frames.push(frame);
-            if (t >= trace.endsAt) resolve(trace.frames);
-            else requestAnimationFrame(tick);
+            if (t >= trace.endsAt) {
+              channel.port1.close();
+              resolve(trace.frames);
+            }
+          };
+          const tick = () => {
+            const t = performance.now();
+            frameTimes.push(t);
+            channel.port2.postMessage(null);
+            if (t < trace.endsAt) requestAnimationFrame(tick);
           };
           requestAnimationFrame(tick);
         });

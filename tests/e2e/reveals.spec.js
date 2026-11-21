@@ -226,44 +226,66 @@ test.describe('at desktop with motion allowed', () => {
 
     const filterRow = page.locator(REVEAL_TARGET).nth(revealTargets([4])[0].index);
     const app = portfolioFilter(page, 'App');
-    await app.evaluate((button) =>
-      button.addEventListener(
-        'click',
-        () => {
-          window.__revealFilterClickAt = performance.now();
-        },
-        { once: true }
-      )
-    );
-    const scrolledAt = await scrollTopAboveViewportBottom(grid, ENTRY_INSET_PX);
-    // The filter row enters with the grid. Its reveal starts by moving it 60 px down, so
-    // the click waits for that first frame, or it would aim at the row's final box.
-    expect(
-      await filterRow.evaluate(
-        (row, maxFrames) =>
-          new Promise((resolve) => {
-            let frames = 0;
-            const check = () => {
-              if (getComputedStyle(row).transform !== 'none') resolve(true);
-              else if (++frames > maxFrames) resolve(false);
-              else requestAnimationFrame(check);
+    // One page call scrolls, then returns where to click, so no round trip sits between the
+    // scroll and the click. The filter row enters with the grid, and its reveal starts by
+    // moving it 60 px down, so the call waits for that first frame before reading the App
+    // button's box. A capture listener stamps, at the click itself, the time and the grid
+    // container's effective opacity, which is read before the filter acts on the click.
+    const clickPoint = await page.evaluate(
+      async ({ gridElement, row, button, inset, maxFrames }) => {
+        const effectiveOpacity = (element) => {
+          let opacity = 1;
+          for (let node = element; node; node = node.parentElement) {
+            const style = getComputedStyle(node);
+            if (style.display === 'none' || style.visibility !== 'visible') return 0;
+            opacity *= Number.parseFloat(style.opacity);
+          }
+          return opacity;
+        };
+        const stamp = { scrolledAt: 0, click: null };
+        window.__revealFilterClick = stamp;
+        document.addEventListener(
+          'click',
+          (event) => {
+            stamp.click = {
+              at: performance.now(),
+              onButton: button.contains(event.target),
+              gridOpacity: effectiveOpacity(gridElement),
             };
-            check();
-          }),
-        REVEAL_START_MAX_FRAMES
-      ),
-      "the filter row's reveal has started"
-    ).toBe(true);
+          },
+          { capture: true, once: true }
+        );
+
+        const top = gridElement.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({ top: top - (window.innerHeight - inset), left: 0, behavior: 'instant' });
+        stamp.scrolledAt = performance.now();
+        for (let frames = 0; getComputedStyle(row).transform === 'none'; frames += 1) {
+          if (frames >= maxFrames) return null;
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
+        const box = button.getBoundingClientRect();
+        return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+      },
+      {
+        gridElement: await grid.elementHandle(),
+        row: await filterRow.elementHandle(),
+        button: await app.elementHandle(),
+        inset: ENTRY_INSET_PX,
+        maxFrames: REVEAL_START_MAX_FRAMES,
+      }
+    );
+    expect(clickPoint, "the filter row's reveal has started").not.toBeNull();
+    // The filter row is mid-reveal and moving, so the click goes to the button's current
+    // box: this early in the ease, the box moves less than 1 px per frame.
+    await page.mouse.click(clickPoint.x, clickPoint.y);
+    const { scrolledAt, click } = await page.evaluate(() => window.__revealFilterClick);
+    expect(click, 'a click reached the page').not.toBeNull();
     expect(
-      await readEffectiveOpacity(grid),
-      "the grid container's effective opacity before the click"
+      click.gridOpacity,
+      "the grid container's effective opacity at the App click"
     ).toBeLessThan(1);
-    // The filter row is mid-reveal and moving, so Playwright's wait for a stable element
-    // would push the click past the AC's 200 ms. The click still lands on the button: this
-    // early in the ease, its box moves less than 1 px per frame.
-    await app.click({ force: true });
-    const clickedAt = await page.evaluate(() => window.__revealFilterClickAt);
-    expect(clickedAt - scrolledAt, 'ms from the scroll to the App click').toBeLessThanOrEqual(
+    expect(click.onButton, 'the click landed on the App button').toBe(true);
+    expect(click.at - scrolledAt, 'ms from the scroll to the App click').toBeLessThanOrEqual(
       FILTER_CLICK_WITHIN_MS
     );
     await page.waitForTimeout(FILTER_SETTLE_MS);
