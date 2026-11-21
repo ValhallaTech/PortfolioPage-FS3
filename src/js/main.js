@@ -31,8 +31,12 @@ import {
   setupPortfolioFilters,
   portfolioFilterSelector,
   portfolioFilterOptions,
-  resolveHashTarget,
   resolveLightboxHref,
+  scrollBehaviorFor,
+  sectionTarget,
+  navigateTo,
+  lightboxEffects,
+  NAVIGABLE_SECTION_SELECTOR,
 } from './utils.js';
 import { introHero, revealOnScroll } from './motion.js';
 
@@ -50,28 +54,59 @@ function prefersReducedMotion() {
   return window.matchMedia(REDUCED_MOTION_QUERY).matches;
 }
 
+/**
+ * The scroll a nav link or `.scrollto` link runs on its target (AD-9). A page section gets
+ * focus and is scrolled to; any other target is only scrolled to. The preference is read at
+ * each click.
+ * @param {HTMLElement} target - The element the link's hash names
+ */
+function goToLinkTarget(target) {
+  const reduce = prefersReducedMotion();
+  if (target.matches(NAVIGABLE_SECTION_SELECTOR)) {
+    navigateTo(target, { reduce, win: window });
+  } else {
+    smoothScrollTo(target, scrollBehaviorFor(reduce));
+  }
+}
+
+/** Muuri's show, hide and layout duration; each call says whether to animate (AD-10). */
+const GRID_ANIMATION_MS = 300;
+
+/** How long the window must stop resizing before the grid lays out again, as Muuri's default. */
+const GRID_RESIZE_DEBOUNCE_MS = 150;
+
 // Sprint 3: Muuri owns the transform, opacity and display of .portfolio-item and .portfolio-wrap, so do not animate them with GSAP.
 /**
- * Initialize the portfolio Muuri grid and bind its filter buttons.
+ * Initialize the portfolio Muuri grid and bind its filter buttons. Muuri cannot change its
+ * settings after construction (V-8), so its durations are constant, its own resize relayout
+ * is off, and every relayout and filter reads the motion preference when it runs (AD-10).
  * @param {Element} container - The portfolio container element
  * @returns {Muuri|null}
  */
 function initPortfolioGrid(container) {
   if (!container) return null;
 
-  const duration = prefersReducedMotion() ? 0 : 300;
   const grid = new Muuri(container, {
     items: '.portfolio-item',
     layoutOnInit: true,
-    layoutOnResize: 150,
+    // false is what Muuri's bindLayoutOnResize treats as off (no resize handler bound).
+    layoutOnResize: false,
     dragEnabled: false,
-    showDuration: duration,
-    hideDuration: duration,
-    layoutDuration: duration,
+    showDuration: GRID_ANIMATION_MS,
+    hideDuration: GRID_ANIMATION_MS,
+    layoutDuration: GRID_ANIMATION_MS,
   });
 
   window.addEventListener('load', () => {
     grid.refreshItems().layout(true);
+  });
+
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      grid.refreshItems().layout(prefersReducedMotion());
+    }, GRID_RESIZE_DEBOUNCE_MS);
   });
 
   const buttons = document.querySelectorAll('#portfolio-filters button[data-filter]');
@@ -233,6 +268,9 @@ function initTestimonialsCarousel(container, toggle) {
  * <img src> in the same .portfolio-wrap, which Parcel has rewritten to the hashed
  * build path. resolveLightboxHref() only returns a parsed same-origin http(s) URL,
  * so no raw DOM value reaches setAttribute; links it rejects keep href="#".
+ * The open, close and slide effects follow the motion preference (AD-11): GLightbox reads
+ * them from its settings at each open, slide change and close, so they are rewritten on each
+ * preference change, and again on `open`, because open() forces the slide effect on mobile.
  * @returns {GLightbox|null}
  */
 function initLightbox() {
@@ -242,7 +280,18 @@ function initLightbox() {
       el.setAttribute('href', href);
     }
   });
-  return GLightbox({ selector: '.glightbox', zoomable: false });
+  const reducedMotion = window.matchMedia(REDUCED_MOTION_QUERY);
+  const lightbox = GLightbox({
+    selector: '.glightbox',
+    zoomable: false,
+    ...lightboxEffects(reducedMotion.matches),
+  });
+  const followMotionPreference = () => {
+    Object.assign(lightbox.settings, lightboxEffects(reducedMotion.matches));
+  };
+  reducedMotion.addEventListener('change', followMotionPreference);
+  lightbox.on('open', followMotionPreference);
+  return lightbox;
 }
 
 const FOCUSABLE_SELECTOR =
@@ -435,13 +484,16 @@ function init() {
   // Hero entrance and typing first, while the style.css gate still hides the hero (AD-5)
   introHero(document.querySelector('.hero-container'));
 
-  // Smooth scroll for nav links
-  setupNavClickHandlers(document, smoothScrollTo, closeMobileNav);
+  // Nav links: focus and scroll to a section, or only scroll to any other target (AD-9)
+  setupNavClickHandlers(document, goToLinkTarget, closeMobileNav);
 
-  // Smooth scroll on page load with hash (by id, so a malformed hash cannot throw)
-  const hashTarget = resolveHashTarget(window.location.hash, document);
-  if (hashTarget) {
-    setTimeout(() => smoothScrollTo(hashTarget), 100);
+  // A hash on load that names a page section focuses it and scrolls to it. Any other hash,
+  // malformed or unknown, gets no scripted scroll or focus, and nothing from it is written.
+  const hashSection = sectionTarget(window.location.hash, document);
+  if (hashSection) {
+    setTimeout(() => {
+      navigateTo(hashSection, { reduce: prefersReducedMotion(), win: window });
+    }, 100);
   }
 
   // Mobile nav toggle
@@ -462,12 +514,12 @@ function init() {
   // Scroll handlers: cached element references, at most one update per frame
   setupScrollHandlers(document, window);
 
-  // Back to top click
+  // Back to top: a jump under reduced motion, a glide otherwise; focus stays put (AD-9)
   const backToTop = document.querySelector('.back-to-top');
   if (backToTop) {
     backToTop.addEventListener('click', (e) => {
       e.preventDefault();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: scrollBehaviorFor(prefersReducedMotion()) });
     });
   }
 

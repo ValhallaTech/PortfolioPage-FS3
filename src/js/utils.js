@@ -4,15 +4,88 @@
  */
 
 /**
- * Smooth scroll to an element
+ * Scroll the window to an element's top.
  * @param {HTMLElement} target - The element to scroll to
+ * @param {ScrollBehavior} [behavior='smooth'] - How the window scrolls there
  */
-export function smoothScrollTo(target) {
+export function smoothScrollTo(target, behavior = 'smooth') {
   if (!target) return;
   window.scrollTo({
     top: target.offsetTop,
-    behavior: 'smooth',
+    behavior,
   });
+}
+
+/**
+ * How in-page scrolling moves for the visitor's motion preference (AD-9).
+ * @param {boolean} reduce - Whether the visitor asks for reduced motion
+ * @returns {'instant'|'smooth'} A jump under reduced motion, a glide otherwise
+ */
+export function scrollBehaviorFor(reduce) {
+  return reduce ? 'instant' : 'smooth';
+}
+
+/** The elements in-page navigation moves focus to: the page's sections that have an id. */
+export const NAVIGABLE_SECTION_SELECTOR = 'main section[id]';
+
+/** How close, in pixels, the window must be to a section's top to count as there already. */
+const SCROLL_TOLERANCE_PX = 1;
+
+/**
+ * The page section a URL fragment names (AD-9). Anything else the fragment names, such as
+ * the dialog or an element inside a section, gives null, as does a malformed or unknown
+ * fragment. Nothing from the fragment is written anywhere.
+ * @param {string} hash - A URL fragment including the leading '#', as in `location.hash`
+ * @param {Document} doc - The document to search
+ * @returns {HTMLElement|null} The section, or null
+ */
+export function sectionTarget(hash, doc) {
+  const target = resolveHashTarget(hash, doc);
+  return target && target.matches(NAVIGABLE_SECTION_SELECTOR) ? target : null;
+}
+
+/**
+ * Move focus to a section and bring it into view (AD-9). The section gets
+ * `tabindex="-1"` only when it has no tabindex, so a mouse click inside it never focuses it
+ * beforehand. Focus moves first, without scrolling, so the next Tab continues from the
+ * section; the scroll is then skipped when the window is already within 1 px of the
+ * section's top, as after the browser's own jump to a fragment.
+ * @param {HTMLElement|null} section - The section to go to
+ * @param {{ reduce?: boolean, win?: Window }} [options] - Whether the visitor asks for
+ *   reduced motion, and the window whose scroll position is read
+ */
+export function navigateTo(section, { reduce = false, win = window } = {}) {
+  if (!section) return;
+  if (!section.hasAttribute('tabindex')) {
+    section.setAttribute('tabindex', '-1');
+  }
+  section.focus({ preventScroll: true });
+  if (Math.abs(win.scrollY - section.offsetTop) <= SCROLL_TOLERANCE_PX) return;
+  smoothScrollTo(section, scrollBehaviorFor(reduce));
+}
+
+/** GLightbox's own effects: zoom in and out, and slides that slide. */
+const LIGHTBOX_MOTION_EFFECTS = Object.freeze({
+  openEffect: 'zoom',
+  closeEffect: 'zoom',
+  slideEffect: 'slide',
+});
+
+/** Effects that change opacity only, for reduced motion. */
+const LIGHTBOX_REDUCED_EFFECTS = Object.freeze({
+  openEffect: 'fade',
+  closeEffect: 'fade',
+  slideEffect: 'fade',
+});
+
+/**
+ * The lightbox's open, close and slide effects for the visitor's motion preference (AD-11).
+ * @param {boolean} reduce - Whether the visitor asks for reduced motion
+ * @returns {{ openEffect: string, closeEffect: string, slideEffect: string }} Fades under
+ *   reduced motion, GLightbox's defaults otherwise; a new object on each call
+ */
+export function lightboxEffects(reduce) {
+  return { ...(reduce ? LIGHTBOX_REDUCED_EFFECTS : LIGHTBOX_MOTION_EFFECTS) };
 }
 
 /**

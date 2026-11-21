@@ -219,6 +219,23 @@ export async function startFrameTrace(page, id, targets, { durationMs = TRACE_MS
 }
 
 /**
+ * Waits until the page has drawn two more frames. Called right after `startFrameTrace`, it
+ * returns once the trace has recorded at least one frame, so a trigger that changes the page
+ * at once, such as Escape on a dialog under reduced motion, cannot land before the trace's
+ * first frame.
+ *
+ * @param {import('@playwright/test').Page} page
+ */
+export function waitForTwoFrames(page) {
+  return page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(resolve));
+      })
+  );
+}
+
+/**
  * Starts a frame trace from the first frame of the next document, with an init script, so
  * it sees an element from the first frame in which it is in the document. The trace runs
  * until `finishFrameTrace`. Call it before `page.goto`.
