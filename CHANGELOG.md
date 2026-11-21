@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The page follows the visitor's reduced motion setting everywhere, and follows it live, so a
   change takes effect without a reload: the scroll reveals, the hero typing, in-page scrolling,
-  the mobile nav, the portfolio caption links, the lightbox, the carousel and the portfolio grid
-  ([#94], [#95], [#96]).
+  the mobile nav, the portfolio caption links, the lightbox and the portfolio grid ([#94],
+  [#95], [#96]).
 - An in-page link, such as a nav item, moves keyboard focus to the section it scrolls to
   ([#96]).
 - The hero headline is one sentence for screen readers and for visitors without JavaScript,
@@ -22,8 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A GPLv3 section 7 additional permission, granted by Valhalla Tech, to combine the site with
   GSAP under GSAP's Standard "no charge" license. It is in the README License section; `LICENSE`
   is unchanged ([#94]).
-- GSAP's license terms in `dist/THIRD-PARTY-NOTICES.txt`, kept in the repo because the GSAP
-  package ships no license file ([#94]).
+- GSAP's license terms, kept in the repo in `third-party-licenses/gsap/LICENSE.md` because the
+  GSAP package ships no license file. The build copies them into
+  `dist/THIRD-PARTY-NOTICES.txt` ([#94]).
 
 ### Changed
 
