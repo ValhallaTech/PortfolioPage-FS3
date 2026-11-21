@@ -10,16 +10,24 @@
  * which may be a `patch:` or other protocol string. The output is sorted by package name and
  * holds no timestamp, so the same install always produces the same bytes.
  *
- * A dependency that ships no LICENSE*, LICENCE* or COPYING* file is skipped: it is left out of
- * the notices, a warning naming it goes to stderr, and the run still succeeds. Providing one
- * is that package's responsibility.
+ * License files are the LICENSE*, LICENCE* and COPYING* files in the installed package's root.
+ * When a dependency ships none, the script falls back to the same files in the repository's
+ * third-party-licenses/<name>/ folder, where a scoped name such as @scope/pkg becomes nested
+ * folders, as it does under node_modules. Those terms are held in the repository because the
+ * package does not carry them; each such section is labeled with its repository path,
+ * `--- third-party-licenses/<name>/<file> ---`. The package's own files always win: the
+ * folder is read only when the package root has no license file.
+ *
+ * A dependency with no license file in either place is skipped: it is left out of the
+ * notices, a warning naming it goes to stderr, and the run still succeeds.
  *
  * The run exits 1, with the reason on stderr, when:
  *   - dist/ does not exist (run the Parcel build first);
  *   - the repository's package.json cannot be read or parsed;
  *   - a `dependencies` key is not a valid npm package name;
  *   - a dependency is not installed, or its package.json cannot be read or parsed;
- *   - reading a license file or writing the notices file fails.
+ *   - reading a license file, reading an existing third-party-licenses/<name>/ folder, or
+ *     writing the notices file fails.
  * In every case but the last, nothing is written. Otherwise it exits 0.
  *
  * Usage: node scripts/third-party-notices.mjs
@@ -36,6 +44,12 @@ const PACKAGE_JSON_FILE = 'package.json';
 const NODE_MODULES_DIR = 'node_modules';
 const DIST_DIR = 'dist';
 const NOTICES_FILE = 'THIRD-PARTY-NOTICES.txt';
+
+/** The repository folder holding license terms for packages that ship none. */
+const REPO_LICENSES_DIR = 'third-party-licenses';
+
+/** readdir error codes that mean the fallback folder is simply absent. */
+const MISSING_DIRECTORY_CODES = new Set(['ENOENT', 'ENOTDIR']);
 
 /** A license file in a package root: LICENSE*, LICENCE* or COPYING*, in any case. */
 const LICENSE_FILE_PATTERN = /^(licen[cs]e|copying)/i;
@@ -64,6 +78,8 @@ const UNDECLARED_LICENSE = 'UNDECLARED';
  * @property {string} version The installed package's version.
  * @property {string} license The package.json `license` field, or UNDECLARED.
  * @property {{ file: string, text: string }[]} licenseFiles Each license file and its text.
+ *   `file` is the bare file name for a file in the package root, and the repository-relative
+ *   path, `third-party-licenses/<name>/<file>`, for one read from the fallback folder.
  */
 
 /**
@@ -76,8 +92,8 @@ const UNDECLARED_LICENSE = 'UNDECLARED';
  * @typedef {object} WriteThirdPartyNoticesResult
  * @property {string} file The absolute path of the written notices file.
  * @property {number} count How many dependencies the file lists.
- * @property {string[]} skipped The dependencies left out because they ship no license file,
- *   sorted by name.
+ * @property {string[]} skipped The dependencies left out because neither the package nor
+ *   third-party-licenses/<name>/ has a license file, sorted by name.
  */
 
 /**
@@ -135,18 +151,59 @@ export async function findLicenseFiles(packageDir) {
 }
 
 /**
- * Reads one installed runtime dependency's identity and license files.
+ * Lists the license files in a folder that may not exist, as findLicenseFiles does.
+ *
+ * @param {string} dir The absolute path of the folder.
+ * @returns {Promise<string[]>} The matching file names; empty when the folder is absent.
+ * @throws {Error} When the folder exists but cannot be read.
+ */
+async function findOptionalLicenseFiles(dir) {
+  try {
+    return await findLicenseFiles(dir);
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && MISSING_DIRECTORY_CODES.has(error.code)) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+/**
+ * Reads and normalizes the named license files in one folder.
+ *
+ * @param {string} dir The absolute path of the folder.
+ * @param {string[]} files The file names to read, in output order.
+ * @param {(file: string) => string} label Maps a file name to its section label.
+ * @returns {Promise<{ file: string, text: string }[]>} Each file's label and normalized text.
+ */
+async function readLicenseFiles(dir, files, label) {
+  const licenseFiles = [];
+  for (const file of files) {
+    const text = normalizeLicenseText(await readFile(path.join(dir, file), 'utf8'));
+    licenseFiles.push({ file: label(file), text });
+  }
+  return licenseFiles;
+}
+
+/**
+ * Reads one installed runtime dependency's identity and license files. The license files come
+ * from the package root or, when it has none, from third-party-licenses/<name>/.
  *
  * @param {string} root The repository root.
  * @param {string} dependency The key from package.json `dependencies`.
- * @returns {Promise<DependencyNotice>} The notice; `licenseFiles` is empty when none exist.
- * @throws {Error} When the name is not a valid package name or the package is not installed.
+ * @returns {Promise<DependencyNotice>} The notice; `licenseFiles` is empty when neither place
+ *   has a license file.
+ * @throws {Error} When the name is not a valid package name, the package is not installed, or
+ *   a license file or the fallback folder cannot be read.
  */
 export async function readDependencyNotice(root, dependency) {
+  // The name check must stay ahead of every path join below: it is what keeps `dependency`
+  // from steering either path out of node_modules or third-party-licenses.
   if (!PACKAGE_NAME_PATTERN.test(dependency)) {
     throw new Error(`"${dependency}" is not a valid package name`);
   }
-  const packageDir = path.join(root, NODE_MODULES_DIR, ...dependency.split('/'));
+  const nameSegments = dependency.split('/');
+  const packageDir = path.join(root, NODE_MODULES_DIR, ...nameSegments);
   let manifest;
   try {
     manifest = await readJson(path.join(packageDir, PACKAGE_JSON_FILE));
@@ -156,10 +213,18 @@ export async function readDependencyNotice(root, dependency) {
       { cause: error }
     );
   }
-  const licenseFiles = [];
-  for (const file of await findLicenseFiles(packageDir)) {
-    const text = normalizeLicenseText(await readFile(path.join(packageDir, file), 'utf8'));
-    licenseFiles.push({ file, text });
+  let licenseFiles = await readLicenseFiles(
+    packageDir,
+    await findLicenseFiles(packageDir),
+    (file) => file
+  );
+  if (licenseFiles.length === 0) {
+    const repoHeldDir = path.join(root, REPO_LICENSES_DIR, ...nameSegments);
+    licenseFiles = await readLicenseFiles(
+      repoHeldDir,
+      await findOptionalLicenseFiles(repoHeldDir),
+      (file) => [REPO_LICENSES_DIR, ...nameSegments, file].join('/')
+    );
   }
   return {
     name: String(manifest.name ?? dependency),
@@ -205,11 +270,12 @@ async function isDirectory(dir) {
 }
 
 /**
- * Writes dist/THIRD-PARTY-NOTICES.txt for every runtime dependency that ships a license file.
+ * Writes dist/THIRD-PARTY-NOTICES.txt for every runtime dependency that has a license file,
+ * in its package root or in third-party-licenses/<name>/.
  *
  * @param {WriteThirdPartyNoticesOptions} [options] The repository root override.
  * @returns {Promise<WriteThirdPartyNoticesResult>} The written path, the listed count and the
- *   dependencies skipped for having no license file.
+ *   dependencies skipped for having no license file in either place.
  * @throws {Error} When dist/ is missing, package.json cannot be read, a dependency name is
  *   invalid, a dependency is not installed, or a file read or the write fails. Except for a
  *   failed write, nothing is written.
@@ -243,7 +309,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     const { file, count, skipped } = await writeThirdPartyNotices();
     for (const name of skipped) {
       process.stderr.write(
-        `${SCRIPT_NAME}: warning: ${name} ships no LICENSE*, LICENCE* or COPYING* file; skipped\n`
+        `${SCRIPT_NAME}: warning: ${name} ships no LICENSE*, LICENCE* or COPYING* file, and ${REPO_LICENSES_DIR}/${name}/ has none either; skipped\n`
       );
     }
     process.stdout.write(`${SCRIPT_NAME}: wrote ${count} notices to ${file}\n`);

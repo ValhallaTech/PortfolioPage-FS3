@@ -152,7 +152,7 @@ function isModal(dialog) {
 }
 
 /**
- * An element's box without its own ScrollReveal translation, at subpixel precision: the
+ * An element's box without its own reveal translation, at subpixel precision: the
  * entrance transforms move a column until it is revealed, and rounded offsets can put
  * two adjacent columns 1 px apart. Both columns of a pair share every ancestor's
  * transform, so comparing them is unaffected by those.
@@ -171,7 +171,7 @@ function layoutBox(locator) {
   });
 }
 
-/** The layout top of each element, unaffected by ScrollReveal's entrance transforms. */
+/** The layout top of each element, unaffected by the reveals' entrance transforms. */
 function offsetTops(locator) {
   return () => locator.evaluateAll((elements) => elements.map((element) => element.offsetTop));
 }
@@ -570,7 +570,7 @@ test.describe('the 1024 px column switch', () => {
   const COLUMN_PAIRS = Object.freeze([
     {
       name: 'About text and photo',
-      first: (page) => page.locator('#about .row > [data-sr="fade-right"]'),
+      first: (page) => page.locator('#about .row > [data-reveal="from-right"]'),
       second: (page) => page.locator('#about .row > .content'),
     },
     {
@@ -689,7 +689,7 @@ test('Short viewport: the submit button can be scrolled to and clicked at 667×3
 
 /**
  * Brings an element into view if it is outside it, and waits until it and its ancestors
- * are at rest: no running animation or transition, and every ScrollReveal container among
+ * are at rest: no running animation or transition, and every reveal target among
  * them revealed (sprint 1 AC-45's settle).
  *
  * @param {import('@playwright/test').Locator} locator
@@ -711,7 +711,7 @@ async function settle(locator) {
             node.getAnimations().some((animation) => animation.playState === 'running')
           );
           const unrevealed = chain.some(
-            (node) => node.matches('[data-sr]') && getComputedStyle(node).opacity !== '1'
+            (node) => node.matches('[data-reveal]') && getComputedStyle(node).opacity !== '1'
           );
           return !animating && !unrevealed;
         }),

@@ -281,3 +281,67 @@ export function resolveLightboxHref(link, doc) {
   if (url.origin !== pageOrigin) return null;
   return url.href;
 }
+
+/** The distance in pixels a revealed element travels into place, as in 5.0.0. */
+const REVEAL_DISTANCE_PX = 60;
+
+/** The `data-reveal` kinds that enter with an offset, mapped to where they start from. */
+const REVEAL_OFFSETS = new Map([
+  ['from-right', { x: REVEAL_DISTANCE_PX, y: 0 }],
+  ['from-left', { x: -REVEAL_DISTANCE_PX, y: 0 }],
+  ['from-below', { x: 0, y: REVEAL_DISTANCE_PX }],
+]);
+
+/** The gap in milliseconds between the reveals of one group's targets in one batch. */
+const REVEAL_STAGGER_MS = 100;
+
+/** `Node.DOCUMENT_POSITION_FOLLOWING`, without reading the `Node` global. */
+const DOCUMENT_POSITION_FOLLOWING = 4;
+
+/**
+ * The offset a reveal target starts its entrance from (AD-3). `fade`, `hero` and any
+ * unknown kind start in place.
+ * @param {string|undefined} kind - The target's `data-reveal` value
+ * @returns {{ x: number, y: number }} The start offset in pixels
+ */
+export function revealOffset(kind) {
+  const offset = REVEAL_OFFSETS.get(kind);
+  return offset ? { ...offset } : { x: 0, y: 0 };
+}
+
+/**
+ * The delay of each target in one batch of reveals (AD-3), in milliseconds. A target's
+ * `data-reveal-delay` is its own delay. Targets that share a `data-reveal-group` also
+ * start in source order, 100 ms apart, counted from the batch; other targets get no
+ * stagger.
+ * @param {HTMLElement[]|NodeListOf<HTMLElement>} targets - The targets revealed together
+ * @returns {number[]} The delay of each target, in the order given
+ */
+export function revealDelays(targets) {
+  const list = Array.from(targets);
+  const groups = new Map();
+  list.forEach((target) => {
+    const group = target.dataset.revealGroup;
+    if (!group) return;
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group).push(target);
+  });
+  const staggers = new Map();
+  groups.forEach((members) => {
+    members
+      .sort((a, b) => (a.compareDocumentPosition(b) & DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+      .forEach((target, index) => staggers.set(target, index * REVEAL_STAGGER_MS));
+  });
+  return list.map((target) => ownRevealDelay(target) + (staggers.get(target) ?? 0));
+}
+
+/**
+ * A target's own `data-reveal-delay` in milliseconds, or 0 when it is missing or is not
+ * a whole number of zero or more.
+ * @param {HTMLElement} target - A reveal target
+ * @returns {number}
+ */
+function ownRevealDelay(target) {
+  const delay = Number(target.dataset.revealDelay);
+  return Number.isInteger(delay) && delay >= 0 ? delay : 0;
+}

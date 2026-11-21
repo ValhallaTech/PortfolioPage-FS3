@@ -60,7 +60,7 @@ async function scrollPastBackToTopThreshold(page) {
 
 /**
  * Brings an element into view and waits until it and its ancestors are at rest: no running
- * animation or transition, and every ScrollReveal container among them fully revealed.
+ * animation or transition, and every reveal target among them fully revealed.
  *
  * It scrolls only an element outside the viewport, so a hovered element stays under the
  * pointer. It does not wait for visibility, because contrast compares computed colors: a
@@ -86,7 +86,7 @@ async function settle(locator) {
             node.getAnimations().some((animation) => animation.playState === 'running')
           );
           const unrevealed = chain.some(
-            (node) => node.matches('[data-sr]') && getComputedStyle(node).opacity !== '1'
+            (node) => node.matches('[data-reveal]') && getComputedStyle(node).opacity !== '1'
           );
           return !animating && !unrevealed;
         }),

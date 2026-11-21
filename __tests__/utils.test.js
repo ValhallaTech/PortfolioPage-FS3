@@ -18,6 +18,8 @@ import {
   portfolioFilterOptions,
   resolveHashTarget,
   resolveLightboxHref,
+  revealOffset,
+  revealDelays,
 } from '../src/js/utils.js';
 
 const STYLE_CSS = path.resolve(__dirname, '..', 'src', 'css', 'style.css');
@@ -1083,5 +1085,198 @@ describe('portfolioFilterOptions', () => {
 
   test('returns animated show, hide and layout without reduced motion', () => {
     expect(portfolioFilterOptions(false)).toEqual({ instant: false, layout: true });
+  });
+});
+
+describe('revealOffset', () => {
+  test.each([
+    ['from-right', { x: 60, y: 0 }],
+    ['from-left', { x: -60, y: 0 }],
+    ['from-below', { x: 0, y: 60 }],
+    ['fade', { x: 0, y: 0 }],
+    ['hero', { x: 0, y: 0 }],
+  ])('returns the start offset for %s', (kind, expected) => {
+    // Act
+    const offset = revealOffset(kind);
+
+    // Assert
+    expect(offset).toEqual(expected);
+  });
+
+  test.each([['from-above'], [''], [undefined]])('starts an unknown kind (%p) in place', (kind) => {
+    // Act
+    const offset = revealOffset(kind);
+
+    // Assert
+    expect(offset).toEqual({ x: 0, y: 0 });
+  });
+
+  test('returns a fresh object, so changing one result leaves the next call unchanged', () => {
+    // Arrange
+    const first = revealOffset('from-right');
+    first.x = 0;
+
+    // Act
+    const second = revealOffset('from-right');
+
+    // Assert
+    expect(second).toEqual({ x: 60, y: 0 });
+  });
+});
+
+describe('revealDelays', () => {
+  /**
+   * Renders reveal targets into the body and returns them by id.
+   *
+   * @param {string} html The targets' markup, each with an id.
+   * @returns {Record<string, HTMLElement>} The targets keyed by id.
+   */
+  function renderTargets(html) {
+    document.body.innerHTML = html;
+    return Object.fromEntries(
+      Array.from(document.querySelectorAll('[id]'), (element) => [element.id, element])
+    );
+  }
+
+  test('gives ungrouped targets without data-reveal-delay no delay', () => {
+    // Arrange
+    const { a, b } = renderTargets(`
+      <div id="a" data-reveal="from-right"></div>
+      <div id="b" data-reveal="from-left"></div>
+    `);
+
+    // Act
+    const delays = revealDelays([a, b]);
+
+    // Assert
+    expect(delays).toEqual([0, 0]);
+  });
+
+  test("uses an ungrouped target's data-reveal-delay as its delay", () => {
+    // Arrange
+    const { grid, row } = renderTargets(`
+      <div id="row" data-reveal="from-below"></div>
+      <div id="grid" data-reveal="from-below" data-reveal-delay="100"></div>
+    `);
+
+    // Act
+    const delays = revealDelays([row, grid]);
+
+    // Assert
+    expect(delays).toEqual([0, 100]);
+  });
+
+  test('staggers a group in source order, 100 ms apart, counted from the batch', () => {
+    // Arrange
+    const { s1, s2, s3 } = renderTargets(`
+      <div id="s1" data-reveal="from-below" data-reveal-group="services"></div>
+      <div id="s2" data-reveal="from-below" data-reveal-group="services"></div>
+      <div id="s3" data-reveal="from-below" data-reveal-group="services"></div>
+    `);
+
+    // Act
+    const delays = revealDelays([s1, s2, s3]);
+
+    // Assert
+    expect(delays).toEqual([0, 100, 200]);
+  });
+
+  test('sorts a group into source order and returns delays in the order given', () => {
+    // Arrange
+    const { s1, s2, s3 } = renderTargets(`
+      <div id="s1" data-reveal="from-below" data-reveal-group="services"></div>
+      <div id="s2" data-reveal="from-below" data-reveal-group="services"></div>
+      <div id="s3" data-reveal="from-below" data-reveal-group="services"></div>
+    `);
+
+    // Act
+    const delays = revealDelays([s3, s1, s2]);
+
+    // Assert
+    expect(delays).toEqual([200, 0, 100]);
+  });
+
+  test("adds a grouped target's data-reveal-delay to its stagger", () => {
+    // Arrange
+    const { s1, s2 } = renderTargets(`
+      <div id="s1" data-reveal="from-below" data-reveal-group="services" data-reveal-delay="50"></div>
+      <div id="s2" data-reveal="from-below" data-reveal-group="services" data-reveal-delay="50"></div>
+    `);
+
+    // Act
+    const delays = revealDelays([s1, s2]);
+
+    // Assert
+    expect(delays).toEqual([50, 150]);
+  });
+
+  test('counts each group from zero and leaves ungrouped targets unstaggered', () => {
+    // Arrange
+    const { a1, a2, lone, b1, b2 } = renderTargets(`
+      <div id="a1" data-reveal="from-below" data-reveal-group="first"></div>
+      <div id="lone" data-reveal="fade"></div>
+      <div id="b1" data-reveal="from-below" data-reveal-group="second"></div>
+      <div id="a2" data-reveal="from-below" data-reveal-group="first"></div>
+      <div id="b2" data-reveal="from-below" data-reveal-group="second"></div>
+    `);
+
+    // Act
+    const delays = revealDelays([a1, lone, b1, a2, b2]);
+
+    // Assert
+    expect(delays).toEqual([0, 0, 0, 100, 100]);
+  });
+
+  test('staggers only the group members in the batch', () => {
+    // Arrange
+    const { s2, s3 } = renderTargets(`
+      <div id="s1" data-reveal="from-below" data-reveal-group="services"></div>
+      <div id="s2" data-reveal="from-below" data-reveal-group="services"></div>
+      <div id="s3" data-reveal="from-below" data-reveal-group="services"></div>
+    `);
+
+    // Act
+    const delays = revealDelays([s2, s3]);
+
+    // Assert
+    expect(delays).toEqual([0, 100]);
+  });
+
+  test.each([['-100'], ['1.5'], ['soon'], ['']])(
+    'treats data-reveal-delay="%s" as no delay',
+    (value) => {
+      // Arrange
+      const { a } = renderTargets(
+        `<div id="a" data-reveal="fade" data-reveal-delay="${value}"></div>`
+      );
+
+      // Act
+      const delays = revealDelays([a]);
+
+      // Assert
+      expect(delays).toEqual([0]);
+    }
+  );
+
+  test('accepts a NodeList', () => {
+    // Arrange
+    renderTargets(`
+      <div id="s1" data-reveal="from-below" data-reveal-group="services"></div>
+      <div id="s2" data-reveal="from-below" data-reveal-group="services"></div>
+    `);
+
+    // Act
+    const delays = revealDelays(document.querySelectorAll('[data-reveal]'));
+
+    // Assert
+    expect(delays).toEqual([0, 100]);
+  });
+
+  test('returns an empty list for an empty batch', () => {
+    // Act
+    const delays = revealDelays([]);
+
+    // Assert
+    expect(delays).toEqual([]);
   });
 });
