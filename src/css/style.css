@@ -507,10 +507,12 @@ h6 {
 
 /* The full sentence is about 32em wide, far wider than any typed phrase. It wraps, in
    balanced lines, at 18em or at the viewport less 16 px a side, whichever is narrower,
-   so it neither widens the hero's column past the viewport nor pushes the name off
-   center. A typed phrase is always narrower than this, so typing never wraps. */
+   but never below 300 px, the hero column's own minimum. So it does not widen the column
+   past what it already is, nor push the name off center. The longest typed phrase,
+   "I am a Photographer|", is about 291 px, so the 300 px floor keeps the typing on one
+   line down to a 320 px viewport. */
 #hero .hero-line {
-  max-width: min(18em, calc(100vw - 32px));
+  max-width: min(18em, max(300px, calc(100vw - 32px)));
   text-wrap: balance;
 }
 
