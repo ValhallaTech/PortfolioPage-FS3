@@ -227,8 +227,10 @@ h6 {
   margin-left: 300px;
 }
 
-/* The skip link focuses #main (tabindex="-1"); it is a target, not a control. */
-#main:focus {
+/* The skip link focuses #main (tabindex="-1"), and in-page navigation focuses a section,
+   which gets tabindex="-1" on first use (AD-9). Both are targets, not controls. */
+#main:focus,
+#main section[tabindex='-1']:focus {
   outline: none;
 }
 
@@ -1231,5 +1233,25 @@ body.gscrollbar-fixer {
     padding: 20px 15px;
     position: static;
     width: auto;
+  }
+}
+
+/*--------------------------------------------------------------
+# Reduced motion
+--------------------------------------------------------------*/
+
+/*
+ * AD-8: under reduced motion the mobile nav and the portfolio caption links appear in
+ * place instead of sliding, and the lightbox track does not slide under a swipe. This block
+ * sits after every rule it overrides, including GLightbox's stylesheet, which main.js
+ * imports first. Fades and color transitions elsewhere stay, and GSAP and the lightbox
+ * effects follow the preference in script.
+ */
+@media (prefers-reduced-motion: reduce) {
+  #header,
+  .mobile-nav-active #header,
+  .portfolio .portfolio-wrap .portfolio-links,
+  .glightbox-container .gslider {
+    transition: none;
   }
 }
