@@ -36,6 +36,9 @@ const LS_REMOTE_TIMEOUT_MS = 120_000;
 /** Upper bound for the fresh-clone gate run; below the suite's testTimeout. */
 const GATE_TIMEOUT_MS = 55 * 60 * 1000;
 
+/** Never prompt for credentials, in the terminal or in Git Credential Manager. */
+const NON_INTERACTIVE_GIT_ENV = { GIT_TERMINAL_PROMPT: '0', GCM_INTERACTIVE: 'never' };
+
 /** How much of the runner's stderr a failure message shows. */
 const STDERR_TAIL_CHARS = 4000;
 
@@ -57,6 +60,20 @@ function describeRun(run) {
     `Gate runner: exit ${run.status}, signal ${run.signal}${spawnError}\n` +
     `Gate runner stderr (last ${STDERR_TAIL_CHARS} characters):\n${tail}`
   );
+}
+
+/**
+ * The environment for child processes: this process's, without Jest's `JEST_*`
+ * variables, plus `extra`.
+ *
+ * @param {NodeJS.ProcessEnv} [extra] Variables to add.
+ * @returns {NodeJS.ProcessEnv} The environment.
+ */
+function childEnv(extra = {}) {
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([name]) => !name.startsWith('JEST_'))
+  );
+  return { ...env, ...extra };
 }
 
 /**
@@ -151,6 +168,7 @@ function readReleaseTagSha() {
   const result = spawnSync('git', ['ls-remote', 'origin', RELEASE_TAG_REF], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
+    env: childEnv(NON_INTERACTIVE_GIT_ENV),
     timeout: LS_REMOTE_TIMEOUT_MS,
     windowsHide: true,
   });
@@ -199,7 +217,7 @@ describe('AC-1: the release commit passes the gate on a fresh Windows clone', ()
   });
 
   afterAll(() => {
-    fs.rmSync(workDir, { recursive: true, force: true });
+    fs.rmSync(workDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   });
 
   it('exits 0 on all six gate commands for the release SHA, cloned with autocrlf', () => {
@@ -224,6 +242,7 @@ describe('AC-1: the release commit passes the gate on a fresh Windows clone', ()
       {
         cwd: REPO_ROOT,
         encoding: 'utf8',
+        env: childEnv(),
         maxBuffer: 512 * 1024 * 1024,
         timeout: GATE_TIMEOUT_MS,
         windowsHide: true,
