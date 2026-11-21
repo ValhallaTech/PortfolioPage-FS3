@@ -1,4 +1,3 @@
-import Typed from 'typed.js';
 import Muuri from 'muuri';
 import Swiper from 'swiper';
 import { A11y, Autoplay, Pagination } from 'swiper/modules';
@@ -39,39 +38,6 @@ import { introHero, revealOnScroll } from './motion.js';
 
 /** The reveal targets the scroll reveals own: every `data-reveal` element but the hero. */
 const REVEAL_TARGET_SELECTOR = '[data-reveal]:not([data-reveal="hero"])';
-
-/**
- * Stops the typing cursor once the last phrase is typed (C-31): it stays visible but no
- * longer blinks.
- * @param {Typed} typed
- */
-function stopTypedCursor(typed) {
-  if (!typed.cursor) return;
-  typed.cursor.classList.remove('typed-cursor--blink');
-  typed.cursor.classList.add('typed-cursor--done');
-}
-
-/**
- * Initialize Typed.js: each phrase is typed once, in order, and the effect stops on the
- * last one. The cursor CSS lives in style.css, so Typed.js inserts no <style> (D-6).
- * @param {Element} el - The typed element
- * @returns {Typed|null}
- */
-function initTyped(el) {
-  if (!el) return null;
-  const items = el.getAttribute('data-typed-items');
-  if (!items) return null;
-  const strings = items.split(',').map((s) => s.trim());
-  return new Typed(el, {
-    strings,
-    loop: false,
-    autoInsertCss: false,
-    typeSpeed: 100,
-    backSpeed: 50,
-    backDelay: 2000,
-    onComplete: stopTypedCursor,
-  });
-}
 
 /** The media query a visitor's reduced-motion preference is read from. */
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
@@ -466,12 +432,8 @@ function initContactForm() {
  * Main initialization - wires up all functionality
  */
 function init() {
-  // Hero entrance first, while the style.css gate still hides the hero (AD-5)
+  // Hero entrance and typing first, while the style.css gate still hides the hero (AD-5)
   introHero(document.querySelector('.hero-container'));
-
-  // Hero typed
-  const typedEl = document.querySelector('.typed');
-  initTyped(typedEl);
 
   // Smooth scroll for nav links
   setupNavClickHandlers(document, smoothScrollTo, closeMobileNav);

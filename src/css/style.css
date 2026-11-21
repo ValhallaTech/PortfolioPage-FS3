@@ -486,15 +486,52 @@ h6 {
   margin-bottom: 50px;
 }
 
-#hero p span {
+/* The underline sits on the phrases and on the typing with its cursor, not on the
+   wrapper spans (AD-7). */
+#hero .hero-phrases,
+#hero .typed,
+#hero .typed-cursor {
   border-bottom: 3px solid var(--color-accent);
   color: var(--color-white);
   letter-spacing: 1px;
   padding-bottom: 4px;
 }
 
-/* The typing cursor. Typed.js runs with autoInsertCss: false (D-6), so its cursor rules
-   live here. It blinks between phrases and stops once the last phrase is typed (C-31). */
+/* The hero line's two modes (AD-7). By default it shows the full sentence: with no
+   script, a failed or late one, or reduced motion. In typing mode the script types into
+   .hero-typing, which screen readers skip, and the sentence stays in the accessibility
+   tree, hidden as Bootstrap's .visually-hidden hides it. */
+.hero-typing {
+  display: none;
+}
+
+/* The full sentence is about 32em wide, far wider than any typed phrase. It wraps, in
+   balanced lines, at 18em or at the viewport less 16 px a side, whichever is narrower,
+   so it neither widens the hero's column past the viewport nor pushes the name off
+   center. A typed phrase is always narrower than this, so typing never wraps. */
+#hero .hero-line {
+  max-width: min(18em, calc(100vw - 32px));
+  text-wrap: balance;
+}
+
+.hero-line.is-typing .hero-typing {
+  display: inline;
+}
+
+.hero-line.is-typing .hero-sentence {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+/* The typing cursor. It blinks while the typing is idle, stays steady while characters
+   change, and stops once the last phrase is typed (C-7, C-31). */
 .typed-cursor {
   opacity: 1;
 }
@@ -519,11 +556,17 @@ h6 {
   }
 }
 
-/* #hero sits in #main but stays full-bleed under the docked 300 px sidebar. */
+/* #hero sits in #main but stays full-bleed under the docked 300 px sidebar. Its content
+   stays centered on that full width, so the hero line is kept 300 px + 16 px narrower on
+   each side of the center, which keeps the full sentence clear of the sidebar. */
 @media (width >= 1280px) {
   #hero {
     margin-left: -300px;
     width: calc(100% + 300px);
+  }
+
+  #hero .hero-line {
+    max-width: min(18em, calc(100vw - 632px));
   }
 }
 

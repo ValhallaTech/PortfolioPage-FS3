@@ -345,3 +345,86 @@ function ownRevealDelay(target) {
   const delay = Number(target.dataset.revealDelay);
   return Number.isInteger(delay) && delay >= 0 ? delay : 0;
 }
+
+/** The hero typing's base timings in milliseconds, as in 5.0.0 (C-7). */
+const TYPING_TIMINGS = Object.freeze({ typeMs: 100, eraseMs: 50, holdMs: 2000 });
+
+/**
+ * @typedef {object} TypingStep
+ * @property {number} at - When the step happens, in milliseconds from the typing's start
+ * @property {string} [text] - The typing element's text from this step on
+ * @property {'blink'|'steady'|'done'} [cursor] - The cursor's state from this step on:
+ *   blinking while idle, steady while characters change, and stopped at the end
+ */
+
+/**
+ * The length of the start that two strings share.
+ * @param {string} a
+ * @param {string} b
+ * @returns {number} How many leading characters are equal in both
+ */
+export function sharedPrefixLength(a, b) {
+  let length = 0;
+  while (length < a.length && length < b.length && a[length] === b[length]) length += 1;
+  return length;
+}
+
+/**
+ * One character step as 5.0.0's typing timed it: the base plus up to half of it again as
+ * random jitter, rounded to a whole millisecond (V-5).
+ * @param {number} base - The step's base duration in milliseconds
+ * @param {() => number} random - Returns a number in [0, 1)
+ * @returns {number}
+ */
+function characterStep(base, random) {
+  return base + Math.round((random() * base) / 2);
+}
+
+/**
+ * The hero typing as timed steps (AD-6), with 5.0.0's texts and timing.
+ * The cursor blinks until the first character. Each phrase is typed on, one character per
+ * step, from the start it shares with the text before it. One more typing step passes
+ * after its last character, then the cursor blinks through the hold. The cursor then goes
+ * steady, one erase step passes with no change, and the phrase is erased one character per
+ * step back to the start it shares with the next phrase. The last phrase is never erased:
+ * one typing step after its last character, the cursor stops.
+ * @param {string[]} phrases - The phrases, in the order they are typed
+ * @param {{ typeMs?: number, eraseMs?: number, holdMs?: number }} [timings] - The base
+ *   typing and erase steps and the hold, in milliseconds
+ * @param {() => number} [random] - Returns a number in [0, 1), as Math.random does
+ * @returns {TypingStep[]} The steps in time order; empty for no phrases
+ */
+export function typingSchedule(phrases, timings = TYPING_TIMINGS, random = Math.random) {
+  const { typeMs, eraseMs, holdMs } = { ...TYPING_TIMINGS, ...timings };
+  /** @type {TypingStep[]} */
+  const steps = [];
+  if (phrases.length === 0) return steps;
+
+  let at = 0;
+  let text = '';
+  steps.push({ at, cursor: 'blink' });
+  phrases.forEach((phrase, index) => {
+    for (let length = text.length + 1; length <= phrase.length; length += 1) {
+      at += characterStep(typeMs, random);
+      text = phrase.slice(0, length);
+      steps.push({ at, text, cursor: 'steady' });
+    }
+    at += characterStep(typeMs, random);
+    const next = phrases[index + 1];
+    if (next === undefined) {
+      steps.push({ at, cursor: 'done' });
+      return;
+    }
+    steps.push({ at, cursor: 'blink' });
+    at += holdMs;
+    steps.push({ at, cursor: 'steady' });
+    at += characterStep(eraseMs, random);
+    const stop = sharedPrefixLength(phrase, next);
+    for (let length = phrase.length - 1; length >= stop; length -= 1) {
+      at += characterStep(eraseMs, random);
+      text = phrase.slice(0, length);
+      steps.push({ at, text });
+    }
+  });
+  return steps;
+}
