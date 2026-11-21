@@ -5,9 +5,10 @@
  * S1 acceptance test for chain I (spec stabilize-and-cleanup, sections 2.3 and 3.4 WI-24):
  * AC-103, the CHANGELOG has a dated entry for every release.
  *
- * The releases are every tag from `git tag --list` that matches `^\d+\.\d+\.\d+$`, plus
- * the `package.json` version, so the test passes at the release commit before its tag
- * exists. Each needs a CHANGELOG.md line `## [T] - YYYY-MM-DD`. A missing CHANGELOG.md
+ * The releases are every tag from `git tag --merged HEAD` (the tags HEAD can reach) that
+ * matches `^\d+\.\d+\.\d+$`, plus the `package.json` version, so the test passes at the
+ * release commit before its tag exists, and a clone holding later releases' tags does
+ * not fail it. Each needs a CHANGELOG.md line `## [T] - YYYY-MM-DD`. A missing CHANGELOG.md
  * counts as empty.
  */
 const { spawnSync } = require('node:child_process');
@@ -54,12 +55,12 @@ function compareVersions(a, b) {
 }
 
 /**
- * Lists the release tags. Never throws: a failure is returned as a problem.
+ * Lists the release tags HEAD can reach. Never throws: a failure is returned as a problem.
  *
  * @returns {{ tags: string[], problem: string | null }} The tags, or the problem.
  */
 function listReleaseTags() {
-  const result = spawnSync('git', ['tag', '--list'], {
+  const result = spawnSync('git', ['tag', '--merged', 'HEAD'], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
     timeout: GIT_TIMEOUT_MS,
@@ -67,7 +68,7 @@ function listReleaseTags() {
   });
   if (result.error || result.status !== 0) {
     const reason = result.error ? result.error.message : (result.stderr ?? '').trim();
-    return { tags: [], problem: `git tag --list failed (exit ${result.status}): ${reason}` };
+    return { tags: [], problem: `git tag --merged HEAD failed (exit ${result.status}): ${reason}` };
   }
   const tags = result.stdout
     .split(/\r?\n/)
@@ -110,7 +111,7 @@ test('AC-103 the CHANGELOG has a dated heading for every release tag and the pac
   expect(
     tagList.tags.length > 0
       ? null
-      : 'AC-103: git tag --list found no tag matching ^\\d+\\.\\d+\\.\\d+$'
+      : 'AC-103: git tag --merged HEAD found no tag matching ^\\d+\\.\\d+\\.\\d+$'
   ).toBeNull();
 
   const releases = [...new Set([...tagList.tags, pkg.version])].sort(compareVersions);
