@@ -7,7 +7,7 @@
  * trigger starts 500 ms after it (§2.3 Conventions). AC-14 case 1 names its own times.
  */
 import { test, expect } from './fixtures.js';
-import { desktop, small } from './viewports.js';
+import { desktop, phone, small } from './viewports.js';
 import {
   POSITION_TOLERANCE_PX,
   TRACE_MS,
@@ -329,6 +329,50 @@ function expectJumpAwayFromTop(scrollYs) {
   expect(Math.abs(scrollYs.at(-1)), 'the last scrollY, away from 0').toBeGreaterThan(100);
 }
 
+/**
+ * AC-12's steps and assertions: item 1's enlarge link opens the lightbox, ArrowRight changes
+ * slide and Escape closes it, each with a frame trace, and no traced image moves or changes
+ * size while it is shown.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {boolean} live - Reach reduced motion by a live switch (AC-14 case 7)
+ */
+async function expectLightboxStepsStill(page, live) {
+  await loadFresh(page, live);
+  await waitForPortfolioGrid(page);
+  await revealPortfolio(page);
+  await expect(portfolioFilter(page, 'All'), 'the All filter').toHaveAttribute(
+    'aria-pressed',
+    'true'
+  );
+  await page.locator(CARD.selector).hover();
+  await switchToReducedIfLive(page, live);
+
+  const opening = await traceDuring(page, 'lightbox-opens', [CURRENT_IMAGE], () =>
+    page.locator(`${ITEM_1} ${PORTFOLIO_LINK}.glightbox`).click()
+  );
+  expectNoMovement(opening, [CURRENT_IMAGE], 'step 1');
+  expect(
+    seriesOf(opening, CURRENT_IMAGE.name).at(-1).opacity,
+    'the lightbox image in the last frame of step 1'
+  ).toBeGreaterThan(0);
+  await expect
+    .poll(() => lightboxImageWidth(page), { message: 'the lightbox image has loaded' })
+    .toBeGreaterThan(0);
+
+  const slides = [slideImage(1), slideImage(2)];
+  const changing = await traceDuring(page, 'lightbox-next', slides, () =>
+    page.keyboard.press('ArrowRight')
+  );
+  expectNoMovement(changing, slides, 'step 2');
+
+  const closing = await traceDuring(page, 'lightbox-closes', [CURRENT_IMAGE], () =>
+    page.keyboard.press('Escape')
+  );
+  expectNoMovement(closing, [CURRENT_IMAGE], 'step 3');
+  expect(await lightboxOpacity(page), 'the lightbox after step 3').toBe(0);
+}
+
 test.describe('in-page navigation, captions, the contact dialog and the lightbox at desktop', () => {
   test.use(desktop);
 
@@ -432,39 +476,7 @@ test.describe('in-page navigation, captions, the contact dialog and the lightbox
     test(`${prefix} the lightbox opens, changes slide and closes without moving`, async ({
       page,
     }) => {
-      await loadFresh(page, live);
-      await waitForPortfolioGrid(page);
-      await revealPortfolio(page);
-      await expect(portfolioFilter(page, 'All'), 'the All filter').toHaveAttribute(
-        'aria-pressed',
-        'true'
-      );
-      await page.locator(CARD.selector).hover();
-      await switchToReducedIfLive(page, live);
-
-      const opening = await traceDuring(page, 'lightbox-opens', [CURRENT_IMAGE], () =>
-        page.locator(`${ITEM_1} ${PORTFOLIO_LINK}.glightbox`).click()
-      );
-      expectNoMovement(opening, [CURRENT_IMAGE], 'step 1');
-      expect(
-        seriesOf(opening, CURRENT_IMAGE.name).at(-1).opacity,
-        'the lightbox image in the last frame of step 1'
-      ).toBeGreaterThan(0);
-      await expect
-        .poll(() => lightboxImageWidth(page), { message: 'the lightbox image has loaded' })
-        .toBeGreaterThan(0);
-
-      const slides = [slideImage(1), slideImage(2)];
-      const changing = await traceDuring(page, 'lightbox-next', slides, () =>
-        page.keyboard.press('ArrowRight')
-      );
-      expectNoMovement(changing, slides, 'step 2');
-
-      const closing = await traceDuring(page, 'lightbox-closes', [CURRENT_IMAGE], () =>
-        page.keyboard.press('Escape')
-      );
-      expectNoMovement(closing, [CURRENT_IMAGE], 'step 3');
-      expect(await lightboxOpacity(page), 'the lightbox after step 3').toBe(0);
+      await expectLightboxStepsStill(page, live);
     });
   }
 
@@ -478,6 +490,21 @@ test.describe('in-page navigation, captions, the contact dialog and the lightbox
     const scrollYs = await traceScrollY(page, 'nav-link', () => navLink(page, 'About').click());
 
     expect(isGlide(scrollYs), `a glide: ${JSON.stringify(describeScroll(scrollYs))}`).toBe(true);
+  });
+});
+
+/*
+ * GLightbox's open() forces the slide effect back to `slide` on a mobile user agent, and
+ * main.js writes the reduced-motion effects again on the `open` event (AD-11, V-6). This
+ * run uses the phone device, whose user agent is a mobile one, so that rewrite is tested.
+ */
+test.describe('the lightbox on a phone', () => {
+  test.use(phone);
+
+  test('AC-12 on a phone: under reduced motion, the lightbox opens, changes slide and closes without moving', async ({
+    page,
+  }) => {
+    await expectLightboxStepsStill(page, false);
   });
 });
 

@@ -210,6 +210,7 @@ for (const { label, reducedMotion } of MOTION_MODES) {
       '#%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E',
       '#a%22%5D%2C*',
       '#',
+      '#%E0%A4%A',
     ]) {
       test(`AC-35: ${label}, the hash "${hash}" on load is ignored`, async ({
         page,
